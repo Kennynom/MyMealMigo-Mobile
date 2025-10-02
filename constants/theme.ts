@@ -5,25 +5,67 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// MyMealMigo brand colors
+const primaryGreen = '#58e221';
+const tintColorLight = primaryGreen;
+const tintColorDark = primaryGreen;
 
 export const Colors = {
   light: {
     text: '#11181C',
     background: '#fff',
+    surface: '#fff',
+    textSecondary: '#687076',
+    border: '#f0f0f0',
+    inactive: '#f8f8f8',
+    card: '#fff',
+    
+    // MyMealMigo brand colors
+    primary: primaryGreen,
+    primaryDark: '#4CAF50',
+    accent: '#81C784',
+    
+    // Status colors
+    success: '#4CAF50',
+    warning: '#FF9800',
+    error: '#F44336',
+    
+    // Original theme colors
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    
+    // Shadow
+    shadow: '#000000',
   },
   dark: {
     text: '#ECEDEE',
     background: '#151718',
+    surface: '#2d2d2d',
+    textSecondary: '#9BA1A6',
+    border: '#404040',
+    inactive: '#404040',
+    card: '#2d2d2d',
+    
+    // MyMealMigo brand colors (same in dark mode)
+    primary: primaryGreen,
+    primaryDark: '#4CAF50',
+    accent: '#81C784',
+    
+    // Status colors
+    success: '#4CAF50',
+    warning: '#FF9800',
+    error: '#F44336',
+    
+    // Original theme colors
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    
+    // Shadow
+    shadow: '#000000',
   },
 };
 
