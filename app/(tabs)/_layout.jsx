@@ -1,21 +1,47 @@
+// app/(tabs)/_layout.jsx - Smart platform detection
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import React, { useContext } from 'react';
+import { Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { ThemeContext } from '@/context/ThemeContext';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import WebLayout from '@/components/layouts/WebLayout';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { theme } = useContext(ThemeContext);
 
+  // ON WEB: Use WebLayout wrapper + hide tabs
+  if (Platform.OS === 'web') {
+    return (
+      <WebLayout>
+        <Tabs
+          screenOptions={{
+            tabBarStyle: { display: 'none' }, // ← HIDE TABS ON WEB
+            headerShown: false,
+          }}
+          initialRouteName='(home)'>
+          <Tabs.Screen name="(home)" />
+          <Tabs.Screen name="(features)" />
+          <Tabs.Screen name="(testimonials)" />
+          <Tabs.Screen name="(how-it-works)" />
+          <Tabs.Screen name="(download)" />
+          <Tabs.Screen name="(calculator)" />
+          <Tabs.Screen name="(about)" />
+        </Tabs>
+      </WebLayout>
+    );
+  }
+
+  // ON MOBILE: Keep your existing tab layout unchanged
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-      }}>
+      }}
+      initialRouteName="(home)">
       <Tabs.Screen
         name="(home)"
         options={{
@@ -34,21 +60,21 @@ export default function TabLayout() {
         name="(add)"
         options={{
           title: 'Add',
-          tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.circle.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="(tracker)"
         options={{
           title: 'Tracker',
-          tabBarIcon: ({ color }) => <FontAwesome6 name="chart-simple" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.line.uptrend.xyaxis" color={color} />,
         }}
       />
       <Tabs.Screen
         name="(discover)"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color }) => <MaterialIcons name="travel-explore" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass.circle.fill" color={color} />,
         }}
       />
     </Tabs>

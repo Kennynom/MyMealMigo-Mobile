@@ -1,332 +1,294 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useContext } from 'react';
+// app/(tabs)/(home)/index.jsx - Add Features section
+import { StyleSheet, View, Text, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { useContext, useState, useEffect } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
+import { router } from 'expo-router';
 
-const { width } = Dimensions.get('window');
+// 🔥 Firebase imports
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+
+// Import components
+import { Hero } from '@/components/hero';
+import { Features } from '@/components/features'; // ← ADD THIS IMPORT
 
 export default function HomeScreen() {
-  const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
+  const { theme } = useContext(ThemeContext);
+  const [loading, setLoading] = useState(true);
+  const [landingPageData, setLandingPageData] = useState(null);
+  const [error, setError] = useState(null);
 
-  const styles = createStyles(theme, colorScheme);
+  // 🔥 FETCH DATA FROM FIREBASE WITH BETTER ERROR HANDLING
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      fetchLandingPageData();
+    } else {
+      // Skip Firebase on mobile for now
+      setLoading(false);
+    }
+  }, []);
 
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+  const fetchLandingPageData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔥 Fetching landing page data from Firebase...');
+      
+      // 🎯 FETCH FROM YOUR EXACT STRUCTURE: landingPageContent/main
+      const landingPageDocRef = doc(db, 'landingPageContent', 'main');
+      const landingPageSnapshot = await getDoc(landingPageDocRef);
+      
+      if (landingPageSnapshot.exists()) {
+        const data = landingPageSnapshot.data();
+        console.log('✅ Landing page data found:', data);
+        setLandingPageData(data);
+      } else {
+        console.log('❌ No landingPageContent/main document found');
+        // Set fallback data
+        setLandingPageData({
+          hero: {
+            title1: "Eat Smart,",
+            title2: "Live Better.",
+            description: "MyMealMigo is your all-in-one nutrition companion that makes healthy eating simple, personalized, and fun. Take our Quiz to get a personal meal plan.",
+            imageURL: null,
+            mediaType: "image"
+          },
+          features: []
+        });
+      }
+      
+    } catch (error) {
+      console.error('🚨 Firebase Error:', error);
+      setError(error.message);
+      // Fallback data on error
+      setLandingPageData({
+        hero: {
+          title1: "Eat Smart,",
+          title2: "Live Better.",
+          description: "MyMealMigo nutrition companion",
+          imageURL: null,
+          mediaType: "image"
+        },
+        features: []
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Create the Male/Female buttons as children for Hero
+  const HeroButtons = () => (
+    <View style={styles.heroButtonsContainer}>
+      <TouchableOpacity 
+        style={styles.heroButton}
+        onPress={() => router.push('/(tabs)/(add)/?sex=male')}
+      >
+        <Text style={styles.heroButtonText}>Male</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.heroButton}
+        onPress={() => router.push('/(tabs)/(add)/?sex=female')}
+      >
+        <Text style={styles.heroButtonText}>Female</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Loading state
+  if (loading && Platform.OS === 'web') {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>🔥 Loading from Firebase...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error && Platform.OS === 'web') {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>⚠️ Error loading data</Text>
+        <Text style={styles.errorDetail}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchLandingPageData}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ON WEB: Show MyMealMigo website with real Firebase data
+  if (Platform.OS === 'web') {
+    return (
+      <ScrollView style={styles.webContainer} showsVerticalScrollIndicator={false}>
+        {/* 🎯 HERO SECTION */}
+        {landingPageData?.hero && (
+          <Hero
+            title1={landingPageData.hero.title1}
+            title2={landingPageData.hero.title2}
+            description={landingPageData.hero.description}
+            imageURL={landingPageData.hero.imageURL}
+            videoURL={landingPageData.hero.videoURL}
+            mediaType={landingPageData.hero.mediaType}
+          >
+            <HeroButtons />
+          </Hero>
+        )}
+        
+        {/* 🎯 FEATURES SECTION - NEW! */}
+        {landingPageData?.features && (
+          <Features features={landingPageData.features} />
+        )}
+        
+        {/* Placeholder for other sections */}
+        <View style={styles.sectionsPlaceholder}>
+          <Text style={styles.placeholderText}>
+            🔥 Hero & Features loaded! Pricing, Testimonials, How It Works coming next...
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // ON MOBILE: Keep existing mobile screen
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
+    <View style={styles.mobileContainer}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Smart Dashboard</Text>
-          <Text style={styles.welcome}>Welcome!</Text>
-          <Text style={styles.subtitle}>You're currently 20 kcal under your daily goal.</Text>
-        </View>
-        <View style={styles.headerButtons}>
-          {/* Theme Toggle Button */}
-          <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-            <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileButton}>
-            <Text style={styles.profileIcon}>👤</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>Home</Text>
+          <Text style={styles.subtitle}>Welcome back to MyMealMigo</Text>
         </View>
       </View>
-
-      {/* Stats Cards */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Weight</Text>
-          <Text style={styles.statValue}>59</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>BMI</Text>
-          <Text style={styles.statValue}>23.5</Text>
-        </View>
+      
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>Your mobile app content here</Text>
+        
+        <TouchableOpacity 
+          style={styles.quickAction}
+          onPress={() => router.push('/(tabs)/(tracker)/bmi-calculator')}
+        >
+          <Text style={styles.quickActionText}>Quick BMI Check</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Progress Chart */}
-      <View style={styles.chartCard}>
-        <View style={styles.chartHeader}>
-          <Text style={styles.chartTitle}>Progress Chart</Text>
-        </View>
-        <View style={styles.chartPlaceholder}>
-          <Text style={styles.chartText}>📈 Weight Progress</Text>
-          <Text style={styles.trendText}>Trend: down 0.8 kg this week</Text>
-        </View>
-        <View style={styles.chartTabs}>
-          <TouchableOpacity style={styles.activeTab}>
-            <Text style={styles.activeTabText}>Weight</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Text style={styles.tabText}>Calories</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Text style={styles.tabText}>Macros</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Tip of the Day */}
-      <View style={styles.tipCard}>
-        <View style={styles.tipHeader}>
-          <Text style={styles.tipTitle}>Tip of the day:</Text>
-          <TouchableOpacity style={styles.tipButton}>
-            <Text style={styles.tipButtonText}>💡</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.tipContent}>
-          <View style={styles.tipIcon}>
-            <Text style={styles.tipEmoji}>🥬</Text>
-          </View>
-          <View style={styles.tipTextContainer}>
-            <Text style={styles.tipText}>
-              Include a serving of leafy green vegetables in your meals to boost your intake of vitamins and minerals
-            </Text>
-            <TouchableOpacity style={styles.tipAction}>
-              <Text style={styles.tipActionText}>📖</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Predictive Insight */}
-      <View style={styles.insightCard}>
-        <Text style={styles.insightTitle}>Predictive Insight</Text>
-        <LinearGradient colors={['#FFB800', '#FF8A00']} style={styles.insightContent}>
-          <View style={styles.lockIcon}>
-            <Text style={styles.lockText}>🔒</Text>
-            <Text style={styles.dollarSign}>$</Text>
-          </View>
-        </LinearGradient>
-      </View>
-
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+    </View>
   );
 }
 
-// Dynamic styles function (exactly like your CrudApp)
-const createStyles = (theme, colorScheme) => StyleSheet.create({
-  container: {
+const styles = StyleSheet.create({
+  loadingContainer: {
     flex: 1,
-    backgroundColor: theme.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#58e221',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#ef4444',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  errorDetail: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#58e221',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  webContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  heroButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heroButton: {
+    backgroundColor: '#58e221',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  heroButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  sectionsPlaceholder: {
+    backgroundColor: '#f8fafc',
+    padding: 40,
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 18,
+    color: '#6b7280',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  // Mobile styles
+  mobileContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     padding: 20,
-    paddingTop: 10,
+    paddingTop: 60,
   },
   headerLeft: {
     flex: 1,
   },
-  greeting: {
-    fontSize: 24,
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 4,
-  },
-  welcome: {
-    fontSize: 16,
-    color: theme.text,
+    color: '#1f2937',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: theme.textSecondary,
+    fontSize: 16,
+    color: '#6b7280',
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  themeButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.surface,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  themeIcon: {
-    fontSize: 20,
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.primary,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileIcon: {
-    color: '#fff',
-    fontSize: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 15,
-    marginBottom: 20,
-  },
-  statCard: {
+  content: {
     flex: 1,
-    backgroundColor: theme.surface,
-    borderRadius: 12,
     padding: 20,
-    alignItems: 'center',
   },
-  statLabel: {
-    color: theme.textSecondary,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  statValue: {
-    color: theme.text,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  chartCard: {
-    backgroundColor: theme.surface,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
+  welcomeText: {
+    fontSize: 18,
+    color: '#374151',
     marginBottom: 20,
   },
-  chartHeader: {
-    marginBottom: 15,
-  },
-  chartTitle: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  chartPlaceholder: {
-    backgroundColor: theme.inactive,
-    height: 120,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  chartText: {
-    color: theme.textSecondary,
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  trendText: {
-    color: theme.primary,
-    fontSize: 14,
-  },
-  chartTabs: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  activeTab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: theme.primary,
-    borderRadius: 20,
-  },
-  activeTabText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  tabText: {
-    color: theme.textSecondary,
-    fontSize: 14,
-  },
-  tipCard: {
-    backgroundColor: theme.surface,
-    marginHorizontal: 20,
+  quickAction: {
+    backgroundColor: '#58e221',
+    padding: 16,
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  tipHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  tipTitle: {
-    color: theme.text,
+  quickActionText: {
+    color: '#ffffff',
     fontSize: 16,
-  },
-  tipButton: {
-    backgroundColor: theme.primary,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tipButtonText: {
-    fontSize: 16,
-  },
-  tipContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tipIcon: {
-    marginRight: 15,
-  },
-  tipEmoji: {
-    fontSize: 24,
-  },
-  tipTextContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tipText: {
-    color: theme.text,
-    fontSize: 14,
-    lineHeight: 20,
-    flex: 1,
-  },
-  tipAction: {
-    marginLeft: 10,
-  },
-  tipActionText: {
-    fontSize: 20,
-  },
-  insightCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  insightTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 10,
-  },
-  insightContent: {
-    height: 120,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  lockIcon: {
-    alignItems: 'center',
-  },
-  lockText: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  dollarSign: {
-    fontSize: 24,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  bottomSpacing: {
-    height: 20,
+    fontWeight: '600',
   },
 });

@@ -48,6 +48,20 @@ export default function TrackerMainScreen() {
         >
           <Text style={styles.trackerTitle}>Activity Tracker</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.trackerCard}
+          onPress={() => router.push('/(tabs)/(tracker)/bmi-calculator')}
+        >
+          <Text style={styles.trackerTitle}>BMI Calculator</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.trackerCard}
+          onPress={() => router.push('/(tabs)/(tracker)/bmr-calculator')}
+        >
+          <Text style={styles.trackerTitle}>BMR Calculator</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

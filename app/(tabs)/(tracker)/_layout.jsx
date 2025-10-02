@@ -7,6 +7,8 @@ export default function TrackerLayout() {
       <Stack.Screen name="calorie-tracker" />
       <Stack.Screen name="progress-tracker" />
       <Stack.Screen name="activity-tracker" />
+      <Stack.Screen name="bmi-calculator" />
+      <Stack.Screen name="bmr-calculator" /> 
     </Stack>
   );
 }
