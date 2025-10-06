@@ -1,8 +1,7 @@
 // components/features.jsx - Exact match to your MyMealMigo design
-import React from "react";
-import { StyleSheet, View, Text, Platform } from 'react-native';
-import { useContext } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
+import React, { useContext } from "react";
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 export function Features({ features = [] }) {
   const { theme } = useContext(ThemeContext);
@@ -85,7 +84,7 @@ const createStyles = (theme) => StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#58e221',
+    color: '#059669',
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 16,
@@ -142,10 +141,10 @@ const createStyles = (theme) => StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#58e221',
+    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#58e221',
+    shadowColor: '#033928',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,

@@ -1,16 +1,22 @@
 // app/(tabs)/(home)/index.jsx - Add Features section
-import { StyleSheet, View, Text, TouchableOpacity, Platform, ScrollView } from 'react-native';
-import { useContext, useState, useEffect } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
+import { useContext, useEffect, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // 🔥 Firebase imports
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Import components
-import { Hero } from '@/components/hero';
+import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
 import { Features } from '@/components/features'; // ← ADD THIS IMPORT
+import { Footer } from '@/components/footer'; // ← ADD FOOTER IMPORT
+import { Hero } from '@/components/hero';
+import { HowItWorks } from '@/components/how-it-works'; // ← ADD HOW IT WORKS IMPORT
+import { Pricing } from '@/components/pricing'; // ← ADD PRICING IMPORT
+import { Testimonials } from '@/components/testimonials'; // ← ADD TESTIMONIALS IMPORT
+
 
 export default function HomeScreen() {
   const { theme } = useContext(ThemeContext);
@@ -99,7 +105,7 @@ export default function HomeScreen() {
   if (loading && Platform.OS === 'web') {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>🔥 Loading from Firebase...</Text>
+        <Text style={styles.loadingText}>🔥 Loading... </Text>
       </View>
     );
   }
@@ -117,10 +123,14 @@ export default function HomeScreen() {
     );
   }
 
+
+
   // ON WEB: Show MyMealMigo website with real Firebase data
   if (Platform.OS === 'web') {
     return (
-      <ScrollView style={styles.webContainer} showsVerticalScrollIndicator={false}>
+      <View style={{ flex: 1 }}>
+        <AuthDebug />
+        <ScrollView style={styles.webContainer} showsVerticalScrollIndicator={false}>
         {/* 🎯 HERO SECTION */}
         {landingPageData?.hero && (
           <Hero
@@ -139,20 +149,51 @@ export default function HomeScreen() {
         {landingPageData?.features && (
           <Features features={landingPageData.features} />
         )}
+
+        {/* 🎯 PRICING SECTION */}
+        {landingPageData?.pricing && (
+          <View style={styles.pricingSection}>
+            <Text style={styles.pricingTitle}>Choose Your Plan</Text>
+            <View style={styles.pricingCardsContainer}>
+            {landingPageData.pricing.map((plan, index) => (
+              <Pricing
+                key={index}
+                name={plan.name}
+                price={plan.price}
+                buttonText={plan.buttonText}
+                description={plan.description}
+                featured={plan.featured}
+                features={plan.features}
+              />
+            ))}
+            </View>
+          </View>
+        )}
+
+        {/* 🎯 TESTIMONIALS SECTION */}
+        {landingPageData?.testimonial && (
+          <Testimonials testimonials={landingPageData.testimonial} />
+        )}
         
-        {/* Placeholder for other sections */}
-        <View style={styles.sectionsPlaceholder}>
-          <Text style={styles.placeholderText}>
-            🔥 Hero & Features loaded! Pricing, Testimonials, How It Works coming next...
-          </Text>
-        </View>
+        {/* 🎯 HOW IT WORKS SECTION */}
+        {landingPageData?.howItWorks && (
+          <HowItWorks howItWorks={landingPageData.howItWorks} />
+        )}
+
+        {/* 🎯 FOOTER SECTION */}
+        <Footer />
+
       </ScrollView>
+      
+
+      </View>
     );
   }
 
   // ON MOBILE: Keep existing mobile screen
   return (
     <View style={styles.mobileContainer}>
+      <AuthDebug />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Home</Text>
@@ -245,6 +286,26 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginBottom: 30,
     textAlign: 'center',
+  },
+  pricingSection: {
+    backgroundColor: '#F8FCF8',
+    padding: 40,
+    alignItems: 'center',
+  },
+  pricingTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pricingCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems:'flex-start',
+    flexWrap: 'wrap',
+    gap: 20,
+    maxWidth: 1200,
   },
   // Mobile styles
   mobileContainer: {

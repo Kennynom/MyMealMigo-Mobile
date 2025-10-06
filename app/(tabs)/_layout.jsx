@@ -1,12 +1,12 @@
 // app/(tabs)/_layout.jsx - Smart platform detection
+import WebLayout from '@/components/layouts/WebLayout';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
+import { ThemeContext } from '@/context/ThemeContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Tabs } from 'expo-router';
 import React, { useContext } from 'react';
 import { Platform } from 'react-native';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemeContext } from '@/context/ThemeContext';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import WebLayout from '@/components/layouts/WebLayout';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -22,13 +22,6 @@ export default function TabLayout() {
             headerShown: false,
           }}
           initialRouteName='(home)'>
-          <Tabs.Screen name="(home)" />
-          <Tabs.Screen name="(features)" />
-          <Tabs.Screen name="(testimonials)" />
-          <Tabs.Screen name="(how-it-works)" />
-          <Tabs.Screen name="(download)" />
-          <Tabs.Screen name="(calculator)" />
-          <Tabs.Screen name="(about)" />
         </Tabs>
       </WebLayout>
     );

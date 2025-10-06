@@ -12,18 +12,18 @@ const tintColorDark = primaryGreen;
 
 export const Colors = {
   light: {
-    text: '#11181C',
+    text: '#000000',  // ← Changed to pure black
     background: '#fff',
     surface: '#fff',
-    textSecondary: '#687076',
+    textSecondary: '#333333',  // ← Changed to darker grey
     border: '#f0f0f0',
     inactive: '#f8f8f8',
     card: '#fff',
     
     // MyMealMigo brand colors
     primary: primaryGreen,
-    primaryDark: '#4CAF50',
-    accent: '#81C784',
+    primaryDark: '#059669',
+    accent: '#059669',
     
     // Status colors
     success: '#4CAF50',
@@ -50,8 +50,8 @@ export const Colors = {
     
     // MyMealMigo brand colors (same in dark mode)
     primary: primaryGreen,
-    primaryDark: '#4CAF50',
-    accent: '#81C784',
+    primaryDark: '#059669',
+    accent: '#059669',
     
     // Status colors
     success: '#4CAF50',
