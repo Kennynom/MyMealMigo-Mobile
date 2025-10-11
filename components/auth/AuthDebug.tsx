@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export function AuthDebug() {
+    // Temporary toggle: set to true to show the debug overlay again.
+    // Keep this file in the repo but disable the visual debug UI while testing.
+    const ENABLE_AUTH_DEBUG = false;
+
+    if (!ENABLE_AUTH_DEBUG) return null;
+
     const { user, userRole, isAdmin, isNutritionist, canAccessWeb, canAccessMobile, loading } = useAuth();
     const [isExpanded, setIsExpanded] = useState(false);
 

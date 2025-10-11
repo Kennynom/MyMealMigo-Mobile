@@ -1,7 +1,7 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useContext } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
+import { useContext } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TrackerMainScreen() {
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
@@ -30,7 +30,7 @@ export default function TrackerMainScreen() {
       <ScrollView style={styles.trackerList} showsVerticalScrollIndicator={false}>
         <TouchableOpacity 
           style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/calorie-tracker')}
+          onPress={() => router.push('calorie-tracker')}
         >
           <Text style={styles.trackerTitle}>Calorie Tracker</Text>
         </TouchableOpacity>
@@ -51,14 +51,14 @@ export default function TrackerMainScreen() {
 
         <TouchableOpacity 
           style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/bmi-calculator')}
+          onPress={() => router.push('/(tabs)/(tracker)/(calculator)/bmi-calculator')}
         >
           <Text style={styles.trackerTitle}>BMI Calculator</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/bmr-calculator')}
+          onPress={() => router.push('/(tabs)/(tracker)/(calculator)/bmr-calculator')}
         >
           <Text style={styles.trackerTitle}>BMR Calculator</Text>
         </TouchableOpacity>

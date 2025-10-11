@@ -24,25 +24,8 @@ export function PlatformGuard({ children }: PlatformGuardProps) {
         return <>{children}</>;
     }
 
-    // MOBILE PLATFORM - Guests, free, and premium users allowed
-    if (!canAccessMobile && user) {
-        return (
-            <View style={styles.accessDeniedContainer}>
-                <Text style={styles.accessDeniedTitle}>Access Restricted</Text>
-                <Text style={styles.accessDeniedText}>
-                    Mobile access is for guest, free, and premium users only.
-                </Text>
-                <Text style={styles.accessDeniedSubtext}>
-                    Current role: {userRole}
-                </Text>
-                <Text style={styles.accessDeniedHint}>
-                    Please use the web portal for admin/nutritionist features.
-                </Text>
-            </View>
-        );
-    }
-
-    // Mobile users can access without login (guest mode) or with appropriate accounts
+    // MOBILE PLATFORM - allow all users to access the mobile app
+    // (web restrictions remain enforced in web branch above)
     return <>{children}</>;
 }
 

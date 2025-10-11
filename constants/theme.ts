@@ -19,6 +19,7 @@ export const Colors = {
     border: '#f0f0f0',
     inactive: '#f8f8f8',
     card: '#fff',
+    transparent: 'transparent',
     
     // MyMealMigo brand colors
     primary: primaryGreen,
@@ -47,6 +48,7 @@ export const Colors = {
     border: '#404040',
     inactive: '#404040',
     card: '#2d2d2d',
+    transparent: 'transparent',
     
     // MyMealMigo brand colors (same in dark mode)
     primary: primaryGreen,

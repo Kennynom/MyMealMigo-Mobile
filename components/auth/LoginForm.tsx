@@ -34,7 +34,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
             <View style={styles.loginCard}>
                 <View style={styles.header}>
                     <Text style={styles.logo}>MyMealMigo</Text>
-                    <Text style={styles.subtitle}>Admin & Nutritionist Portal</Text>
+                    <Text style={styles.subtitle}>Your Personal Meal Assistant</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -78,13 +78,33 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                             {loading ? 'Signing In...' : 'Sign In'}
                         </Text>
                     </TouchableOpacity>
-                </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        For admin and nutritionist access only
-                    </Text>
+                    {Platform.OS !== 'web' ? (
+                        <TouchableOpacity style={styles.guestButton} onPress={() => onSuccess?.()}>
+                            <Text style={styles.guestButtonText}>Login as Guest</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <></>
+                    )}
+
                 </View>
+                
+                {Platform.OS === 'web' ? (
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            For admin and nutritionist access only
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            Terms of Service | Privacy Policy
+                        </Text>
+                        <Text style={styles.footerText}>
+                            © 2024 MyMealMigo
+                        </Text>
+                    </View>
+                )}
             </View>
         </View>
     );
@@ -181,5 +201,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#9ca3af',
         textAlign: 'center',
+    },
+    guestLoginText: {
+        marginTop: 16,
+    },
+    guestButton: {
+        marginTop: 12,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    guestButtonText: {
+        color: '#374151',
+        fontSize: 16,
     },
 });
