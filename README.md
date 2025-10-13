@@ -126,27 +126,28 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 
    # Animations
    npx expo install react-native-reanimated
-  
-  # Additional dependencies used in this project
-  npx expo install @react-native-async-storage/async-storage
-  npx expo install @react-native-community/datetimepicker
-  npx expo install @react-navigation/bottom-tabs
-  npx expo install @react-navigation/elements
-  npx expo install @react-navigation/native
-  npx expo install expo-haptics
-  npx expo install expo-image
-  npx expo install expo-linear-gradient
-  npx expo install expo-constants
-  npx expo install expo-font
-  npx expo install expo-linking
-  npx expo install expo-splash-screen
-  npx expo install expo-status-bar
-  npx expo install expo-symbols
-  npx expo install expo-system-ui
-  npx expo install expo-web-browser
-  npx expo install react-native-gesture-handler
-  npx expo install react-native-web
-  npx expo install react-native-worklets
+   
+   # Additional dependencies used in this project
+
+   npx expo install @react-native-async-storage/async-storage
+   npx expo install @react-native-community/datetimepicker
+   npx expo install @react-navigation/bottom-tabs
+   npx expo install @react-navigation/elements
+   npx expo install @react-navigation/native
+   npx expo install expo-haptics
+   npx expo install expo-image
+   npx expo install expo-linear-gradient
+   npx expo install expo-constants
+   npx expo install expo-font
+   npx expo install expo-linking
+   npx expo install expo-splash-screen
+   npx expo install expo-status-bar
+   npx expo install expo-symbols
+   npx expo install expo-system-ui
+   npx expo install expo-web-browser
+   npx expo install react-native-gesture-handler
+   npx expo install react-native-web
+   npx expo install react-native-worklets
    ```
 
 4. **Start development server:**
