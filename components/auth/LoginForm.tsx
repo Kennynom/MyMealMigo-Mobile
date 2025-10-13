@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from "react";
 import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -28,6 +29,8 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
             setLoading(false);
         }
     };
+
+    const router = useRouter();
 
     return (
         <View style={styles.container}>
@@ -80,9 +83,16 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                     </TouchableOpacity>
 
                     {Platform.OS !== 'web' ? (
-                        <TouchableOpacity style={styles.guestButton} onPress={() => onSuccess?.()}>
-                            <Text style={styles.guestButtonText}>Login as Guest</Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity style={styles.loginButton} onPress={() => router.push({ pathname: '/(auth)/signup' } as any)}>
+                                <Text style={styles.loginButtonText}>Sign Up</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={styles.guestButton} onPress={() => onSuccess?.()}>
+                                <Text style={styles.guestButtonText}>Login as Guest</Text>
+                            </TouchableOpacity>
+                        </>
+                        
                     ) : (
                         <></>
                     )}
@@ -101,7 +111,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                             Terms of Service | Privacy Policy
                         </Text>
                         <Text style={styles.footerText}>
-                            © 2024 MyMealMigo
+                            © 2025 MyMealMigo
                         </Text>
                     </View>
                 )}
