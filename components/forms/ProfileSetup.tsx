@@ -1,10 +1,9 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-// Date picker (install: npm install @react-native-community/datetimepicker)
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function ProfileSetup({ onComplete }: { onComplete?: () => void }) {
   const { user } = useAuth();
@@ -371,42 +370,136 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
               {COMMON_ALLERGIES.map((a) => {
                 const active = allergiesItems.includes(a);
                 return (
-                  <TouchableOpacity key={a} onPress={() => toggleArray(allergiesItems,setAllergiesItems,a)} style={[styles.pill, active && styles.pillActive]}>
-                    <Text style={active?styles.pillTextActive:styles.pillText}>{a.replace(/_/g,' ')}</Text>
+                  <TouchableOpacity
+                    key={a}
+                    onPress={() =>
+                      setAllergiesItems((prev) =>
+                        prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
+                      )
+                    }
+                    style={[styles.pill, active && styles.pillActive]}
+                  >
+                    <Text style={active ? styles.pillTextActive : styles.pillText}>{a}</Text>
                   </TouchableOpacity>
                 );
               })}
-            </View>
-            <Text style={[styles.label,{marginTop:8}]}>Other allergies / notes</Text>
-            <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" />
 
+              {/* Allergies */}
+              <TouchableOpacity
+                key="Other"
+                onPress={() =>
+                  setAllergiesItems((prev) => {
+                    const has = prev.includes('Other');
+                    if (has) {
+                      setAllergiesOther(''); // clear when turning off
+                      return prev.filter((x) => x !== 'Other');
+                    }
+                    return [...prev, 'Other'];
+                  })
+                }
+                style={[styles.pill, allergiesItems.includes('Other') && styles.pillActive]}
+              >
+                <Text style={allergiesItems.includes('Other') ? styles.pillTextActive : styles.pillText}>other</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {allergiesItems.includes('Other') ? (
+              <>
+                <Text style={[styles.label,{marginTop:8}]}>State other allergies here:</Text>
+                <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" />
+              </>
+            ) : null}
+
+            {/* Conditions */}
             <Text style={[styles.label,{marginTop:12}]}>Conditions</Text>
             <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8}}>
               {COMMON_CONDITIONS.map((c) => {
                 const active = conditionsItems.includes(c);
                 return (
-                  <TouchableOpacity key={c} onPress={() => toggleArray(conditionsItems,setConditionsItems,c)} style={[styles.pill, active && styles.pillActive]}>
-                    <Text style={active?styles.pillTextActive:styles.pillText}>{c.replace(/_/g,' ')}</Text>
+                  <TouchableOpacity
+                    key={c}
+                    onPress={() =>
+                      setConditionsItems((prev) =>
+                        prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+                      )
+                    }
+                    style={[styles.pill, active && styles.pillActive]}
+                  >
+                    <Text style={active ? styles.pillTextActive : styles.pillText}>{c}</Text>
                   </TouchableOpacity>
                 );
               })}
-            </View>
-            <Text style={[styles.label,{marginTop:8}]}>Conditions - other notes</Text>
-            <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" />
 
+              {/* Other pill */}
+              <TouchableOpacity
+                key="Other"
+                onPress={() =>
+                  setConditionsItems((prev) => {
+                    const has = prev.includes('Other');
+                    if (has) {
+                      setConditionsOther('');
+                      return prev.filter((x) => x !== 'Other');
+                    }
+                    return [...prev, 'Other'];
+                  })
+                }
+                style={[styles.pill, conditionsItems.includes('Other') && styles.pillActive]}
+              >
+                <Text style={conditionsItems.includes('Other') ? styles.pillTextActive : styles.pillText}>other</Text>
+              </TouchableOpacity>
+            </View>
+
+            {conditionsItems.includes('Other') ? (
+              <>
+                <Text style={[styles.label,{marginTop:8}]}>State other conditions here:</Text>
+                <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" />
+              </>
+            ) : null}
+            
+            {/* Injuries */}
             <Text style={[styles.label,{marginTop:12}]}>Injuries</Text>
             <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8}}>
               {COMMON_INJURIES.map((c) => {
                 const active = injuriesItems.includes(c);
                 return (
-                  <TouchableOpacity key={c} onPress={() => toggleArray(injuriesItems,setInjuriesItems,c)} style={[styles.pill, active && styles.pillActive]}>
-                    <Text style={active?styles.pillTextActive:styles.pillText}>{c.replace(/_/g,' ')}</Text>
+                  <TouchableOpacity
+                    key={c}
+                    onPress={() =>
+                      setInjuriesItems((prev) =>
+                        prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+                      )
+                    }
+                    style={[styles.pill, active && styles.pillActive]}
+                  >
+                    <Text style={active ? styles.pillTextActive : styles.pillText}>{c}</Text>
                   </TouchableOpacity>
                 );
               })}
+              
+              <TouchableOpacity
+                key="Other"
+                onPress={() =>
+                  setInjuriesItems((prev) => {
+                    const has = prev.includes('Other');
+                    if (has) {
+                      setInjuriesNotes('');
+                      return prev.filter((x) => x !== 'Other');
+                    }
+                    return [...prev, 'Other'];
+                  })
+                }
+                style={[styles.pill, injuriesItems.includes('Other') && styles.pillActive]}
+              >
+                <Text style={injuriesItems.includes('Other') ? styles.pillTextActive : styles.pillText}>other</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={[styles.label,{marginTop:8}]}>Injuries - notes</Text>
-            <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" />
+
+            {injuriesItems.includes('Other') ? (
+              <>
+                <Text style={[styles.label,{marginTop:8}]}>State other injuries here:</Text>
+                <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" />
+              </>
+            ) : null}
 
               <Text style={[styles.label,{marginTop:12}]}>Medications</Text>
               <TextInput value={medicationsList} onChangeText={setMedicationsList} style={styles.input} placeholder="List medications (comma separated)" />
@@ -436,8 +529,13 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
                 </View>
               ))}
             </View>
-            <Text style={[styles.label,{marginTop:8}]}>PAR-Q notes</Text>
-            <TextInput value={parqNotes} onChangeText={setParqNotes} style={styles.input} placeholder="Notes" />
+            
+            {(parq as any).q7_otherReason ? (
+              <>
+                <Text style={[styles.label,{marginTop:8}]}>State other reason here:</Text>
+                <TextInput value={parqNotes} onChangeText={setParqNotes} style={styles.input} placeholder="Notes" />
+              </>
+            ) : null}
 
             <Text style={[styles.label,{marginTop:12}]}>Constraints</Text>
             <View style={{flexDirection:'row',alignItems:'center',marginTop:6}}>
@@ -460,9 +558,30 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
                   <Text style={dietPlan===d?styles.pillTextActive:styles.pillText}>{d.replace(/_/g,' ')}</Text>
                 </TouchableOpacity>
               ))}
+
+              {/* Other pill for diet */}
+              <TouchableOpacity
+                key="Other"
+                onPress={() => {
+                  if (dietPlan === 'Other') {
+                    setDietPlan(''); // clear selection
+                    setDietNotes('');
+                  } else {
+                    setDietPlan('Other');
+                  }
+                }}
+                style={[styles.pill, dietPlan === 'Other' && styles.pillActive]}
+              >
+                <Text style={dietPlan === 'Other' ? styles.pillTextActive : styles.pillText}>Other</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={[styles.label,{marginTop:8}]}>Diet plan notes</Text>
-            <TextInput value={dietNotes} onChangeText={setDietNotes} style={styles.input} placeholder="Notes about diet" />
+
+            {dietPlan === 'Other' ? (
+              <>
+                <Text style={[styles.label,{marginTop:8}]}>State other diet plan here:</Text>
+                <TextInput value={dietNotes} onChangeText={setDietNotes} style={styles.input} placeholder="Notes about diet" />
+              </>
+            ) : null}
 
             <Text style={[styles.label,{marginTop:12}]}>Meal prep preferred time</Text>
             <View style={{flexDirection:'row',gap:8,marginTop:8}}>

@@ -2,7 +2,7 @@
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
@@ -20,9 +20,14 @@ import { Testimonials } from '@/components/testimonials'; // ← ADD TESTIMONIAL
 
 export default function HomeScreen() {
   const { theme } = useContext(ThemeContext);
+  const styles = createStyle(theme);
   const [loading, setLoading] = useState(true);
   const [landingPageData, setLandingPageData] = useState(null);
   const [error, setError] = useState(null);
+
+  // simple profile image URL (falls back to a generic avatar)
+  const profileImageUrl =
+    landingPageData?.profile?.photoURL ?? 'https://www.gravatar.com/avatar/?d=mp&s=200';
 
   // 🔥 FETCH DATA FROM FIREBASE WITH BETTER ERROR HANDLING
   useEffect(() => {
@@ -197,7 +202,23 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Home</Text>
-          <Text style={styles.subtitle}>Welcome back to MyMealMigo</Text>
+          <Text style={styles.subtitle}>Welcome back to {"\n"}
+            <Text style={styles.highlight}>MyMealMigo</Text>
+          </Text>
+        </View>
+
+        {/* Profile picture on the right (fills a circle) */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/(profile)')}
+            accessibilityLabel="Open profile"
+          >
+            <Image
+              source={{ uri: profileImageUrl }}
+              style={styles.profileImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
         </View>
       </View>
       
@@ -215,141 +236,165 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#58e221',
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#ef4444',
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  errorDetail: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#58e221',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  webContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  heroButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  heroButton: {
-    backgroundColor: '#58e221',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  heroButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  sectionsPlaceholder: {
-    backgroundColor: '#f8fafc',
-    padding: 40,
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 18,
-    color: '#6b7280',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  pricingSection: {
-    backgroundColor: '#F8FCF8',
-    padding: 40,
-    alignItems: 'center',
-  },
-  pricingTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  pricingCardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems:'flex-start',
-    flexWrap: 'wrap',
-    gap: 20,
-    maxWidth: 1200,
-  },
-  // Mobile styles
-  mobileContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    paddingTop: 60,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  welcomeText: {
-    fontSize: 18,
-    color: '#374151',
-    marginBottom: 20,
-  },
-  quickAction: {
-    backgroundColor: '#58e221',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  quickActionText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+// Theme-aware style creator
+function createStyle(theme) {
+  return StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.background,
+    },
+    loadingText: {
+      fontSize: 18,
+      color: theme.primary,
+      fontWeight: '500',
+    },
+    errorContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.background,
+      padding: 20,
+    },
+    errorText: {
+      fontSize: 18,
+      color: theme.error,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    errorDetail: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: theme.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: theme.buttonText,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    webContainer: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    heroButtonsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    heroButton: {
+      backgroundColor: theme.primary,
+      paddingHorizontal: 32,
+      paddingVertical: 12,
+      borderRadius: 25,
+    },
+    heroButtonText: {
+      color: theme.buttonText,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    sectionsPlaceholder: {
+      backgroundColor: theme.sectionBackground,
+      padding: 40,
+      alignItems: 'center',
+    },
+    placeholderText: {
+      fontSize: 18,
+      color: theme.textSecondary,
+      marginBottom: 30,
+      textAlign: 'center',
+    },
+    pricingSection: {
+      backgroundColor: theme.sectionBackground,
+      padding: 40,
+      alignItems: 'center',
+    },
+    pricingTitle: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    pricingCardsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems:'flex-start',
+      flexWrap: 'wrap',
+      gap: 20,
+      maxWidth: 1200,
+    },
+    // Mobile styles
+    mobileContainer: {
+      flex: 1,
+      backgroundColor: theme.mobileBackground,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center', 
+      padding: 20,
+      paddingTop: 60,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    headerRight: {
+      marginLeft: 12,
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    subtitle: {
+      paddingTop: 40,
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+    },
+    welcomeText: {
+      fontSize: 18,
+      color: theme.text,
+      marginBottom: 20,
+    },
+    quickAction: {
+      backgroundColor: theme.secondary,
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    quickActionText: {
+      color: theme.altText,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    profileImage: {
+      width: 48,
+      height: 48,
+      borderRadius: 999,
+      borderWidth: 2,
+      borderColor: theme.secondary ?? theme.secondaryGreen ?? '#059669',
+      backgroundColor: theme.inactive,
+    },
+    highlight: { 
+      color: theme.primary,
+      fontWeight: '700',
+      fontStyle: 'italic',
+      textDecorationLine: 'underline',
+      fontSize: 24,
+    },
+  });
+}

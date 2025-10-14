@@ -14,6 +14,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const seedHealthProfile = async (uid: string) => {
     const profileRef = doc(db, 'users', uid, 'private', 'health_profile');
+
     const profileData = {
       // allergies
       allergies: { items: [], other: '', completed: true },
@@ -22,26 +23,78 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
       // consent
       consent: { healthConsentAt: new Date().toISOString(), shareWithCoach: false },
       // constraints
-      constraints: { heat: true, hiImpact: true, notes: 'Diet: no_preference | Cooking time: 10-20 | Budget: medium', overheadLifts: true },
+      constraints: {
+        heat: true,
+        hiImpact: true,
+        notes: 'Diet: no_preference | Cooking time: 10-20 | Budget: medium',
+        overheadLifts: true
+      },
       createdAt: serverTimestamp(),
       demographics: { birthYear: 2013, heightCm: 170, weightKg: 65 },
       doctorClearance: { hasClearance: false },
       fitness: { equipment: [], goal: 'muscle_gain', preferredIntensity: 'medium' },
       injuries: { items: [], notes: '' },
       medications: [],
-      parqPlus: { notes: '', q1_chestPain: false, q2_dizziness: false, q3_boneJointProblem: false, q4_prescriptionMeds: false, q5_heartCondition: false, q6_bloodPressureIssue: false, q7_otherReason: false, riskLevel: 'low' },
+      parqPlus: {
+        notes: '',
+        q1_chestPain: false,
+        q2_dizziness: false,
+        q3_boneJointProblem: false,
+        q4_prescriptionMeds: false,
+        q5_heartCondition: false,
+        q6_bloodPressureIssue: false,
+        q7_otherReason: false,
+        riskLevel: 'low'
+      },
       updatedAt: serverTimestamp(),
       version: 1,
-      // calorieTracker summary
+      // Calorie tracker summary (renamed intake structures and initial zeros)
       calorieTracker: {
         calorieSet: 0,
         consumedToday: 0,
-        dailyMacro: { carbs: 0, protein: 0, fats: 0 },
-        weeklyMacro: { carbs: 0, protein: 0, fats: 0 },
-        monthlyMacro: { carbs: 0, protein: 0, fats: 0 },
+        // dailyIntake holds the intake for the current day
+        dailyIntake: {
+          carbs: 0,
+          protein: 0,
+          fats: 0,
+          sodium: 0,
+          sugar: 0,
+          dateStart: null,
+          caloriesSet: 0,
+          caloriesConsumed: 0,
+          caloriesRemaining: 0
+        },
+        // weeklyIntake should represent totals for the current week (seed with zeros)
+        weeklyIntake: {
+          carbs: 0,
+          protein: 0,
+          fats: 0,
+          sodium: 0,
+          sugar: 0,
+          // periodStart/periodEnd can be populated by your app logic when computing weekly totals
+          dateStart: null,
+          dateEnd: null,
+          caloriesSet: 0,
+          caloriesConsumed: 0,
+          caloriesRemaining: 0
+        },
+        // monthlyIntake should represent totals for the current month (seed with zeros)
+        monthlyIntake: {
+          carbs: 0,
+          protein: 0,
+          fats: 0,
+          sodium: 0,
+          sugar: 0,
+          // periodStart/periodEnd can be populated by your app logic when computing monthly totals
+          dateStart: null,
+          dateEnd: null,
+          caloriesSet: 0,
+          caloriesConsumed: 0,
+          caloriesRemaining: 0
+        },
         historySummary: { latestMonth: null, months: {} },
         updatedAt: serverTimestamp(),
-        version: 1,
+        version: 1
       }
     };
 
@@ -61,10 +114,15 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
     try {
       console.log('Adding initial calorie log to collection parent:', healthProfileDocRef.path);
       await addDoc(logsCol, {
-        calories: 0,
         carbs: 0,
         protein: 0,
         fats: 0,
+        sodium: 0,
+        sugar: 0,
+        date: serverTimestamp(),
+        caloriesSet: 0,
+        caloriesConsumed: 0,
+        caloriesRemaining: 0,
         createdAt: serverTimestamp(),
         entryType: 'initial',
         note: 'Initial calorie log'
@@ -77,8 +135,8 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const handleSignUp = async () => {
     setError('');
-  if (!email || !password) return setError('Please enter email and password');
-  if (password !== confirmPassword) return setError('Passwords do not match');
+    if (!email || !password) return setError('Please enter email and password');
+    if (password !== confirmPassword) return setError('Passwords do not match');
     setLoading(true);
 
     try {
@@ -96,7 +154,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
         createdAt: serverTimestamp(),
       });
 
-      // Seed full health_profile (including calorieTracker) and initial calorie log
+      // Seed full health_profile (including updated intake structures) and initial calorie log
       await seedHealthProfile(uid);
 
       onSuccess?.();

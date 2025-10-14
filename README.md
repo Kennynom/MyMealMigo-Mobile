@@ -191,6 +191,61 @@ A comprehensive nutrition tracking and meal planning application built with Reac
     └── ThemeContext.js          # Theme management
 ```
 
+## Updated file directory
+
+mobile-mmm/
+├─ app/
+│  ├─ _layout.jsx
+│  ├─ (tabs)/
+│  │  ├─ _layout.jsx
+│  │  ├─ (home)/
+│  │  │  ├─ _layout.jsx
+│  │  │  └─ index.jsx
+│  │  ├─ (discover)/
+│  │  │  ├─ _layout.jsx
+│  │  │  └─ index.jsx
+│  │  ├─ (add)/
+│  │  │  ├─ _layout.jsx
+│  │  │  └─ index.jsx
+│  │  ├─ (logs)/
+│  │  │  ├─ _layout.jsx
+│  │  │  ├─ index.jsx
+│  │  │  └─ view-log.jsx
+│  │  └─ (tracker)/
+│  │     ├─ _layout.jsx
+│  │     ├─ index.jsx
+│  │     └─ (calorie)/calorie-tracker.jsx
+│  └─ other route files...
+├─ components/
+│  ├─ forms/
+│  │  └─ ProfileSetup.tsx         
+│  ├─ ui/
+│  │  ├─ icon-symbol.tsx
+│  │  └─ icon-symbol.ios.tsx
+│  ├─ parallax-scroll-view.tsx
+│  └─ ...other shared components
+├─ context/
+│  └─ ThemeContext.js
+├─ constants/
+│  └─ theme.ts
+├─ hooks/
+│  ├─ use-theme-color.ts
+│  ├─ use-color-scheme.ts
+│  ├─ use-color-scheme.web.ts
+│  └─ useContent.js
+├─ lib/
+│  └─ firebase.js
+├─ scripts/
+│  └─ reset-project.js
+├─ package.json
+├─ app.json
+├─ tsconfig.json
+└─ README.md
+
+Notes
+- ProfileSetup.tsx now shows "Other" pills for Allergies, Conditions, Injuries and Diet Plan. The corresponding TextInput fields are rendered only when "Other" is selected and are cleared when deselected.
+- PAR-Q question 7 now conditionally reveals its "other" TextInput only when the q7 flag is true.
+
 ## 🔥 Firebase Integration
 
 ### Database Structure:

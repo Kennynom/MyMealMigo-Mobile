@@ -7,22 +7,25 @@ import { Platform } from 'react-native';
 
 // MyMealMigo brand colors
 const primaryGreen = '#58e221';
+const secondaryGreen = '#059669';
 const tintColorLight = primaryGreen;
 const tintColorDark = primaryGreen;
 
 export const Colors = {
   light: {
-    text: '#000000',  // ← Changed to pure black
+    text: '#000000',  
     background: '#fff',
     surface: '#fff',
-    textSecondary: '#333333',  // ← Changed to darker grey
+    textSecondary: '#333333',  
     border: '#f0f0f0',
     inactive: '#f8f8f8',
     card: '#fff',
     transparent: 'transparent',
+    altText: '#fff',
     
     // MyMealMigo brand colors
     primary: primaryGreen,
+    secondary: secondaryGreen,
     primaryDark: '#059669',
     accent: '#059669',
     
@@ -49,9 +52,11 @@ export const Colors = {
     inactive: '#404040',
     card: '#2d2d2d',
     transparent: 'transparent',
+    altText: '#000000',
     
     // MyMealMigo brand colors (same in dark mode)
     primary: primaryGreen,
+    secondary: secondaryGreen,
     primaryDark: '#059669',
     accent: '#059669',
     
