@@ -222,8 +222,6 @@ mobile-mmm/
 
 ## Updated file directory
 
-
-
 Notes
 - ProfileSetup.tsx now shows "Other" pills for Allergies, Conditions, Injuries and Diet Plan. The corresponding TextInput fields are rendered only when "Other" is selected and are cleared when deselected.
 - PAR-Q question 7 now conditionally reveals its "other" TextInput only when the q7 flag is true.
