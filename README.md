@@ -170,29 +170,6 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 ## 📁 Project Structure
 
 ```
-├── app/
-│   ├── _layout.jsx              # Root layout with providers
-│   ├── index.jsx                # Root redirect to home
-│   └── (tabs)/
-│       ├── _layout.jsx          # Tab navigation controller
-│       ├── (home)/
-│       │   └── index.jsx        # Main page with Firebase integration
-│       ├── (add)/               # Add meal functionality
-│       ├── (tracker)/           # BMI calculator & tracking
-│       └── (profile)/           # User profile
-├── components/
-│   ├── hero.jsx                 # Hero section component
-│   ├── features.jsx             # Features grid component
-│   └── layouts/
-│       └── WebLayout.jsx        # Web navigation wrapper
-├── config/
-│   └── firebase.js              # Firebase configuration
-└── context/
-    └── ThemeContext.js          # Theme management
-```
-
-## Updated file directory
-
 mobile-mmm/
 ├─ app/
 │  ├─ _layout.jsx
@@ -241,6 +218,11 @@ mobile-mmm/
 ├─ app.json
 ├─ tsconfig.json
 └─ README.md
+```
+
+## Updated file directory
+
+
 
 Notes
 - ProfileSetup.tsx now shows "Other" pills for Allergies, Conditions, Injuries and Diet Plan. The corresponding TextInput fields are rendered only when "Other" is selected and are cleared when deselected.
