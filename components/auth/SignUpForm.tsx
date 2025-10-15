@@ -1,6 +1,6 @@
 import { db } from '@/config/firebase';
 import { createUserWithEmailAndPassword, deleteUser, getAuth } from 'firebase/auth';
-import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -47,55 +47,8 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
         riskLevel: 'low'
       },
       updatedAt: serverTimestamp(),
-      version: 1,
-      // Calorie tracker summary (renamed intake structures and initial zeros)
-      calorieTracker: {
-        calorieSet: 0,
-        consumedToday: 0,
-        // dailyIntake holds the intake for the current day
-        dailyIntake: {
-          carbs: 0,
-          protein: 0,
-          fats: 0,
-          sodium: 0,
-          sugar: 0,
-          dateStart: null,
-          caloriesSet: 0,
-          caloriesConsumed: 0,
-          caloriesRemaining: 0
-        },
-        // weeklyIntake should represent totals for the current week (seed with zeros)
-        weeklyIntake: {
-          carbs: 0,
-          protein: 0,
-          fats: 0,
-          sodium: 0,
-          sugar: 0,
-          // periodStart/periodEnd can be populated by your app logic when computing weekly totals
-          dateStart: null,
-          dateEnd: null,
-          caloriesSet: 0,
-          caloriesConsumed: 0,
-          caloriesRemaining: 0
-        },
-        // monthlyIntake should represent totals for the current month (seed with zeros)
-        monthlyIntake: {
-          carbs: 0,
-          protein: 0,
-          fats: 0,
-          sodium: 0,
-          sugar: 0,
-          // periodStart/periodEnd can be populated by your app logic when computing monthly totals
-          dateStart: null,
-          dateEnd: null,
-          caloriesSet: 0,
-          caloriesConsumed: 0,
-          caloriesRemaining: 0
-        },
-        historySummary: { latestMonth: null, months: {} },
-        updatedAt: serverTimestamp(),
-        version: 1
-      }
+      version: 1
+      // calorieTracker REMOVED
     };
 
     // debug log
@@ -106,31 +59,17 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
       console.error('Failed to write health_profile:', err, 'profileRef:', profileRef?.path);
       throw err;
     }
+  };
 
-    // create an initial calorie log doc (auto-id) under the user's health_profile document
-    // Valid path: users/{uid}/private/health_profile (doc) -> calorie_logs (collection)
+  const initializeCalorieLogs = async (uid: string) => {
     const healthProfileDocRef = doc(db, 'users', uid, 'private', 'health_profile');
-    const logsCol = collection(healthProfileDocRef, 'calorie_logs');
-    try {
-      console.log('Adding initial calorie log to collection parent:', healthProfileDocRef.path);
-      await addDoc(logsCol, {
-        carbs: 0,
-        protein: 0,
-        fats: 0,
-        sodium: 0,
-        sugar: 0,
-        date: serverTimestamp(),
-        caloriesSet: 0,
-        caloriesConsumed: 0,
-        caloriesRemaining: 0,
-        createdAt: serverTimestamp(),
-        entryType: 'initial',
-        note: 'Initial calorie log'
-      });
-    } catch (err) {
-      console.error('Failed to add initial calorie log:', err, 'logsParent:', healthProfileDocRef?.path);
-      throw err;
-    }
+    const calorieLogDocRef = doc(healthProfileDocRef, 'calorie_logs', 'main'); // 'main' is the doc id
+
+    await setDoc(calorieLogDocRef, {
+      dailyLogs: [],
+      weeklyLogs: [],
+      monthlyLogs: [],
+    });
   };
 
   const handleSignUp = async () => {
@@ -156,6 +95,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
 
       // Seed full health_profile (including updated intake structures) and initial calorie log
       await seedHealthProfile(uid);
+      await initializeCalorieLogs(uid);
 
       onSuccess?.();
     } catch (err: any) {
