@@ -1,6 +1,13 @@
 // Create: app/(tabs)/(tracker)/calorie-tracker.jsx
 import { ThemeContext } from '@/context/ThemeContext';
+import { db } from '@/lib/firebase'; // or the correct path
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -8,30 +15,99 @@ import Svg, { Circle } from 'react-native-svg';
 export default function CalorieTrackerScreen() {
     const { theme } = useContext(ThemeContext); 
     const [period, setPeriod] = useState('weekly');
-    const [caloriesSet, setCaloriesSet] = useState(0);
-    const [consumed, setConsumed] = useState(0);
-    const [remaining, setRemaining] = useState(0);
-    const [dailyMacro, setDailyMacro] = useState({ carbs: 0, protein: 0, fats: 0 });
-    const [weeklyMacro, setWeeklyMacro] = useState({ carbs: 0, protein: 0, fats: 0 });
-    const [monthlyMacro, setMonthlyMacro] = useState({ carbs: 0, protein: 0, fats: 0 });
-    const [history, setHistory] = useState({month: { carbs: 0, protein: 0, fats: 0 }});
-    const [currentMonth, setCurrentMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
+
+    const [dailyIntake, setDailyIntake] = useState({
+        dateStart: '',
+        dateEnd: '',
+        carbs: 0,
+        protein: 0,
+        fats: 0,
+        sodium: 0,
+        sugar: 0,
+        caloriesSet: 0,
+        caloriesConsumed: 0,
+        caloriesRemaining: 0
+    });
+    const [weeklyIntake, setWeeklyIntake] = useState({
+        dateStart: '',
+        dateEnd: '',
+        carbs: 0,
+        protein: 0,
+        fats: 0,
+        sodium: 0,
+        sugar: 0,
+        caloriesSet: 0,
+        caloriesConsumed: 0,
+        caloriesRemaining: 0
+    });
+    const [monthlyIntake, setMonthlyIntake] = useState({
+        dateStart: '',
+        dateEnd: '',
+        carbs: 0,
+        protein: 0,
+        fats: 0,
+        sodium: 0,
+        sugar: 0,
+        caloriesSet: 0,
+        caloriesConsumed: 0,
+        caloriesRemaining: 0
+    });
+
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [allDailyLogs, setAllDailyLogs] = useState([]);
 
     // Function to calculate remaining calories
     const calculateRemaining = (caloriesSet, consumed) => {
-        setRemaining((caloriesSet - consumed)/caloriesSet * 100);
+        return caloriesSet > 0 ? caloriesSet - consumed : 0;
     }
 
-    // set initial values once
+    // Example: update dailyIntake when values change
     useEffect(() => {
-        setCaloriesSet(2500); // Example static value, replace with user input logic
-        setConsumed(200); // Initial consumed calories
+        setDailyIntake((prev) => ({
+            ...prev,
+            caloriesRemaining: calculateRemaining(prev.caloriesSet, prev.caloriesConsumed)
+        }));
+    }, [dailyIntake.caloriesSet, dailyIntake.caloriesConsumed]);
+
+    useEffect(() => {
+        const fetchCalorieLogs = async () => {
+            const auth = getAuth();
+            const uid = auth.currentUser?.uid;
+            if (!uid) return;
+
+            const calorieLogDocRef = doc(db, 'users', uid, 'private', 'health_profile', 'calorie_logs', 'main');
+            const docSnap = await getDoc(calorieLogDocRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setAllDailyLogs(data.dailyLogs || []);
+                // Get latest daily log
+                if (data.dailyLogs && data.dailyLogs.length > 0) {
+                    setDailyIntake(data.dailyLogs[data.dailyLogs.length - 1]);
+                }
+                // Get latest weekly log
+                if (data.weeklyLogs && data.weeklyLogs.length > 0) {
+                    setWeeklyIntake(data.weeklyLogs[data.weeklyLogs.length - 1]);
+                }
+                // Get latest monthly log
+                if (data.monthlyLogs && data.monthlyLogs.length > 0) {
+                    setMonthlyIntake(data.monthlyLogs[data.monthlyLogs.length - 1]);
+                }
+            }
+        };
+        fetchCalorieLogs();
     }, []);
 
-    // when calories or consumed changes, recalculate remaining
-    useEffect(() => {
-        calculateRemaining(caloriesSet, consumed);
-    }, [caloriesSet, consumed]);
+    // Find daily log for selected date
+    const selectedDateString = selectedDate.toISOString().split('T')[0];
+    const dailyLogForDate = allDailyLogs.find(
+        log => log.dateStart && log.dateStart.startsWith(selectedDateString)
+    ) || dailyIntake;
+
+    // Choose which intake to show
+    const currentIntake =
+        period === 'daily' ? dailyIntake :
+        period === 'weekly' ? weeklyIntake :
+        monthlyIntake;
 
     const styles = createStyles(theme);
     
@@ -50,21 +126,16 @@ export default function CalorieTrackerScreen() {
             </View>
 
             {/* Overview Section */}
-            <View>
+            <View style={styles.cardContainer}>
                 <Text style={styles.overviewHeader}>Overview</Text>
                 <View style={styles.overviewContainer}>
-                    <View style={styles.consumedSection}>
-                        <Text style={styles.consumedNumber}>{consumed}</Text>
-                        <Text style={styles.consumedText}>Consumed</Text>
-                    </View>
-
                     <View style={styles.remainingSection}>
                         {/* Circular progress ring showing percent remaining */}
                         {(() => {
-                            const percent = caloriesSet > 0
-                                ? Math.max(0, Math.min(100, Math.round(((caloriesSet - consumed) / caloriesSet) * 100)))
+                            const percent = dailyIntake.caloriesSet > 0
+                                ? Math.max(0, Math.min(100, Math.round(((dailyIntake.caloriesSet - dailyIntake.caloriesConsumed) / dailyIntake.caloriesSet) * 100)))
                                 : 0;
-                            const radius = 55;
+                            const radius = 70;
                             const strokeWidth = 12;
                             const normalizedRadius = radius;
                             const circumference = 2 * Math.PI * normalizedRadius;
@@ -106,8 +177,35 @@ export default function CalorieTrackerScreen() {
                     </View>
 
                     <View style={styles.caloriesSetSection}>
-                        <Text style={styles.setNumber}>{caloriesSet}</Text>
-                        <Text style={styles.setText}>Set</Text>
+                        <View style={styles.displayCol}>
+                            <View>
+                                <AntDesign name="fire" size={24} color="darkorange" />
+                            </View>
+                            <View>
+                                <Text style={styles.rightText}>Goal:</Text>
+                                <Text style={styles.rightNumber}>{dailyIntake.caloriesSet}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.displayCol}>
+                            <View>
+                                <MaterialCommunityIcons name="food-apple" size={24} color="crimson" />
+                            </View>
+                            <View>
+                                <Text style={styles.rightText}>Consumed:</Text>
+                                <Text style={styles.rightNumber}>{dailyIntake.caloriesConsumed}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.displayCol}>
+                            <View>
+                                <Entypo name="check" size={24} color="lime" />
+                            </View>
+                            <View>
+                                <Text style={styles.rightText}>Remaining:</Text>
+                                <Text style={styles.rightNumber}>{dailyIntake.caloriesSet - dailyIntake.caloriesConsumed}</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
             </View>
@@ -145,23 +243,53 @@ export default function CalorieTrackerScreen() {
                             <Text style={[styles.pillText, period === 'monthly' && styles.pillTextActive]}>Monthly</Text>
                         </TouchableOpacity>
                     </View>
+                    
+                    {/* Date Picker Section (for daily) */}
+                    {period === 'daily' && (
+                    <View style={styles.datePickerSection}>
+                        <DateTimePicker
+                            value={selectedDate}
+                            mode="date"
+                            display="default"
+                            onChange={(event, date) => {
+                                if (date) setSelectedDate(date);
+                            }}
+                        />
+                    </View>
+                    )}
 
                     <View style={styles.nutritionList}>
                         <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Calories:</Text>
-                            <Text style={styles.rowValue}>{caloriesSet}</Text>
+                            <Text style={styles.rowLabel}>Goal:</Text>
+                            <Text style={styles.rowValue}>{currentIntake.caloriesSet}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.rowLabel}>Calories Consumed:</Text>
+                            <Text style={styles.rowValue}>{currentIntake.caloriesConsumed}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.rowLabel}>Calories Remaining:</Text>
+                            <Text style={styles.rowValue}>{currentIntake.caloriesSet - currentIntake.caloriesConsumed}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Carbs:</Text>
-                            <Text style={styles.rowValue}>{dailyMacro.carbs}</Text>
+                            <Text style={styles.rowValue}>{period === 'daily' ? dailyLogForDate.carbs : currentIntake.carbs}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Protein:</Text>
-                            <Text style={styles.rowValue}>{dailyMacro.protein}</Text>
+                            <Text style={styles.rowValue}>{currentIntake.protein}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Fats:</Text>
-                            <Text style={styles.rowValue}>{dailyMacro.fats}</Text>
+                            <Text style={styles.rowValue}>{currentIntake.fats}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.rowLabel}>Sodium:</Text>
+                            <Text style={styles.rowValue}>{currentIntake.sodium}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.rowLabel}>Sugar:</Text>
+                            <Text style={styles.rowValue}>{currentIntake.sugar}</Text>
                         </View>
                     </View>
                 </View>
@@ -214,17 +342,10 @@ const createStyles = (theme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'flex-end',
     },
-    consumedNumber: {
-        fontSize: 24,
-        color: theme.text,
-    },
-    consumedText: {
-        fontSize: 14,
-        color: theme.textSecondary,
-    },
     remainingSection: {
         alignItems: 'center',
         color: theme.text,
+        justifyContent: 'center',
     },
     remainingNumber: {
         fontSize: 24,
@@ -235,16 +356,17 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme.textSecondary,
     },
     caloriesSetSection: {
-        alignItems: 'center',
-        justifyContent: 'flex-end',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
     },
-    setNumber: {
-        fontSize: 24,
-        color: theme.text,
-    },
-    setText: {
+    rightText:{
         fontSize: 14,
         color: theme.textSecondary,
+        marginTop: 10,
+    },
+    rightNumber:{
+        fontSize: 24,
+        color: theme.text,
     },
     ringWrapper: {
         width: 120,
@@ -288,6 +410,11 @@ const createStyles = (theme) => StyleSheet.create({
         padding: 16,
         marginTop: 20,
         marginHorizontal: 8,
+        shadowColor: '#000',
+        shadowOffset: 0,
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+        elevation: 3, // Android
     },
     cardHandle: {
         width: 36,
@@ -338,4 +465,15 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme?.primary ?? '#b22222',
         fontWeight: '700',
     },
+    datePickerSection: {
+        marginBottom: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+    },
+    displayCol: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    }
 });
