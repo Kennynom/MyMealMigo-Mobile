@@ -115,14 +115,17 @@ export default function CalorieTrackerScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Text style={styles.backText}>← Back</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerText}>Calorie Tracker</Text>
-                {/* History Button - to adjust route */}
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Text style={styles.historyText}>History</Text>
-                </TouchableOpacity>
+                <View style={styles.headerSide}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Text style={styles.backText}>← Back</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.headerTitle}>
+                    <Text style={styles.headerText}>Calorie Tracker</Text>
+                </View>
+                <View style={styles.headerSide}>
+                    {/* Empty for spacing */}
+                </View>
             </View>
 
             {/* Overview Section */}
@@ -183,7 +186,7 @@ export default function CalorieTrackerScreen() {
                             </View>
                             <View>
                                 <Text style={styles.rightText}>Goal:</Text>
-                                <Text style={styles.rightNumber}>{dailyIntake.caloriesSet}</Text>
+                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesSet}</Text>
                             </View>
                         </View>
 
@@ -193,7 +196,7 @@ export default function CalorieTrackerScreen() {
                             </View>
                             <View>
                                 <Text style={styles.rightText}>Consumed:</Text>
-                                <Text style={styles.rightNumber}>{dailyIntake.caloriesConsumed}</Text>
+                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesConsumed}</Text>
                             </View>
                         </View>
 
@@ -203,14 +206,14 @@ export default function CalorieTrackerScreen() {
                             </View>
                             <View>
                                 <Text style={styles.rightText}>Remaining:</Text>
-                                <Text style={styles.rightNumber}>{dailyIntake.caloriesSet - dailyIntake.caloriesConsumed}</Text>
+                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
             </View>
 
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.dateSection}>
                     <View style={styles.dailyButton} />
                     <View style={styles.weeklyButton} />
@@ -261,35 +264,53 @@ export default function CalorieTrackerScreen() {
                     <View style={styles.nutritionList}>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Goal:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.caloriesSet}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.caloriesSet : currentIntake.caloriesSet}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Calories Consumed:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.caloriesConsumed}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.caloriesConsumed : currentIntake.caloriesConsumed}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Calories Remaining:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.caloriesSet - currentIntake.caloriesConsumed}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily'
+                                    ? dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed
+                                    : currentIntake.caloriesSet - currentIntake.caloriesConsumed}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Carbs:</Text>
-                            <Text style={styles.rowValue}>{period === 'daily' ? dailyLogForDate.carbs : currentIntake.carbs}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.carbs : currentIntake.carbs}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Protein:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.protein}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.protein : currentIntake.protein}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Fats:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.fats}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.fats : currentIntake.fats}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Sodium:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.sodium}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.sodium : currentIntake.sodium}
+                            </Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Sugar:</Text>
-                            <Text style={styles.rowValue}>{currentIntake.sugar}</Text>
+                            <Text style={styles.rowValue}>
+                                {period === 'daily' ? dailyLogForDate.sugar : currentIntake.sugar}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -307,18 +328,24 @@ const createStyles = (theme) => StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'center',
         marginBottom: 40,
+    },
+    headerSide: {
+        flex: 1,
+        alignItems: 'flex-start',
+    },
+    headerTitle: {
+        flex: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerText: {
         fontSize: 20,
         fontWeight: 'bold',
         color: theme.text,
-    },
-    historyText: {
-        fontSize: 16,
-        color: theme.text,
+        textAlign: 'center',
     },
     backButton: {
         padding: 8,
@@ -336,73 +363,21 @@ const createStyles = (theme) => StyleSheet.create({
     },
     overviewContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    consumedSection: {
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-    },
-    remainingSection: {
-        alignItems: 'center',
-        color: theme.text,
         justifyContent: 'center',
-    },
-    remainingNumber: {
-        fontSize: 24,
-        color: theme.text,
-    },
-    remainingText: {
-        fontSize: 14,
-        color: theme.textSecondary,
+        alignItems: 'center',
     },
     caloriesSetSection: {
         alignItems: 'flex-start',
         justifyContent: 'center',
     },
-    rightText:{
+    rightText: {
         fontSize: 14,
         color: theme.textSecondary,
         marginTop: 10,
     },
-    rightNumber:{
+    rightNumber: {
         fontSize: 24,
         color: theme.text,
-    },
-    ringWrapper: {
-        width: 120,
-        height: 120,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    ringCenter: {
-        position: 'absolute',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    ringPercent: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: theme?.text ?? '#000',
-    },
-    ringLabel: {
-        fontSize: 12,
-        color: theme?.textSecondary ?? '#666',
-    },
-    controlsRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 12,
-        marginTop: 16,
-    },
-    controlButton: {
-        backgroundColor: theme?.primary ?? '#007AFF',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-    },
-    controlText: {
-        color: '#fff',
-        fontWeight: '600',
     },
     cardContainer: {
         backgroundColor: theme?.surface ?? '#f2f2f2',
@@ -411,10 +386,10 @@ const createStyles = (theme) => StyleSheet.create({
         marginTop: 20,
         marginHorizontal: 8,
         shadowColor: '#000',
-        shadowOffset: 0,
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.12,
         shadowRadius: 4,
-        elevation: 3, // Android
+        elevation: 3,
     },
     cardHandle: {
         width: 36,
@@ -435,6 +410,7 @@ const createStyles = (theme) => StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 10,
         backgroundColor: '#bba9b0',
+        width: 90,
     },
     pillActive: {
         backgroundColor: theme?.primary ?? '#b22222',
@@ -443,6 +419,7 @@ const createStyles = (theme) => StyleSheet.create({
     pillText: {
         color: '#333',
         fontWeight: '600',
+        textAlign: 'center',
     },
     pillTextActive: {
         color: '#fff',
@@ -475,5 +452,5 @@ const createStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-    }
+    },
 });

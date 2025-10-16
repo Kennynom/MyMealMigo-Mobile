@@ -2,7 +2,7 @@
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
@@ -199,39 +199,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.mobileContainer}>
       <AuthDebug />
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Home</Text>
-          <Text style={styles.subtitle}>Welcome back to {"\n"}
-            <Text style={styles.highlight}>MyMealMigo</Text>
-          </Text>
-        </View>
-
-        {/* Profile picture on the right (fills a circle) */}
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/(profile)')}
-            accessibilityLabel="Open profile"
-          >
-            <Image
-              source={{ uri: profileImageUrl }}
-              style={styles.profileImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
       
-      <View style={styles.content}>
-        <Text style={styles.welcomeText}>Your mobile app content here</Text>
-        
-        <TouchableOpacity 
-          style={styles.quickAction}
-          onPress={() => router.push('/(tabs)/(tracker)/bmi-calculator')}
-        >
-          <Text style={styles.quickActionText}>Quick BMI Check</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -333,7 +301,7 @@ function createStyle(theme) {
     // Mobile styles
     mobileContainer: {
       flex: 1,
-      backgroundColor: theme.mobileBackground,
+      backgroundColor: theme.background,
     },
     header: {
       flexDirection: 'row',
@@ -358,8 +326,15 @@ function createStyle(theme) {
     },
     subtitle: {
       paddingTop: 40,
+      fontSize: 22,
+      color: theme.textSecondary,
+      fontWeight: 'bold',
+    },
+    subtitle2: {
       fontSize: 16,
       color: theme.textSecondary,
+      marginTop: 4,
+      marginBottom: 12,
     },
     content: {
       flex: 1,
