@@ -15,6 +15,7 @@ export const Colors = {
   light: {
     text: '#000000',  
     background: '#fff',
+    altBackground: '#000000',
     surface: '#fff',
     textSecondary: '#333333',  
     border: '#f0f0f0',
@@ -46,6 +47,7 @@ export const Colors = {
   dark: {
     text: '#ECEDEE',
     background: '#151718',
+    altBackground: '#FFFFFF',
     surface: '#2d2d2d',
     textSecondary: '#9BA1A6',
     border: '#404040',

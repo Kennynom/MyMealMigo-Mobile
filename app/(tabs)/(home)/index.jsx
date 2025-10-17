@@ -2,10 +2,11 @@
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 
 // Import components
@@ -24,6 +25,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [landingPageData, setLandingPageData] = useState(null);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
+  const [userWeight, setUserWeight] = useState(null);
 
   // simple profile image URL (falls back to a generic avatar)
   const profileImageUrl =
@@ -38,6 +41,47 @@ export default function HomeScreen() {
       setLoading(false);
     }
   }, []);
+
+  // Fetch user's latest weight for display on mobile dashboard
+  useEffect(() => {
+    let cancelled = false;
+    const fetchWeight = async () => {
+      if (!user) return;
+      try {
+        // Try weight_log/main first (array of entries)
+        const weightLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'weight_log', 'main');
+        const weightLogSnap = await getDoc(weightLogRef);
+        if (cancelled) return;
+
+        if (weightLogSnap.exists()) {
+          const data = weightLogSnap.data() || {};
+          const logs = Array.isArray(data.logs) ? data.logs : [];
+          if (logs.length > 0) {
+            const last = logs[logs.length - 1];
+            if (last && typeof last.weightKg === 'number') {
+              setUserWeight(last.weightKg);
+              return;
+            }
+          }
+        }
+
+        // Fallback: check demographics.weightKg on health_profile
+        const hpRef = doc(db, 'users', user.uid, 'private', 'health_profile');
+        const hpSnap = await getDoc(hpRef);
+        if (cancelled) return;
+        if (hpSnap.exists()) {
+          const hp = hpSnap.data() || {};
+          const fallback = hp?.demographics?.weightKg;
+          if (typeof fallback === 'number') setUserWeight(fallback);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user weight:', err);
+      }
+    };
+
+    fetchWeight();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const fetchLandingPageData = async () => {
     try {
@@ -199,7 +243,43 @@ export default function HomeScreen() {
   return (
     <View style={styles.mobileContainer}>
       <AuthDebug />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Smart Dashboard</Text>
+        </View>
+        {/* Profile */}
+        <View>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/(profile)/')}
+            accessibilityLabel="Profile Button"
+          >
+            <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />
+          </TouchableOpacity>
+        </View>
+      </View>
       
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>Welcome!</Text>
+        <Text style={styles.subtitle}>You are currently viewing smart dashboard</Text>
+
+        {/* Mini islands */}
+        <View style={styles.islandContainer}>
+          <View style={styles.indIsland}>
+            <Text style={styles.altText1}>Weight:</Text>
+            <Text style={styles.altText2}>{userWeight != null ? `${userWeight} kg` : '— kg'}</Text>
+          </View>
+          <View style={styles.indIsland}>
+            <Text style={styles.altText1}>BMI:</Text>
+            <Text style={styles.altText2}>22.5</Text>
+          </View>
+        </View>
+
+        {/* Predictive graph */}
+        <View>
+
+        </View>
+
+      </View>
     </View>
   );
 }
@@ -325,10 +405,8 @@ function createStyle(theme) {
       marginBottom: 4,
     },
     subtitle: {
-      paddingTop: 40,
-      fontSize: 22,
+      fontSize: 16,
       color: theme.textSecondary,
-      fontWeight: 'bold',
     },
     subtitle2: {
       fontSize: 16,
@@ -336,14 +414,14 @@ function createStyle(theme) {
       marginTop: 4,
       marginBottom: 12,
     },
+    welcomeText: {
+      fontSize: 24,
+      color: theme.text,
+      fontWeight: '600',
+    },
     content: {
       flex: 1,
       padding: 20,
-    },
-    welcomeText: {
-      fontSize: 18,
-      color: theme.text,
-      marginBottom: 20,
     },
     quickAction: {
       backgroundColor: theme.secondary,
@@ -370,6 +448,38 @@ function createStyle(theme) {
       fontStyle: 'italic',
       textDecorationLine: 'underline',
       fontSize: 24,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    islandContainer: {
+      flexWrap: 'wrap',
+      flexDirection: 'row',
+      marginTop: 20,
+      justifyContent: 'space-evenly',
+    },
+    indIsland: {
+      alignItems: 'center',
+      backgroundColor: theme.altBackground,
+      padding: 10,
+      margin: 10,
+      borderRadius: 8,
+      minWidth: 140,
+      minHeight: 90,
+      justifyContent: 'center',
+    },
+    altText1: {
+      fontSize: 22,
+      color: theme.altText,
+      fontWeight: '600',
+      paddingBottom: 4,
+    },
+    altText2: {
+      fontSize: 16,
+      color: theme.altText,
     },
   });
 }

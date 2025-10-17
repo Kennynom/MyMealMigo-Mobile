@@ -1,7 +1,7 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -208,6 +208,32 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
         },
         updatedAt: serverTimestamp(),
       }, { merge: true });
+
+      // Ensure a weight_log exists at the same level as calorie_logs.
+      // This is intentionally idempotent: only create if missing.
+      try {
+        const weightLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'weight_log', 'main');
+        const weightSnap = await getDoc(weightLogRef);
+        if (!weightSnap.exists()) {
+          await setDoc(weightLogRef, { logs: [] });
+        }
+
+        // If user provided an initial weight during profile setup, append it as an entry.
+        if (weightKg) {
+          try {
+            const entry = {
+              date: new Date().toISOString().split('T')[0],
+              weightKg: Number(weightKg),
+            };
+            await updateDoc(weightLogRef, { logs: arrayUnion(entry) });
+          } catch (appendErr) {
+            console.error('Failed to append initial weight_log entry:', appendErr);
+          }
+        }
+      } catch (we) {
+        // Don't block the onboarding if the weight log creation fails; log for debugging.
+        console.error('Failed to ensure weight_log:', we);
+      }
 
       onComplete?.();
     } catch (e: any) {

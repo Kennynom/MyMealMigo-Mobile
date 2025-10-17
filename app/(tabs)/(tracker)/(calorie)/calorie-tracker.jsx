@@ -135,8 +135,8 @@ export default function CalorieTrackerScreen() {
                     <View style={styles.remainingSection}>
                         {/* Circular progress ring showing percent remaining */}
                         {(() => {
-                            const percent = dailyIntake.caloriesSet > 0
-                                ? Math.max(0, Math.min(100, Math.round(((dailyIntake.caloriesSet - dailyIntake.caloriesConsumed) / dailyIntake.caloriesSet) * 100)))
+                            const percent = dailyLogForDate.caloriesSet > 0
+                                ? Math.max(0, Math.min(100, Math.round(((dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed) / dailyLogForDate.caloriesSet) * 100)))
                                 : 0;
                             const radius = 70;
                             const strokeWidth = 12;
@@ -452,5 +452,29 @@ const createStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+    },
+    ringWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        // optional: give wrapper enough space for the svg
+        padding: 8,
+    },
+    ringCenter: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    ringPercent: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: theme.text,
+    },
+    ringLabel: {
+        fontSize: 12,
+        color: theme.textSecondary,
     },
 });

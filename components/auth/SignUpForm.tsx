@@ -61,6 +61,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   };
 
+  // Initialize empty calorie logs
   const initializeCalorieLogs = async (uid: string) => {
     const healthProfileDocRef = doc(db, 'users', uid, 'private', 'health_profile');
     const calorieLogDocRef = doc(healthProfileDocRef, 'calorie_logs', 'main'); // 'main' is the doc id
@@ -69,6 +70,12 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
       dailyLogs: [],
       weeklyLogs: [],
       monthlyLogs: [],
+    });
+    
+    // Also initialize weight_log subcollection
+    const weightLogDocRef = doc(healthProfileDocRef, 'weight_log', 'main');
+    await setDoc(weightLogDocRef, {
+      logs: [],
     });
   };
 
