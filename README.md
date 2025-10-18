@@ -126,6 +126,8 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 
    # Animations
    npx expo install react-native-reanimated
+   npm install react-native-chart-kit
+   npx expo install react-native-svg
    
    # Additional dependencies used in this project
 

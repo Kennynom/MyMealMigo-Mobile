@@ -3,6 +3,7 @@ import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
@@ -27,6 +28,15 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
   const { user } = useAuth();
   const [userWeight, setUserWeight] = useState(null);
+
+  // for predictive graph
+  // Hardcoded weight data for chart-kit
+  const chartData = {
+    labels: ["1", "2", "3", "4", "5", "6", "7"],
+    datasets: [
+      { data: [62, 66, 71, 67, 65, 61, 55] }
+    ]
+  };
 
   // simple profile image URL (falls back to a generic avatar)
   const profileImageUrl =
@@ -275,8 +285,26 @@ export default function HomeScreen() {
         </View>
 
         {/* Predictive graph */}
-        <View>
-
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={chartData}
+            width={320}
+            height={220}
+            chartConfig={{
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#fff",
+              backgroundGradientTo: "#fff",
+              color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              style: { borderRadius: 18 },
+              propsForDots: {
+                r: "4",
+                strokeWidth: "2",
+                stroke: "purple"
+              }
+            }}
+            style={styles.chart}
+          />
         </View>
 
       </View>
@@ -378,6 +406,24 @@ function createStyle(theme) {
       gap: 20,
       maxWidth: 1200,
     },
+    chartContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 24,
+      marginHorizontal: 16,
+      paddingHorizontal: 12,
+    },
+    chart: {
+      backgroundColor: '#fff',
+      borderRadius: 8,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 2,
+    },
     // Mobile styles
     mobileContainer: {
       flex: 1,
@@ -467,7 +513,7 @@ function createStyle(theme) {
       padding: 10,
       margin: 10,
       borderRadius: 8,
-      minWidth: 140,
+      minWidth: 150,
       minHeight: 90,
       justifyContent: 'center',
     },

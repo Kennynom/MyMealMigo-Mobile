@@ -14,7 +14,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 export default function CalorieTrackerScreen() {
     const { theme } = useContext(ThemeContext); 
-    const [period, setPeriod] = useState('weekly');
+    const [period, setPeriod] = useState('daily');
 
     const [dailyIntake, setDailyIntake] = useState({
         dateStart: '',
@@ -213,8 +213,10 @@ export default function CalorieTrackerScreen() {
                 </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.dateSection}>
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                >
+                <View>
                     <View style={styles.dailyButton} />
                     <View style={styles.weeklyButton} />
                     <View style={styles.monthlyButton} />
@@ -223,7 +225,7 @@ export default function CalorieTrackerScreen() {
                 <View style={styles.macroSection}/>
 
                 {/* Inline card */}
-                <View style={styles.cardContainer}>
+                <View style={styles.cardContainer2}>
                     <View style={styles.cardHandle} />
 
                     <View style={styles.pillsRow}>
@@ -324,7 +326,8 @@ const createStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.background,
-        padding: 16,
+        paddingTop: 16,
+        paddingHorizontal: 16,
     },
     header: {
         flexDirection: 'row',
@@ -363,7 +366,7 @@ const createStyles = (theme) => StyleSheet.create({
     },
     overviewContainer: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-evenly',
         alignItems: 'center',
     },
     caloriesSetSection: {
@@ -379,8 +382,14 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: 24,
         color: theme.text,
     },
-    cardContainer: {
-        backgroundColor: theme?.surface ?? '#f2f2f2',
+    cardContainer:{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 6,
+        shadowOpacity: 0.5,
+    },
+    cardContainer2:{
+        backgroundColor: theme.background,
         borderRadius: 14,
         padding: 16,
         marginTop: 20,
@@ -390,14 +399,6 @@ const createStyles = (theme) => StyleSheet.create({
         shadowOpacity: 0.12,
         shadowRadius: 4,
         elevation: 3,
-    },
-    cardHandle: {
-        width: 36,
-        height: 4,
-        backgroundColor: '#ccc',
-        borderRadius: 2,
-        alignSelf: 'center',
-        marginBottom: 12,
     },
     pillsRow: {
         flexDirection: 'row',
