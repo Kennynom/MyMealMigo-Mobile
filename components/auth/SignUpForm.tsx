@@ -64,7 +64,9 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
   // Initialize empty calorie logs
   const initializeCalorieLogs = async (uid: string) => {
     const healthProfileDocRef = doc(db, 'users', uid, 'private', 'health_profile');
-    const calorieLogDocRef = doc(healthProfileDocRef, 'calorie_logs', 'main'); // 'main' is the doc id
+    const calorieLogDocRef = doc(healthProfileDocRef, 'calorie_logs', 'main');        // Also initialize calorie_logs subcollection
+    const weightLogDocRef = doc(healthProfileDocRef, 'weight_log', 'main');           // Also initialize weight_log subcollection
+    const reflectionLogDocRef = doc(healthProfileDocRef, 'reflection_log', 'main');   // Also initialize reflection_log subcollection
 
     await setDoc(calorieLogDocRef, {
       dailyLogs: [],
@@ -72,10 +74,13 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
       monthlyLogs: [],
     });
     
-    // Also initialize weight_log subcollection
-    const weightLogDocRef = doc(healthProfileDocRef, 'weight_log', 'main');
+    
     await setDoc(weightLogDocRef, {
       logs: [],
+    });
+
+    await setDoc(reflectionLogDocRef, {
+      entries: [],
     });
   };
 
