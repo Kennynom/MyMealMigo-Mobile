@@ -67,6 +67,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
     const calorieLogDocRef = doc(healthProfileDocRef, 'calorie_logs', 'main');        // Also initialize calorie_logs subcollection
     const weightLogDocRef = doc(healthProfileDocRef, 'weight_log', 'main');           // Also initialize weight_log subcollection
     const reflectionLogDocRef = doc(healthProfileDocRef, 'reflection_log', 'main');   // Also initialize reflection_log subcollection
+    const mealLogDocRef = doc(healthProfileDocRef, 'meal_logs', 'main');               // Also initialize meal_logs subcollection
 
     await setDoc(calorieLogDocRef, {
       dailyLogs: [],
@@ -74,13 +75,16 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
       monthlyLogs: [],
     });
     
-    
     await setDoc(weightLogDocRef, {
       logs: [],
     });
 
     await setDoc(reflectionLogDocRef, {
       entries: [],
+    });
+
+    await setDoc(mealLogDocRef, {
+      dailyLogs: [],
     });
   };
 
