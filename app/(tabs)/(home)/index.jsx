@@ -260,7 +260,7 @@ export default function HomeScreen() {
         {/* Profile */}
         <View>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/(profile)/')}
+            onPress={() => router.push('(profile)')}
             accessibilityLabel="Profile Button"
           >
             <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />

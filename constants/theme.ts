@@ -22,6 +22,7 @@ export const Colors = {
     inactive: '#f8f8f8',
     card: '#fff',
     transparent: 'transparent',
+    translucent: '#FFFFFF83',
     altText: '#fff',
     
     // MyMealMigo brand colors
@@ -54,6 +55,7 @@ export const Colors = {
     inactive: '#404040',
     card: '#2d2d2d',
     transparent: 'transparent',
+    translucent: '#38383883',
     altText: '#000000',
     
     // MyMealMigo brand colors (same in dark mode)

@@ -82,9 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               finalRole = 'admin';
             } else if (role === 'nutritionist') {
               finalRole = 'nutritionist';
-            } else if (subscriptionActive && subscriptionPlan === 'premium') {
+            } else if (role === 'premium') {
               finalRole = 'premium';
-            } else if (subscriptionActive && subscriptionPlan === 'free') {
+            } else if (role === 'free') {
               finalRole = 'free';
             } else {
               finalRole = 'guest';
