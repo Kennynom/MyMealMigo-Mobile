@@ -155,12 +155,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
       const sexAtBirth = sex === 'male' || sex === 'female' ? sex : 'prefer_not_to_say';
 
       await setDoc(hpRef, {
-        demographics: {
-          ...(heightCm ? { heightCm: Number(heightCm) } : {}),
-          ...(weightKg ? { weightKg: Number(weightKg) } : {}),
-          ...(birthYear ? { birthYear } : {}),
-          ...(sexAtBirth ? { sexAtBirth } : {}),
-        },
         fitness: {
           ...(goal ? { goal } : {}),
           ...(preferredIntensity ? { preferredIntensity } : {}),

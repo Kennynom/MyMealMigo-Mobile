@@ -5,7 +5,7 @@ import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
@@ -16,7 +16,7 @@ export default function ProfileScreen() {
     const [profileDoc, setProfileDoc] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedTab, setSelectedTab] = useState('about');
-    const [activeSection, setActiveSection] = useState(null); // 'personal' | 'health' | 'questionnaire' | null
+
     // For logout navigation
     const handleLogout = async () => {
         try {
@@ -102,81 +102,39 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
-            {/* Menu List or Details */}
-            {activeSection === 'personal' ? (
-                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-                <View style={styles.detailCard}>
-                    <Text style={styles.detailTitle}>Personal Information</Text>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Name:</Text><Text style={styles.detailValue}>{displayName}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Email:</Text><Text style={styles.detailValue}>{displayEmail}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Sex:</Text><Text style={styles.detailValue}>{displaySex}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Birthday:</Text><Text style={styles.detailValue}>{displayBirthday}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Location:</Text><Text style={styles.detailValue}>{displayLocation}</Text></View>
-                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
-                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
-                        <Text style={styles.detailBackText}>Back</Text>
-                    </TouchableOpacity>
-                </View>
-                </ScrollView>
-            ) : activeSection === 'health' ? (
-                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-                <View style={styles.detailCard}>
-                    <Text style={styles.detailTitle}>Health Information</Text>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Height:</Text><Text style={styles.detailValue}>{displayHeight} cm</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Weight:</Text><Text style={styles.detailValue}>{displayWeight} kg</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Allergies:</Text><Text style={styles.detailValue}>{displayAllergies}</Text></View>
-                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Conditions:</Text><Text style={styles.detailValue}>{displayConditions}</Text></View>
-                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
-                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
-                        <Text style={styles.detailBackText}>Back</Text>
-                    </TouchableOpacity>
-                </View>
-                </ScrollView>
-            ) : activeSection === 'questionnaire' ? (
-                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-                <View style={styles.detailCard}>
-                    <Text style={styles.detailTitle}>Questionnaire (PAR-Q)</Text>
-                    {parqQuestions.map(q => (
-                        <View style={styles.detailRow} key={q.key}>
-                            <Text style={styles.detailLabel}>{q.label}:</Text>
-                            <Text style={styles.detailValue}>{parq[q.key] === true ? 'Yes' : parq[q.key] === false ? 'No' : '-'}</Text>
-                        </View>
-                    ))}
-                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
-                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
-                        <Text style={styles.detailBackText}>Back</Text>
-                    </TouchableOpacity>
-                </View>
-                </ScrollView>
-            ) : (
-                <View style={styles.menuList}>
-                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('personal')}>
-                        <FontAwesome5 name="user" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                        <Text style={styles.menuText}>Personal Information</Text>
-                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('health')}>
-                        <FontAwesome5 name="heartbeat" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                        <Text style={styles.menuText}>Health Information</Text>
-                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('questionnaire')}>
-                        <FontAwesome5 name="clipboard-list" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                        <Text style={styles.menuText}>Questionnaire</Text>
-                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <FontAwesome5 name="file-invoice-dollar" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                        <Text style={styles.menuText}>Payment History</Text>
-                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleDeleteAccount}>
-                        <MaterialIcons name="delete" size={20} color={theme.error || '#F44336'} style={styles.menuIcon} />
-                        <Text style={[styles.menuText, {color: theme.error || '#F44336'}]}>Delete Account</Text>
-                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.error || '#F44336'} style={{marginLeft: 'auto'}} />
-                    </TouchableOpacity>
-                </View>
-            )}
+            <View style={styles.menuList}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(personal)')}>
+                    <FontAwesome5 name="user" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                    <Text style={styles.menuText}>Personal Information</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(health)')}>
+                    <FontAwesome5 name="heartbeat" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                    <Text style={styles.menuText}>Health Information</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(questionnaire)')}>
+                    <FontAwesome5 name="clipboard-list" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                    <Text style={styles.menuText}>Questionnaire</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(subscription)')}>
+                    <FontAwesome5 name="file-invoice-dollar" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                    <Text style={styles.menuText}>Subscription</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+                    <MaterialIcons name="logout" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                    <Text style={styles.menuText}>Logout</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleDeleteAccount}>
+                    <MaterialIcons name="delete" size={20} color={theme.error || '#F44336'} style={styles.menuIcon} />
+                    <Text style={[styles.menuText, {color: theme.error || '#F44336'}]}>Delete Account</Text>
+                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.error || '#F44336'} style={{marginLeft: 'auto'}} />
+                </TouchableOpacity>
+            </View>
+            
         </View>
     );
 }
@@ -243,7 +201,7 @@ const createStyles = (theme) => StyleSheet.create({
         paddingTop: 30,
         paddingBottom: 10,
         shadowColor: theme.shadow || '#000',
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.5,
         shadowRadius: 8,
         elevation: 2,
     },

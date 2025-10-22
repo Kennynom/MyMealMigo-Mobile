@@ -30,7 +30,6 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
         overheadLifts: true
       },
       createdAt: serverTimestamp(),
-      demographics: { birthYear: 2013, heightCm: 170, weightKg: 65 },
       doctorClearance: { hasClearance: false },
       fitness: { equipment: [], goal: 'muscle_gain', preferredIntensity: 'medium' },
       injuries: { items: [], notes: '' },
