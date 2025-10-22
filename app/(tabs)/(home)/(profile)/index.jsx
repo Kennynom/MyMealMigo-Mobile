@@ -1,14 +1,11 @@
-
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import Feather from '@expo/vector-icons/Feather';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
@@ -18,6 +15,8 @@ export default function ProfileScreen() {
     const [userDoc, setUserDoc] = useState(null);
     const [profileDoc, setProfileDoc] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedTab, setSelectedTab] = useState('about');
+    const [activeSection, setActiveSection] = useState(null); // 'personal' | 'health' | 'questionnaire' | null
     // For logout navigation
     const handleLogout = async () => {
         try {
@@ -38,8 +37,10 @@ export default function ProfileScreen() {
         setLoading(true);
         const fetchData = async () => {
             try {
+                // Get public user doc
                 const userSnap = await getDoc(doc(db, 'users', user.uid));
                 setUserDoc(userSnap.exists() ? userSnap.data() : null);
+                // Get private health profile doc
                 const profileSnap = await getDoc(doc(db, 'users', user.uid, 'private', 'health_profile'));
                 setProfileDoc(profileSnap.exists() ? profileSnap.data() : null);
             } catch (err) {
@@ -52,10 +53,30 @@ export default function ProfileScreen() {
         fetchData();
     }, [user]);
 
+    // Personal Info
     const displayName = userDoc?.name || user?.displayName || 'Unknown';
     const displayEmail = userDoc?.email || user?.email || 'Unknown';
-    const displayRole = userRole || userDoc?.role || 'guest';
-    const profileImageUrl = userDoc?.photoURL || 'https://www.gravatar.com/avatar/?d=mp&s=200';
+    const displayBirthday = userDoc?.profile?.birthday || profileDoc?.birthday || '-';
+    const displaySex = userDoc?.profile?.sex || profileDoc?.sex || '-';
+    const displayLocation = userDoc?.location || '-';
+    // Health Info
+    const displayHeight = userDoc?.profile?.heightCm || profileDoc?.heightCm || '-';
+    const displayWeight = userDoc?.profile?.weightKg || profileDoc?.weightKg || '-';
+    const displayAllergies = profileDoc?.allergies?.items?.other || 'None';
+    const displayConditions = profileDoc?.conditions?.items?.other || 'None';
+    // PAR-Q
+    const parq = profileDoc?.parqPlus || {};
+    const parqQuestions = [
+        { key: 'q1_chestPain', label: 'Chest Pain' },
+        { key: 'q2_dizziness', label: 'Dizziness' },
+        { key: 'q3_boneJointProblem', label: 'Bone/Joint Problem' },
+        { key: 'q4_prescriptionMeds', label: 'Prescription Meds' },
+        { key: 'q5_heartCondition', label: 'Heart Condition' },
+        { key: 'q6_bloodPressureIssue', label: 'Blood Pressure Issue' },
+        { key: 'q7_otherReason', label: 'Other Reason' },
+    ];
+    // const profileImageUrl = userDoc?.photoURL || 'https://www.gravatar.com/avatar/?d=mp&s=200';
+    const profileImageUrl = 'https://www.gravatar.com/avatar/?d=mp&s=200';
 
     if (authLoading || loading) {
         return (
@@ -67,145 +88,95 @@ export default function ProfileScreen() {
 
     return (
         <View style={styles.wrapper}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerSide}>
+            {/* Header Card */}
+            <View style={styles.headerCard}>
+                <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back-ios" style={styles.backIcon} />
+                        <Ionicons name="arrow-back" size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitleBig}>My Profile</Text>
+                    <Ionicons name="notifications-outline" size={24} color={theme.text} style={{marginLeft: 'auto'}} />
+                </View>
+                <View style={styles.profileImageWrapper}>
+                    <Image source={{ uri: profileImageUrl }} style={styles.profileImageBig} />
+                </View>
+            </View>
+
+            {/* Menu List or Details */}
+            {activeSection === 'personal' ? (
+                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+                <View style={styles.detailCard}>
+                    <Text style={styles.detailTitle}>Personal Information</Text>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Name:</Text><Text style={styles.detailValue}>{displayName}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Email:</Text><Text style={styles.detailValue}>{displayEmail}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Sex:</Text><Text style={styles.detailValue}>{displaySex}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Birthday:</Text><Text style={styles.detailValue}>{displayBirthday}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Location:</Text><Text style={styles.detailValue}>{displayLocation}</Text></View>
+                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
+                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
+                        <Text style={styles.detailBackText}>Back</Text>
                     </TouchableOpacity>
                 </View>
-                <View style={styles.headerTitle}>
-                    <Text style={styles.headerText}>Profile</Text>
+                </ScrollView>
+            ) : activeSection === 'health' ? (
+                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+                <View style={styles.detailCard}>
+                    <Text style={styles.detailTitle}>Health Information</Text>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Height:</Text><Text style={styles.detailValue}>{displayHeight} cm</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Weight:</Text><Text style={styles.detailValue}>{displayWeight} kg</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Allergies:</Text><Text style={styles.detailValue}>{displayAllergies}</Text></View>
+                    <View style={styles.detailRow}><Text style={styles.detailLabel}>Conditions:</Text><Text style={styles.detailValue}>{displayConditions}</Text></View>
+                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
+                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
+                        <Text style={styles.detailBackText}>Back</Text>
+                    </TouchableOpacity>
                 </View>
-                <View style={styles.headerSide}>{/* Empty for spacing */}</View>
-            </View>
-
-            {/* Content */}
-            <View style={styles.content}>
-                {/* PFP Section */}
-                <View>
-                    <View style={{ alignItems: 'center', position: 'relative' }}>
-                        <Image 
-                            source={{ uri: profileImageUrl }} 
-                            style={{ ...styles.profileImage, zIndex: 1 }} 
-                        />
-                        <TouchableOpacity
-                            onPress={() => { /* Handle edit pfp */ }}
-                            style={{
-                                position: 'absolute',
-                                bottom: -5,
-                                right: 0,
-                                width: 50,
-                                height: 50,
-                                borderRadius: 25,
-                                backgroundColor: theme.primaryGreen ?? '#58e221',
-                                borderWidth: 2,
-                                borderColor: theme.primaryGreen ?? '#58e221',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Feather 
-                                name="edit-2"
-                                size={24}
-                                color={theme.altText}
-                            />
-                        </TouchableOpacity>
-                    </View>
+                </ScrollView>
+            ) : activeSection === 'questionnaire' ? (
+                <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+                <View style={styles.detailCard}>
+                    <Text style={styles.detailTitle}>Questionnaire (PAR-Q)</Text>
+                    {parqQuestions.map(q => (
+                        <View style={styles.detailRow} key={q.key}>
+                            <Text style={styles.detailLabel}>{q.label}:</Text>
+                            <Text style={styles.detailValue}>{parq[q.key] === true ? 'Yes' : parq[q.key] === false ? 'No' : '-'}</Text>
+                        </View>
+                    ))}
+                    <TouchableOpacity style={styles.detailBackBtn} onPress={() => setActiveSection(null)}>
+                        <MaterialIcons name="arrow-back" size={20} color={theme.primaryDark} />
+                        <Text style={styles.detailBackText}>Back</Text>
+                    </TouchableOpacity>
                 </View>
-
-                {/* Info */}
-                <View style={{
-                    backgroundColor: theme.primaryDark,
-                    alignItems: 'center',
-                    paddingTop: 100,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 0,
-                    position: 'absolute',
-                    top: 70,
-                    marginHorizontal: 20,
-                }}>
-                    <View style={{ marginTop: -40 }}>
-                        {/* Name */}
-                        <Text style={styles.nameText}>{displayName}</Text>
-                        {/* Email */}
-                        <Text style={styles.emailText}>{displayEmail}</Text>
-                        <View style={styles.roleContainer}>
-                            <Text style={styles.roleText}>{displayRole}</Text>
-                        </View>
-                    </View>
-
-                    {/* Buttons Section */}
-                    <View style={{ marginTop: 10 }}>
-                        {/* View Profile */}
-                        <View style={styles.button}>
-                            <TouchableOpacity onPress={() => { /* Handle view profile */ }} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={styles.firstHalf}>
-                                    <AntDesign name="user" size={24} color={theme.text} />
-                                    <Text style={styles.buttonText}>View Profile</Text>
-                                </View>
-                                <View style={styles.secondHalf}>
-                                    <AntDesign name="right" size={24} color={theme.text} />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Edit Profile */}
-                        <View style={styles.button}>
-                            <TouchableOpacity onPress={() => { /* Handle edit profile */ }} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={styles.firstHalf}>
-                                    <AntDesign name="edit" size={24} color={theme.text} />
-                                    <Text style={styles.buttonText}>Edit Profile</Text>
-                                </View>
-                                <View style={styles.secondHalf}>
-                                    <AntDesign name="right" size={24} color={theme.text} />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Upgrade to Pro */}
-                        <View style={styles.button}>
-                            <TouchableOpacity onPress={() => { /* Handle upgrade to pro */ }} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={styles.firstHalf}>
-                                    <MaterialIcons name="upgrade" size={24} color={theme.text} />
-                                    <Text style={styles.buttonText}>Upgrade to Pro</Text>
-                                </View>
-                                <View style={styles.secondHalf}>
-                                    <AntDesign name="right" size={24} color={theme.text} />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Delete Account */}
-                        <View style={styles.button}>
-                            <TouchableOpacity onPress={() => { /* Handle delete account */ }} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={styles.firstHalf}>
-                                    <AntDesign name="delete" size={24} color={theme.text} />
-                                    <Text style={styles.buttonText}>Delete Account</Text>
-                                </View>
-                                <View style={styles.secondHalf}>
-                                    <AntDesign name="right" size={24} color={theme.text} />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Logout */}
-                        <View style={styles.logOutButton}>
-                            <TouchableOpacity onPress={handleLogout} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={styles.firstHalf}>
-                                    <AntDesign name="logout" size={24} color={theme.text} />
-                                    <Text style={styles.buttonText}>Logout</Text>
-                                </View>
-                                <View style={styles.secondHalf}>
-                                    <AntDesign name="right" size={24} color={theme.text} />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                </ScrollView>
+            ) : (
+                <View style={styles.menuList}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('personal')}>
+                        <FontAwesome5 name="user" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                        <Text style={styles.menuText}>Personal Information</Text>
+                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('health')}>
+                        <FontAwesome5 name="heartbeat" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                        <Text style={styles.menuText}>Health Information</Text>
+                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => setActiveSection('questionnaire')}>
+                        <FontAwesome5 name="clipboard-list" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                        <Text style={styles.menuText}>Questionnaire</Text>
+                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <FontAwesome5 name="file-invoice-dollar" size={20} color={theme.primaryDark} style={styles.menuIcon} />
+                        <Text style={styles.menuText}>Payment History</Text>
+                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleDeleteAccount}>
+                        <MaterialIcons name="delete" size={20} color={theme.error || '#F44336'} style={styles.menuIcon} />
+                        <Text style={[styles.menuText, {color: theme.error || '#F44336'}]}>Delete Account</Text>
+                        <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.error || '#F44336'} style={{marginLeft: 'auto'}} />
+                    </TouchableOpacity>
                 </View>
-            </View>
+            )}
         </View>
     );
 }
@@ -215,121 +186,162 @@ const createStyles = (theme) => StyleSheet.create({
         flex: 1,
         backgroundColor: theme.background,
     },
-    header: {
+    headerCard: {
+        backgroundColor: theme.primaryDark,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        paddingBottom: 30,
+        paddingTop: 20,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 40,
-        marginTop: 20,
+        width: '100%',
+        marginBottom: 10,
     },
-    headerSide: {
-        flex: 1,
-        alignItems: 'flex-start',
+    headerTitleBig: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: theme.altText,
     },
-    headerTitle: {
-        flex: 2,
+    profileImageWrapper: {
+        marginTop: 10,
+        marginBottom: 10,
+        borderWidth: 4,
+        borderColor: '#fff',
+        borderRadius: 999,
+        padding: 4,
+        backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
     },
-    headerText: {
-        fontSize: 20,
+    profileImageBig: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        resizeMode: 'cover',
+    },
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 8,
+        width: '100%',
+    },
+    menuList: {
+        backgroundColor: theme.background || '#fff',
+        borderRadius: 28,
+        marginHorizontal: 18,
+        marginTop: -30,
+        paddingTop: 30,
+        paddingBottom: 10,
+        shadowColor: theme.shadow || '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 18,
+        paddingHorizontal: 18,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        backgroundColor: '#fff',
+        borderRadius: 28,
+        marginBottom: 8,
+    },
+    menuIcon: {
+        marginRight: 16,
+    },
+    menuText: {
+        fontSize: 16,
+        color: theme.primaryDark,
         fontWeight: 'bold',
-        color: theme.text,
-        textAlign: 'center',
     },
     backButton: {
-        paddingLeft: 25,
+        marginRight: 12,
+        padding: 6,
+        borderRadius: 28,
+        backgroundColor: theme.translucent,
     },
-    backIcon: {
-        fontSize: 22,
-        color: theme.text,
+    detailCard: {
+        backgroundColor: theme.cardBackground || '#fff',
+        borderRadius: 18,
+        marginHorizontal: 18,
+        marginTop: 0,
+        paddingTop: 30,
+        paddingBottom: 20,
+        paddingHorizontal: 20,
+        shadowColor: theme.shadow || '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
     },
-    profileImage: {
-      width: 120,
-      height: 120,
-      borderRadius: 999,
-      borderWidth: 2,
-      borderColor: theme.primaryGreen ?? theme.primaryGreen ?? '#58e221',
-      backgroundColor: theme.inactive,
-      
+    detailScroll: {
+        flexGrow: 0,
+        backgroundColor: 'transparent',
+        borderRadius: 18,
+        marginHorizontal: 0,
+        marginTop: 210,
+        marginBottom: 0,
+        padding: 15,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
     },
-    editProfileImage: { 
-        fontSize: 20,   
-        color: theme.text,
-        width: 50,
-        height: 50,
-        borderRadius: 999,
-        borderWidth: 2,
-        borderColor: theme.secondary ?? theme.secondaryGreen ?? '#059669',
-        backgroundColor: theme.secondary ?? theme.secondaryGreen ?? '#059669',
-        textAlign: 'center',
-    },
-    content: {
-        flex: 1,
-        backgroundColor: theme.background,
-        alignItems: 'center',
-    },
-    nameText:{
-        fontSize: 28,
+    detailTitle: {
+        fontSize: 20,
         fontWeight: 'bold',
-        color: theme.altText,
+        color: theme.primaryDark,
+        marginBottom: 18,
         textAlign: 'center',
     },
-    roleText:{
+    detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    detailLabel: {
         fontSize: 16,
-        color: theme.altText,
-        textAlign: 'center',
+        color: theme.textSecondary || '#888',
+        fontWeight: 'bold',
     },
-    emailText:{
+    detailValue: {
         fontSize: 16,
-        color: theme.altText,
-        textAlign: 'center',
+        color: theme.primaryDark,
+        fontWeight: 'bold',
     },
-    roleContainer:{
-        marginTop: 15,
-        borderRadius: 20,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        backgroundColor: theme.altBackground,
-    },
-    button:{
-        borderRadius: 15,
-        padding: 15,
-        marginVertical: 10,
-        backgroundColor: theme.translucent ?? theme.translucent ?? '#FFFFFF83',
-        shadowColor: '#000',
-        shadowOffset: 0,
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 5,
-        minWidth: 280,
-        minHeight: 55,
-        justifyContent: 'center',
-    },
-    logOutButton:{
-        borderRadius: 15,
-        padding: 15,
-        marginVertical: 10,
-        backgroundColor: theme.error ?? theme.error ?? '#F44336',
-        shadowColor: '#000',
-        shadowOffset: 0,
-        shadowOpacity: 0.5,
-        shadowRadius: 3,
-        elevation: 5,
-        minWidth: 280,
-        justifyContent: 'center',
-    },
-    buttonText:{
-        marginLeft: 10,
-        color: theme.text,
-        fontSize: 16,
-    },
-    firstHalf:{
+    detailBackBtn: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'flex-start',
+        marginTop: 18,
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 16,
+        backgroundColor: theme.translucent || '#eaeaea',
     },
-    secondHalf:{
-        flexDirection: 'row',
-        alignItems: 'center',
+    detailBackText: {
+        fontSize: 16,
+        color: theme.primaryDark,
+        marginLeft: 6,
+        fontWeight: 'bold',
     },
 });
+
+// Add the handler for delete account
+const handleDeleteAccount = async () => {
+    // TODO: Implement account deletion logic (Firebase Auth + Firestore cleanup)
+    alert('Account deletion is not yet implemented.');
+};

@@ -22,7 +22,7 @@ export const Colors = {
     inactive: '#f8f8f8',
     card: '#fff',
     transparent: 'transparent',
-    translucent: '#FFFFFF83',
+    translucent: '#FFFFFF86',
     altText: '#fff',
     
     // MyMealMigo brand colors
@@ -30,6 +30,10 @@ export const Colors = {
     secondary: secondaryGreen,
     primaryDark: '#059669',
     accent: '#059669',
+    altAccent: '#e26a21',
+    neutralAccent1: '#f5f5f5',
+    neutralAccent2: '#9BA1A6',
+    coolAccent: '#2176e2',
     
     // Status colors
     success: '#4CAF50',
@@ -63,10 +67,15 @@ export const Colors = {
     secondary: secondaryGreen,
     primaryDark: '#059669',
     accent: '#059669',
+    altAccent: '#e26a21',
+    neutralAccent1: '#f5f5f5',
+    neutralAccent2: '#9BA1A6',
+    coolAccent: '#2176e2',
     
     // Status colors
     success: '#4CAF50',
     warning: '#FF9800',
+    altWarning: '#F52A2AA9',
     error: '#F44336',
     
     // Original theme colors
