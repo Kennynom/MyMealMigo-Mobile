@@ -36,9 +36,9 @@ export default function RootLayout() {
                   />
                 </View>
                 <View style={styles.closeOverlay} pointerEvents="box-none">
-                  <View style={styles.closeWrapper} pointerEvents="box-none">
-                    <TouchableClose onPress={() => setOpen(false)} />
-                  </View>
+                    <View style={styles.closeWrapper} pointerEvents="box-none">
+                      <TouchableClose onPress={() => setOpen(false)} />
+                    </View>
                 </View>
               </View>
             </Modal>
@@ -55,5 +55,8 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.05)' },
   modalContainer: { flex: 1, backgroundColor: '#fff', marginTop: 40 },
   closeOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  closeWrapper: { position: 'absolute', top: 8, right: 8, zIndex: 2000 },
+  // place close button at top-right but positioned below the webchat's share control
+  // so it doesn't overlap the share action and remains easily tappable.
+  // Increased top value so the native close sits below the Share option in the webchat header.
+  closeWrapper: { position: 'absolute', top: 92, right: 12, zIndex: 2000 },
 });

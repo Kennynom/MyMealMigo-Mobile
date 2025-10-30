@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -8,8 +8,29 @@ type Props = {
   onClose?: () => void;
 };
 
-const BotChat: React.FC<Props> = ({ botpressUrl, botId, onClose }) => {
+const BotChat = forwardRef(function BotChat(
+  { botpressUrl, botId, onClose }: Props,
+  ref: React.Ref<any>,
+) {
   const [error, setError] = useState<string | null>(null);
+  const webviewRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    // clears common browser storage and reloads the WebView
+    clearHistory: () => {
+      try {
+        const js = `try{localStorage.clear(); sessionStorage.clear();}catch(e){};true;`;
+        if (webviewRef.current && webviewRef.current.injectJavaScript) {
+          webviewRef.current.injectJavaScript(js);
+        }
+        if (webviewRef.current && webviewRef.current.reload) {
+          webviewRef.current.reload();
+        }
+      } catch (e) {
+        // ignore
+      }
+    },
+  }));
   // If the provided URL is a full shareable page (includes shareable.html or a configUrl),
   // load it directly in the WebView using uri. Otherwise build an HTML snippet that
   // injects the botpress webchat script from the host.
@@ -31,13 +52,15 @@ const BotChat: React.FC<Props> = ({ botpressUrl, botId, onClose }) => {
       </body>
     </html>`;
 
-  const injectedJS = `(function(){function post(prefix,msg){try{window.ReactNativeWebView.postMessage(prefix+msg);}catch(e){} } var _log=console.log; var _err=console.error; console.log=function(){ post('LOG:', Array.prototype.slice.call(arguments).join(' ')); try{_log.apply(console, arguments)}catch(e){} }; console.error=function(){ post('ERR:', Array.prototype.slice.call(arguments).join(' ')); try{_err.apply(console, arguments)}catch(e){} }; window.onerror=function(msg,url,line,col,error){ post('ERR:', msg+' at '+url+':'+line+':'+col); }; try{ if(!document.getElementById('rn-close-chat-btn')){ var btn=document.createElement('button'); btn.id='rn-close-chat-btn'; btn.innerText='\u2715'; btn.setAttribute('aria-label','Close chat'); Object.assign(btn.style,{position:'fixed',top:'12px',right:'12px',width:'48px',height:'48px',borderRadius:'24px',background:'rgba(255,255,255,0.95)',border:'none',boxShadow:'0 2px 6px rgba(0,0,0,0.15)',zIndex:2147483647,fontSize:'22px',cursor:'pointer'}); btn.onclick=function(e){ e.preventDefault(); try{ window.ReactNativeWebView.postMessage('CLOSE_CHAT'); }catch(e){} }; document.addEventListener('readystatechange', function(){ try{ document.body.appendChild(btn);}catch(e){} }); try{ document.body.appendChild(btn);}catch(e){} } }catch(injectErr){ post('ERR:','inject-close-btn:'+(injectErr&&injectErr.message)); } setTimeout(function(){},2000); setTimeout(function(){},5000); setTimeout(function(){},8000); true; })();`;
+  // Keep only console forwarding / error forwarding. Removed injected in-page close button (opaque native close is used now).
+  const injectedJS = `(function(){function post(prefix,msg){try{window.ReactNativeWebView.postMessage(prefix+msg);}catch(e){} } var _log=console.log; var _err=console.error; console.log=function(){ post('LOG:', Array.prototype.slice.call(arguments).join(' ')); try{_log.apply(console, arguments)}catch(e){} }; console.error=function(){ post('ERR:', Array.prototype.slice.call(arguments).join(' ')); try{_err.apply(console, arguments)}catch(e){} }; window.onerror=function(msg,url,line,col,error){ post('ERR:', msg+' at '+url+':'+line+':'+col); }; setTimeout(function(){},2000); setTimeout(function(){},5000); setTimeout(function(){},8000); true; })();`;
 
   return (
     <View style={styles.container}>
       <WebView
         originWhitelist={["*"]}
         source={isFullPage ? { uri: botpressUrl } : { html }}
+        ref={webviewRef}
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
@@ -50,10 +73,6 @@ const BotChat: React.FC<Props> = ({ botpressUrl, botId, onClose }) => {
         onMessage={(e) => {
           try {
             const data = e.nativeEvent.data || '';
-            if (data === 'CLOSE_CHAT') {
-              if (typeof onClose === 'function') onClose();
-              return;
-            }
             if (data.startsWith('LOG:') || data.startsWith('ERR:')) setError((prev) => (prev ? prev + '\n' + data : data));
           } catch (err) {
             // ignore
@@ -76,7 +95,8 @@ const BotChat: React.FC<Props> = ({ botpressUrl, botId, onClose }) => {
       ) : null}
     </View>
   );
-}
+  });
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

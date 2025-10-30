@@ -1,11 +1,11 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Tabs } from 'expo-router';
+import React from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -14,6 +14,17 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        // reduce default tab bar padding/height so icons sit closer to the content
+        // and to eliminate the small white gap that appears next to the Discover tab
+        // and below the floating chat bubble.
+        tabBarStyle: {
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 6,
+          paddingHorizontal: 6,
+          borderTopWidth: 0,
+          elevation: 8,
+        },
         headerShown: false,
       }}>
       <Tabs.Screen
@@ -49,6 +60,13 @@ export default function TabLayout() {
         options={{
           title: 'Discover',
           tabBarIcon: ({ color }) => <MaterialIcons name="travel-explore" size={28} color={color} />,
+        }}
+      />
+      {/* hide the chat/index route from the tab bar (it remains routable) */}
+      <Tabs.Screen
+        name="chat/index"
+        options={{
+          tabBarButton: () => null,
         }}
       />
     </Tabs>

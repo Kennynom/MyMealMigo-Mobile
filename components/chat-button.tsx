@@ -19,7 +19,9 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     right: 16,
-    bottom: 24,
+    // lifted slightly so it doesn't overlap the bottom tab bar — lowered to sit closer
+    // to the tightened tab bar height to remove visible white gap.
+    bottom: 72,
     width: 64,
     height: 64,
     borderRadius: 32,
