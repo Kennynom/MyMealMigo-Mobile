@@ -1,3 +1,4 @@
+import { JournalProvider } from '@/context/JournalContext';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -18,6 +19,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider>
+        <JournalProvider>
         <SafeAreaProvider>
           <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             <PlatformGuard>
@@ -31,6 +33,7 @@ export default function RootLayout() {
             </PlatformGuard>
           </SafeAreaView>
         </SafeAreaProvider>
+        </JournalProvider>
       </ThemeProvider>
     </AuthProvider>
   );
