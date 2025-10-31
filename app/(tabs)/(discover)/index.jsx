@@ -39,7 +39,7 @@ export default function DiscoverMainScreen() {
 
         <TouchableOpacity 
           style={styles.discoverCard}
-          onPress={() => router.push('/(tabs)/(discover)/browse-recipes')}
+          onPress={() => router.push('/(tabs)/(discover)/(recipes)/browse-recipes')}
         >
           <View style={styles.cardIcon}>
             <Text style={styles.cardEmoji}>👨‍🍳</Text>
