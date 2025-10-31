@@ -253,6 +253,15 @@ export default function HomeScreen() {
   return (
     <View style={styles.mobileContainer}>
       <AuthDebug />
+      <View style={styles.headerAI}>
+        <TouchableOpacity
+          onPress={() => router.push('(ai)')}
+          accessibilityLabel="AI Assistant Button"
+          style={styles.buttonAI}
+        >
+          <Text> AI Assistant</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Smart Dashboard</Text>
@@ -534,6 +543,19 @@ function createStyle(theme) {
     altText2: {
       fontSize: 16,
       color: theme.altText,
+    },
+    headerAI: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 15,
+      backgroundColor: theme.background,
+    },
+    buttonAI: {
+      backgroundColor: theme.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 50,
     },
   });
 }
