@@ -55,7 +55,7 @@ export default function ScanBarcodeScreen() {
 
     try {
       // Lookup product in barcodes.json via the ML server API
-      const response = await fetch(`http://192.168.18.81:5174/api/barcodes/${barcode}`);
+      const response = await fetch(`http://172.20.10.4:5174/api/barcodes/${barcode}`);
       
       if (!response.ok) {
         throw new Error('Product not found');
@@ -161,7 +161,7 @@ export default function ScanBarcodeScreen() {
         <View style={styles.resultsCard}>
           {scannedProduct.localImage && (
             <Image 
-              source={{ uri: `http://192.168.18.81:5174/images/${scannedProduct.localImage}` }}
+              source={{ uri: `http://172.20.10.4:5174/images/${scannedProduct.localImage}` }}
               style={styles.photoImg}
               resizeMode="contain"
             />
