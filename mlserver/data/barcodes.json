@@ -1,0 +1,24 @@
+[
+  {"code": "8888196305916", 
+   "name": "Pokka Premium Cappuccino 500ml",             
+   "calories": 220, 
+   "protein": 4, 
+   "carbs": 37.6, 
+   "fat": 6,
+   "sugar": 31.6,
+   "sodium": 126,
+   "localImage": "PokkaPremiumCappucino500ml.jpg"
+  },
+
+   {"code": "4897036694992", 
+   "name": "Monster Energy Ultra Peachy Keen 355ml",             
+   "calories": 10, 
+   "protein": 0, 
+   "carbs": 3, 
+   "fat": 0,
+   "sugar": 0,
+   "sodium": 185,
+   "localImage": "Monster0PeachyKeen.jpg"
+  }
+
+]

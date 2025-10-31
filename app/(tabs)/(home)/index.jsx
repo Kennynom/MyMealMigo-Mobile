@@ -268,7 +268,11 @@ export default function HomeScreen() {
         </View>
       </View>
       
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.welcomeText}>Welcome!</Text>
         <Text style={styles.subtitle}>You are currently viewing smart dashboard</Text>
 
@@ -307,7 +311,7 @@ export default function HomeScreen() {
           />
         </View>
 
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -410,6 +414,7 @@ function createStyle(theme) {
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 24,
+      marginBottom: 40, // Add bottom margin for better spacing
       marginHorizontal: 16,
       paddingHorizontal: 12,
     },
@@ -467,7 +472,10 @@ function createStyle(theme) {
     },
     content: {
       flex: 1,
+    },
+    scrollContent: {
       padding: 20,
+      paddingBottom: 100, // Add extra bottom padding to prevent cropping
     },
     quickAction: {
       backgroundColor: theme.secondary,

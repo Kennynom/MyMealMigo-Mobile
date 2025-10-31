@@ -5,10 +5,10 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -69,21 +69,28 @@ export default function CalorieTrackerScreen() {
         }));
     }, [dailyIntake.caloriesSet, dailyIntake.caloriesConsumed]);
 
-    useEffect(() => {
-        const fetchCalorieLogs = async () => {
-            const auth = getAuth();
-            const uid = auth.currentUser?.uid;
-            if (!uid) return;
+    const fetchCalorieLogs = useCallback(async () => {
+        const auth = getAuth();
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
 
+        try {
             const calorieLogDocRef = doc(db, 'users', uid, 'private', 'health_profile', 'calorie_logs', 'main');
             const docSnap = await getDoc(calorieLogDocRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setAllDailyLogs(data.dailyLogs || []);
-                // Get latest daily log
-                if (data.dailyLogs && data.dailyLogs.length > 0) {
+                
+                // Find today's log or use the latest log
+                const today = new Date().toISOString().split('T')[0];
+                const todayLog = data.dailyLogs?.find(log => log.dateStart === today);
+                
+                if (todayLog) {
+                    setDailyIntake(todayLog);
+                } else if (data.dailyLogs && data.dailyLogs.length > 0) {
                     setDailyIntake(data.dailyLogs[data.dailyLogs.length - 1]);
                 }
+                
                 // Get latest weekly log
                 if (data.weeklyLogs && data.weeklyLogs.length > 0) {
                     setWeeklyIntake(data.weeklyLogs[data.weeklyLogs.length - 1]);
@@ -93,9 +100,21 @@ export default function CalorieTrackerScreen() {
                     setMonthlyIntake(data.monthlyLogs[data.monthlyLogs.length - 1]);
                 }
             }
-        };
-        fetchCalorieLogs();
+        } catch (error) {
+            console.error('Error fetching calorie logs:', error);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchCalorieLogs();
+    }, [fetchCalorieLogs]);
+
+    // Refresh data when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchCalorieLogs();
+        }, [fetchCalorieLogs])
+    );
 
     // Find daily log for selected date
     const selectedDateString = selectedDate.toISOString().split('T')[0];
