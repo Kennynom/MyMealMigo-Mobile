@@ -1,7 +1,7 @@
 // app/(tabs)/(logs)/view-log.jsx
 import ReflectionRow from "@/components/ReflectionRow";
 import SummaryModal from "@/components/SummaryModal";
-import { AuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { useJournal } from "@/context/JournalContext";
 import { ThemeContext } from "@/context/ThemeContext";
 import { deleteMealAndCalories, getUserMeals } from "@/utils/mealService";
@@ -25,11 +25,9 @@ import {
 } from "react-native";
 
 export default function ViewMealLogScreen() {
-  const { colorScheme, setColorScheme, theme } =
-    useContext(ThemeContext);
-  const authContext = useContext(AuthContext);
-  const user = authContext?.user || null;
-  const styles = createStyles(theme, colorScheme);
+  const { theme } = useContext(ThemeContext);
+  const { user } = useAuth();
+  const styles = createStyles(theme);
 
   const { tab: initialTabParam } = useLocalSearchParams();
   const [tab, setTab] = useState("Meal log"); // "Meal log" | "Reflection"

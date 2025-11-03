@@ -25,22 +25,6 @@ export default function LogsMainScreen() {
         </View>
       </View>
 
-      {/* Quick Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>3</Text>
-          <Text style={styles.statLabel}>Meals Today</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>1,850</Text>
-          <Text style={styles.statLabel}>Calories</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>85%</Text>
-          <Text style={styles.statLabel}>Goal Progress</Text>
-        </View>
-      </View>
-
       {/* Main Options */}
       <View style={styles.optionsContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -84,23 +68,6 @@ export default function LogsMainScreen() {
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
 
-        {/* Add New Meal */}
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => router.push('/(tabs)/(logs)/add-meal')}
-        >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>➕</Text>
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>Add New Meal</Text>
-            <Text style={styles.optionSubtitle}>
-              Log a new meal or snack with photos
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
         {/* History */}
         <TouchableOpacity
           style={styles.optionCard}
@@ -113,23 +80,6 @@ export default function LogsMainScreen() {
             <Text style={styles.optionTitle}>Meal History</Text>
             <Text style={styles.optionSubtitle}>
               Browse and analyze previous days
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* Favorites */}
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => router.push('/(tabs)/(logs)/favorites')}
-        >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>⭐</Text>
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>Favorite Meals</Text>
-            <Text style={styles.optionSubtitle}>
-              Quick access to your go-to meals
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
