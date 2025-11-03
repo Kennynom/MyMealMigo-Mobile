@@ -3,13 +3,11 @@ import { router } from 'expo-router';
 import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function TrackerMainScreen() {
-  const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
-  const styles = createStyles(theme, colorScheme);
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
-  };
+export default function TrackerMainScreen() {
+  const { theme } = useContext(ThemeContext);
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -19,55 +17,60 @@ export default function TrackerMainScreen() {
           <Text style={styles.title}>Tracker</Text>
           <Text style={styles.subtitle}>Monitor your health and fitness journey</Text>
         </View>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-            <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Tracker Cards */}
       <ScrollView style={styles.trackerList} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity 
-          style={styles.trackerCard}
-          onPress={() => router.push('calorie-tracker')}
-        >
-          <Text style={styles.trackerTitle}>Calorie Tracker</Text>
-        </TouchableOpacity>
+        <View style={styles.trackerRow}>
+          <TouchableOpacity 
+            style={styles.trackerCard}
+            onPress={() => router.push('calorie-tracker')}
+          >
+            <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
+              <MaterialIcons name="apple" size={24} color={theme.primaryDark} />
+              <Text style={[styles.trackerTitle, { textAlign: 'left', alignSelf: 'flex-start' }]}>Calorie Tracker</Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/progress-tracker')}
-        >
-          <Text style={styles.trackerTitle}>Progress Tracker</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.trackerCard}
+            onPress={() => router.push('/(tabs)/(tracker)/progress-tracker')}
+          >
+            <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
+              <MaterialIcons name="align-vertical-bottom" size={24} color={theme.primaryDark} />
+              <Text style={[styles.trackerTitle, { textAlign: 'left', alignSelf: 'flex-start' }]}>Progress Tracker</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity 
-          style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/activity-tracker')}
-        >
-          <Text style={styles.trackerTitle}>Activity Tracker</Text>
-        </TouchableOpacity>
+        <View style={styles.trackerRow}>
+          <TouchableOpacity 
+            style={styles.trackerCard}
+            onPress={() => router.push('/(tabs)/(tracker)/activity-tracker')}
+          >
+            <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
+              <MaterialIcons name="directions-run" size={24} color={theme.primaryDark} />
+              <Text style={[styles.trackerTitle, { textAlign: 'left', alignSelf: 'flex-start' }]}>Activity Tracker</Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/(calculator)/bmi-calculator')}
-        >
-          <Text style={styles.trackerTitle}>BMI Calculator</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.trackerCard}
+            onPress={() => router.push('/(tabs)/(tracker)/health-calculator')}
+          >
+            <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
+              <MaterialIcons name="monitor-heart" size={24} color={theme.primaryDark} />
+              <Text style={[styles.trackerTitle, { textAlign: 'left', alignSelf: 'flex-start' }]}>Health Calculator</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity 
-          style={styles.trackerCard}
-          onPress={() => router.push('/(tabs)/(tracker)/(calculator)/bmr-calculator')}
-        >
-          <Text style={styles.trackerTitle}>BMR Calculator</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-const createStyles = (theme, colorScheme) => StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -92,39 +95,37 @@ const createStyles = (theme, colorScheme) => StyleSheet.create({
     fontSize: 16,
     color: theme.textSecondary,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  themeButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.surface,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  themeIcon: {
-    fontSize: 20,
-  },
   trackerList: {
     flex: 1,
-    paddingHorizontal: 20,
+    margin: 10,
   },
   trackerCard: {
-    backgroundColor: '#000',
-    borderRadius: 12,
-    padding: 40,
-    marginBottom: 20,
-    justifyContent: 'center',
+    backgroundColor: theme.background,
+    borderRadius: 20,
+    padding: 20,
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    minHeight: 80,
+    width: '45%',
+    height: 200,
+    margin: 5,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   trackerTitle: {
-    color: '#fff',
+    color: theme.primaryDark,
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
+  },
+  trackerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  trackerIcon: {
+    marginBottom: 10,
+    alignItems: 'flex-start',
   },
 });

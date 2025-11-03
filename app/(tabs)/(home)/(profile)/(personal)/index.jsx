@@ -4,13 +4,14 @@ import { ThemeContext } from '@/context/ThemeContext';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
-    const { theme } = useContext(ThemeContext);
+    const { theme, colorScheme, toggleTheme } = useContext(ThemeContext);
     const styles = createStyles(theme);
     const { user, userRole, loading: authLoading, logout } = useAuth();
     const [userDoc, setUserDoc] = useState(null);
@@ -111,12 +112,25 @@ export default function ProfileScreen() {
     const handleSave = async () => {
         if (!user) return;
         try {
+            // Calculate age from birthday
+            let age = null;
+            if (editFields.birthday) {
+                const birthDate = new Date(editFields.birthday);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+
             // Update users/{uid} doc
             const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, {
                 name: editFields.name,
                 email: editFields.email,
                 'profile.birthday': editFields.birthday,
+                'profile.age': age,
                 'profile.sex': editFields.sex,
                 'profile.heightCm': parseInt(editFields.height) || null,
                 'profile.weightKg': parseInt(editFields.weight) || null,
@@ -129,6 +143,7 @@ export default function ProfileScreen() {
                 profile: {
                     ...((prev && prev.profile) || {}),
                     birthday: editFields.birthday,
+                    age: age,
                     sex: editFields.sex,
                     heightCm: parseInt(editFields.height) || null,
                     weightKg: parseInt(editFields.weight) || null,
@@ -154,6 +169,55 @@ export default function ProfileScreen() {
         setEditMode(false);
     };
 
+    // Handler for delete account
+    const handleDeleteAccount = async () => {
+        if (!user) return;
+        
+        Alert.alert(
+            'Delete Account',
+            'Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Delete Firestore data first
+                            // Delete private health profile
+                            const healthProfileRef = doc(db, 'users', user.uid, 'private', 'health_profile');
+                            await deleteDoc(healthProfileRef);
+                            
+                            // Delete main user document
+                            const userRef = doc(db, 'users', user.uid);
+                            await deleteDoc(userRef);
+                            
+                            // Delete Firebase Auth user
+                            await deleteUser(user);
+                            
+                            // Navigate to login
+                            Alert.alert('Success', 'Your account has been deleted.');
+                            router.replace('/(auth)/login');
+                        } catch (error) {
+                            console.error('Error deleting account:', error);
+                            if (error.code === 'auth/requires-recent-login') {
+                                Alert.alert(
+                                    'Re-authentication Required',
+                                    'For security reasons, please log out and log back in before deleting your account.'
+                                );
+                            } else {
+                                Alert.alert('Error', 'Failed to delete account. Please try again.');
+                            }
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     if (authLoading || loading) {
         return (
             <View style={[styles.wrapper, { justifyContent: 'center', alignItems: 'center' }]}> 
@@ -171,7 +235,9 @@ export default function ProfileScreen() {
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitleBig}>Personal Information</Text>
-                    <Ionicons name="notifications-outline" size={24} color={theme.text} style={{marginLeft: 'auto'}} />
+                    <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
+                        <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.profileImageWrapper}>
                     <Image source={{ uri: profileImageUrl }} style={styles.profileImageBig} />
@@ -376,6 +442,15 @@ const createStyles = (theme) => StyleSheet.create({
         borderRadius: 28,
         backgroundColor: theme.translucent,
     },
+    themeButton: {
+        marginLeft: 'auto',
+        padding: 6,
+        borderRadius: 28,
+        backgroundColor: theme.translucent,
+    },
+    themeIcon: {
+        fontSize: 20,
+    },
     detailCard: {
         backgroundColor: theme.background || '#fff',
         borderRadius: 28,
@@ -504,9 +579,3 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: 16,
     },
 });
-
-// Add the handler for delete account
-const handleDeleteAccount = async () => {
-    // TODO: Implement account deletion logic (Firebase Auth + Firestore cleanup)
-    alert('Account deletion is not yet implemented.');
-};

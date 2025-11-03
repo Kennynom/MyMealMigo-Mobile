@@ -25,9 +25,8 @@ import {
 } from "react-native";
 
 export default function ViewMealLogScreen() {
-  const {theme } =
+  const { theme } =
     useContext(ThemeContext);
-  const { user } = useContext(AuthContext);
   const styles = createStyles(theme);
 
   const { tab: initialTabParam } = useLocalSearchParams();
@@ -104,7 +103,6 @@ export default function ViewMealLogScreen() {
       return 0;
     });
   }, [entries]);
-
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -237,6 +235,10 @@ export default function ViewMealLogScreen() {
               ? "View Meal Log"
               : "Your Reflections"}
           </Text>
+
+          <TouchableOpacity style={styles.profileButton}>
+            <Text style={styles.profileIcon}>👤</Text>
+          </TouchableOpacity>
         </View>
 
         {/* TAB SWITCH */}

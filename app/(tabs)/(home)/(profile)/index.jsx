@@ -3,13 +3,14 @@ import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
+import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
-    const { theme } = useContext(ThemeContext);
+    const { theme, colorScheme, toggleTheme } = useContext(ThemeContext);
     const styles = createStyles(theme);
     const { user, userRole, loading: authLoading, logout } = useAuth();
     const [userDoc, setUserDoc] = useState(null);
@@ -25,6 +26,55 @@ export default function ProfileScreen() {
         } catch (e) {
             // Optionally show error
         }
+    };
+
+    // Handler for delete account
+    const handleDeleteAccount = async () => {
+        if (!user) return;
+        
+        Alert.alert(
+            'Delete Account',
+            'Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Delete Firestore data first
+                            // Delete private health profile
+                            const healthProfileRef = doc(db, 'users', user.uid, 'private', 'health_profile');
+                            await deleteDoc(healthProfileRef);
+                            
+                            // Delete main user document
+                            const userRef = doc(db, 'users', user.uid);
+                            await deleteDoc(userRef);
+                            
+                            // Delete Firebase Auth user
+                            await deleteUser(user);
+                            
+                            // Navigate to login
+                            Alert.alert('Success', 'Your account has been deleted.');
+                            router.replace('/(auth)/login');
+                        } catch (error) {
+                            console.error('Error deleting account:', error);
+                            if (error.code === 'auth/requires-recent-login') {
+                                Alert.alert(
+                                    'Re-authentication Required',
+                                    'For security reasons, please log out and log back in before deleting your account.'
+                                );
+                            } else {
+                                Alert.alert('Error', 'Failed to delete account. Please try again.');
+                            }
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     useEffect(() => {
@@ -95,7 +145,9 @@ export default function ProfileScreen() {
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitleBig}>My Profile</Text>
-                    <Ionicons name="notifications-outline" size={24} color={theme.text} style={{marginLeft: 'auto'}} />
+                    <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
+                        <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.profileImageWrapper}>
                     <Image source={{ uri: profileImageUrl }} style={styles.profileImageBig} />
@@ -212,7 +264,7 @@ const createStyles = (theme) => StyleSheet.create({
         paddingHorizontal: 18,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
-        backgroundColor: '#fff',
+        backgroundColor: theme.background,
         borderRadius: 28,
         marginBottom: 8,
     },
@@ -229,6 +281,15 @@ const createStyles = (theme) => StyleSheet.create({
         padding: 6,
         borderRadius: 28,
         backgroundColor: theme.translucent,
+    },
+    themeButton: {
+        marginLeft: 'auto',
+        padding: 6,
+        borderRadius: 28,
+        backgroundColor: theme.translucent,
+    },
+    themeIcon: {
+        fontSize: 20,
     },
     detailCard: {
         backgroundColor: theme.cardBackground || '#fff',
@@ -297,9 +358,3 @@ const createStyles = (theme) => StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-
-// Add the handler for delete account
-const handleDeleteAccount = async () => {
-    // TODO: Implement account deletion logic (Firebase Auth + Firestore cleanup)
-    alert('Account deletion is not yet implemented.');
-};
