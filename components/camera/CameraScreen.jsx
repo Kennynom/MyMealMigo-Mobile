@@ -7,18 +7,18 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import FoodRecognitionResults from './FoodRecognitionResults';
 
 const { width, height } = Dimensions.get('window');
 
-export default function CameraScreen() {
+export default function CameraScreen({ editMode = false, mealId = null, existingMealData = null }) {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
   const [facing, setFacing] = useState('back');
@@ -196,6 +196,9 @@ export default function CameraScreen() {
         confidence={recognitionResults.confidence}
         onRetakePhoto={handleRetakePhoto}
         onAddMeal={handleMealAdded}
+        editMode={editMode}
+        mealId={mealId}
+        existingMealData={existingMealData}
       />
     );
   }

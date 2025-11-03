@@ -1,16 +1,21 @@
 // app/(tabs)/(logs)/view-log.jsx
 import ReflectionRow from "@/components/ReflectionRow";
 import SummaryModal from "@/components/SummaryModal";
+import { AuthContext } from "@/context/AuthContext";
 import { useJournal } from "@/context/JournalContext";
 import { ThemeContext } from "@/context/ThemeContext";
-import { router, useLocalSearchParams } from "expo-router";
+import { deleteMealAndCalories, getUserMeals } from "@/utils/mealService";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import {
+  Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,13 +27,67 @@ import {
 export default function ViewMealLogScreen() {
   const { colorScheme, setColorScheme, theme } =
     useContext(ThemeContext);
+  const { user } = useContext(AuthContext);
   const styles = createStyles(theme, colorScheme);
 
   const { tab: initialTabParam } = useLocalSearchParams();
   const [tab, setTab] = useState("Meal log"); // "Meal log" | "Reflection"
   const [showSummary, setShowSummary] = useState(false);
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Modal states for editing meals
+  const [showMealListModal, setShowMealListModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showEditMethodModal, setShowEditMethodModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
 
   const { entries, deleteEntry } = useJournal();
+
+  // Fetch meals when component mounts or user changes
+  useEffect(() => {
+    if (user?.uid && tab === "Meal log") {
+      fetchMeals();
+    }
+  }, [user, tab]);
+
+  // Refetch meals when screen comes into focus (e.g., after editing a meal)
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.uid && tab === "Meal log") {
+        fetchMeals();
+      }
+    }, [user, tab])
+  );
+
+  const fetchMeals = async () => {
+    if (!user?.uid) return;
+    
+    setLoading(true);
+    try {
+      const userMeals = await getUserMeals(user.uid);
+      setMeals(userMeals);
+    } catch (error) {
+      console.error('Error fetching meals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Group meals by category for today's date
+  const mealsByCategory = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayMeals = meals.filter(meal => {
+      const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
+      return mealDate === today;
+    });
+
+    return {
+      breakfast: todayMeals.filter(m => m.mealCategory === 'breakfast'),
+      lunch: todayMeals.filter(m => m.mealCategory === 'lunch'),
+      dinner: todayMeals.filter(m => m.mealCategory === 'dinner'),
+    };
+  }, [meals]);
 
   // open Reflection tab automatically if navigated with ?tab=reflections
   useEffect(() => {
@@ -70,6 +129,95 @@ export default function ViewMealLogScreen() {
 
   function handleDeleteReflection(id) {
     deleteEntry(id);
+  }
+
+  // Handler for clicking the pencil icon on a meal category
+  function handleEditMealCategory(mealCategory) {
+    setSelectedCategory(mealCategory);
+    setShowMealListModal(true);
+  }
+
+  // Handler for clicking Edit on a specific meal
+  function handleEditMeal(meal) {
+    setSelectedMeal(meal);
+    setShowMealListModal(false);
+    setShowEditMethodModal(true);
+  }
+
+  // Handler for selecting an edit method (photo, barcode, manual)
+  function handleSelectEditMethod(method) {
+    setShowEditMethodModal(false);
+
+    if (!selectedMeal) return;
+
+    // Navigate to the appropriate screen with edit mode enabled
+    const editParams = {
+      editMode: 'true',
+      mealId: selectedMeal.id,
+      mealData: JSON.stringify({
+        foodName: selectedMeal.foodName,
+        calories: selectedMeal.calories,
+        protein: selectedMeal.protein,
+        carbs: selectedMeal.carbs,
+        fat: selectedMeal.fat,
+        sodium: selectedMeal.sodium,
+        sugar: selectedMeal.sugar,
+        servingSize: selectedMeal.servingSize,
+        servingUnit: selectedMeal.servingUnit,
+        mealCategory: selectedMeal.mealCategory,
+        mealType: selectedMeal.mealType,
+        timestamp: selectedMeal.timestamp?.toISOString?.() || new Date(selectedMeal.timestamp).toISOString(),
+      })
+    };
+
+    switch (method) {
+      case 'photo':
+        router.push({
+          pathname: '/(tabs)/(add)/photo-capture',
+          params: editParams
+        });
+        break;
+      case 'barcode':
+        router.push({
+          pathname: '/(tabs)/(add)/scan-barcode',
+          params: editParams
+        });
+        break;
+      case 'manual':
+        router.push({
+          pathname: '/(tabs)/(add)/manual-entry',
+          params: editParams
+        });
+        break;
+    }
+  }
+
+  // Handler for deleting a meal
+  async function handleDeleteMeal(meal) {
+    Alert.alert(
+      'Delete Meal',
+      `Are you sure you want to delete "${meal.foodName}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMealAndCalories(user.uid, meal.id, meal);
+              Alert.alert('Success', 'Meal deleted successfully');
+              fetchMeals(); // Refresh the meal list
+            } catch (error) {
+              console.error('Error deleting meal:', error);
+              Alert.alert('Error', 'Failed to delete meal. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   }
 
   const isMealTab = tab === "Meal log";
@@ -166,37 +314,74 @@ export default function ViewMealLogScreen() {
         {/* -------- MEAL TAB -------- */}
         {isMealTab && (
           <>
-            {["Breakfast", "Lunch", "Dinner"].map(
-              (meal, idx) => (
-                <View key={idx} style={styles.mealCard}>
-                  <View style={styles.mealHeader}>
-                    <Text style={styles.mealTitle}>
-                      {meal}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                    >
-                      <Text style={styles.editIcon}>✏️</Text>
-                    </TouchableOpacity>
-                  </View>
+            {["breakfast", "lunch", "dinner"].map(
+              (mealCategory, idx) => {
+                const categoryMeals = mealsByCategory[mealCategory] || [];
+                const categoryLabel = mealCategory.charAt(0).toUpperCase() + mealCategory.slice(1);
+                
+                return (
+                  <View key={idx} style={styles.mealCard}>
+                    <View style={styles.mealHeader}>
+                      <Text style={styles.mealTitle}>
+                        {categoryLabel} {mealCategory === 'breakfast' ? '🌅' : mealCategory === 'lunch' ? '🌞' : '🌙'}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEditMealCategory(mealCategory)}
+                      >
+                        <Text style={styles.editIcon}>✏️</Text>
+                      </TouchableOpacity>
+                    </View>
 
-                  <View style={styles.chartPlaceholder}>
-                    <Text style={styles.chartText}>
-                      📊 Nutrition Chart
-                    </Text>
-                    <Text
-                      style={{
-                        color: theme.textSecondary,
-                        fontSize: 12,
-                        marginTop: 4,
-                        textAlign: "center",
-                      }}
-                    >
-                      future: calories & macros
-                    </Text>
+                    {categoryMeals.length === 0 ? (
+                      <View style={styles.chartPlaceholder}>
+                        <Text style={styles.chartText}>
+                        </Text>
+                        <Text
+                          style={{
+                            color: theme.textSecondary,
+                            fontSize: 12,
+                            marginTop: 4,
+                            textAlign: "center",
+                          }}
+                        >
+                          No meals logged yet
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.mealsListContainer}>
+                        {categoryMeals.map((meal, mealIdx) => (
+                          <View key={meal.id || mealIdx} style={styles.mealItemCard}>
+                            <View style={styles.mealItemHeader}>
+                              <Text style={styles.mealItemName}>{meal.foodName}</Text>
+                              <Text style={styles.mealItemType}>
+                                {meal.mealType === 'beverage' ? '🥤' : '🍽️'} {meal.mealType}
+                              </Text>
+                            </View>
+                            <View style={styles.mealItemNutrition}>
+                              <Text style={styles.nutritionText}>
+                                {meal.calories} cal
+                              </Text>
+                              <Text style={styles.nutritionDivider}>•</Text>
+                              <Text style={styles.nutritionText}>
+                                C: {meal.carbs}g
+                              </Text>
+                              <Text style={styles.nutritionDivider}>•</Text>
+                              <Text style={styles.nutritionText}>
+                                P: {meal.protein}g
+                              </Text>
+                              <Text style={styles.nutritionDivider}>•</Text>
+                              <Text style={styles.nutritionText}>
+                                F: {meal.fat}g
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                </View>
-              )
+                );
+              }
             )}
 
             <View style={styles.bottomSpacing} />
@@ -258,7 +443,10 @@ export default function ViewMealLogScreen() {
       {/* ADD BUTTON (bottom CTA) */}
       <View style={styles.addButtonContainer}>
         {isMealTab ? (
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/(add)')}
+          >
             <Text style={styles.addButtonText}>
               Add Meal
             </Text>
@@ -295,6 +483,109 @@ export default function ViewMealLogScreen() {
         visible={showSummary}
         onClose={() => setShowSummary(false)}
       />
+
+      {/* MEAL LIST MODAL - Shows all meals in selected category */}
+      <Modal
+        visible={showMealListModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMealListModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedCategory && `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Meals`}
+              </Text>
+              <TouchableOpacity onPress={() => setShowMealListModal(false)}>
+                <Text style={styles.modalCloseButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              {selectedCategory && mealsByCategory[selectedCategory]?.map((meal, index) => (
+                <View key={meal.id || index} style={styles.mealItemRow}>
+                  <View style={styles.mealItemInfo}>
+                    <Text style={styles.mealItemName}>{meal.foodName}</Text>
+                    <Text style={styles.mealItemDetails}>
+                      {meal.calories} cal • {meal.mealType === 'beverage' ? '🥤' : '🍽️'} {meal.mealType}
+                    </Text>
+                  </View>
+                  <View style={styles.mealItemActions}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.editActionButton]}
+                      onPress={() => handleEditMeal(meal)}
+                    >
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.deleteActionButton]}
+                      onPress={() => handleDeleteMeal(meal)}
+                    >
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              
+              {selectedCategory && mealsByCategory[selectedCategory]?.length === 0 && (
+                <View style={styles.emptyMealList}>
+                  <Text style={styles.emptyMealListText}>No meals logged yet</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* EDIT METHOD MODAL - Shows photo/barcode/manual options */}
+      <Modal
+        visible={showEditMethodModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditMethodModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Edit: {selectedMeal?.foodName}
+              </Text>
+              <TouchableOpacity onPress={() => setShowEditMethodModal(false)}>
+                <Text style={styles.modalCloseButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={styles.editMethodSubtitle}>Choose how to edit this meal:</Text>
+              
+              <TouchableOpacity
+                style={styles.editMethodButton}
+                onPress={() => handleSelectEditMethod('photo')}
+              >
+                <Text style={styles.editMethodIcon}>📸</Text>
+                <Text style={styles.editMethodText}>Take Photo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.editMethodButton}
+                onPress={() => handleSelectEditMethod('barcode')}
+              >
+                <Text style={styles.editMethodIcon}>📱</Text>
+                <Text style={styles.editMethodText}>Scan Barcode</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.editMethodButton}
+                onPress={() => handleSelectEditMethod('manual')}
+              >
+                <Text style={styles.editMethodIcon}>✏️</Text>
+                <Text style={styles.editMethodText}>Manual Entry</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -528,5 +819,162 @@ const createStyles = (theme, colorScheme) =>
       color: "#fff",
       fontWeight: "700",
       fontSize: 14,
+    },
+    
+    // Meal item styles
+    mealsListContainer: {
+      gap: 10,
+    },
+    mealItemCard: {
+      backgroundColor: theme.background,
+      borderRadius: 8,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    mealItemHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    mealItemName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+      flex: 1,
+    },
+    mealItemType: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      fontWeight: '500',
+      textTransform: 'capitalize',
+    },
+    mealItemNutrition: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    nutritionText: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    nutritionDivider: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContainer: {
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      maxHeight: '80%',
+      paddingBottom: 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    modalCloseButton: {
+      fontSize: 24,
+      color: theme.textSecondary,
+      fontWeight: '300',
+    },
+    modalContent: {
+      padding: 20,
+    },
+
+    // Meal item row in modal
+    mealItemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    mealItemInfo: {
+      flex: 1,
+      marginRight: 12,
+    },
+    mealItemDetails: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      marginTop: 4,
+    },
+    mealItemActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    actionButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      minWidth: 70,
+      alignItems: 'center',
+    },
+    editActionButton: {
+      backgroundColor: theme.primary,
+    },
+    deleteActionButton: {
+      backgroundColor: '#ff4444',
+    },
+    actionButtonText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    emptyMealList: {
+      padding: 40,
+      alignItems: 'center',
+    },
+    emptyMealListText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+
+    // Edit method modal styles
+    editMethodSubtitle: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      marginBottom: 20,
+    },
+    editMethodButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    editMethodIcon: {
+      fontSize: 24,
+      marginRight: 16,
+    },
+    editMethodText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
     },
   });

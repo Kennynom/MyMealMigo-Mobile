@@ -1,7 +1,7 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useContext } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
+import { useContext } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AddMealMainScreen() {
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
@@ -30,7 +30,10 @@ export default function AddMealMainScreen() {
         
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/photo-capture')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/photo-capture',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>📷</Text>
@@ -44,7 +47,10 @@ export default function AddMealMainScreen() {
 
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/scan-barcode')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/scan-barcode',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>📱</Text>
@@ -63,7 +69,10 @@ export default function AddMealMainScreen() {
         
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/search-food')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/search-food',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>🔍</Text>
@@ -77,7 +86,10 @@ export default function AddMealMainScreen() {
 
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/manual-entry')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/manual-entry',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>✏️</Text>

@@ -1,12 +1,12 @@
 import { db } from '@/config/firebase';
 import {
-  arrayUnion,
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-  Timestamp,
-  updateDoc
+    arrayUnion,
+    deleteDoc,
+    doc,
+    getDoc,
+    setDoc,
+    Timestamp,
+    updateDoc
 } from 'firebase/firestore';
 
 // Collection paths for nested structure
@@ -397,18 +397,257 @@ export const updateCalorieTracking = async (userId, mealData) => {
  */
 export const getUserCalorieGoal = async (userId) => {
   try {
-    // Path: users/{userId}/private/health_profile
+    // First priority: Check existing daily logs for caloriesSet
+    const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
+    const logsSnap = await getDoc(calorieLogsRef);
+    
+    if (logsSnap.exists()) {
+      const logsData = logsSnap.data();
+      // Get caloriesSet from the most recent daily log
+      if (logsData.dailyLogs && logsData.dailyLogs.length > 0) {
+        const latestLog = logsData.dailyLogs[logsData.dailyLogs.length - 1];
+        if (latestLog.caloriesSet) {
+          return latestLog.caloriesSet;
+        }
+      }
+    }
+    
+    // Second priority: Fall back to health profile's dailyCalorieGoal
     const healthProfileRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC);
     const docSnap = await getDoc(healthProfileRef);
     
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return data.dailyCalorieGoal || 2000; // Default to 2000 if not set
+      if (data.dailyCalorieGoal) {
+        return data.dailyCalorieGoal;
+      }
     }
     
-    return 2000; // Default calorie goal
+    // No calorie goal set
+    return null;
   } catch (error) {
     console.error('Error getting user calorie goal:', error);
-    return 2000; // Default on error
+    return null;
   }
 };
+
+/**
+ * Update an existing meal and adjust calorie tracking accordingly
+ * @param {string} userId - The user's ID
+ * @param {string} mealId - The ID of the meal to update
+ * @param {Object} oldMealData - The original meal data (for calorie adjustment)
+ * @param {Object} newMealData - The updated meal data
+ * @returns {Promise<void>}
+ */
+export const updateMealAndCalories = async (userId, mealId, oldMealData, newMealData) => {
+  try {
+    console.log('=== Updating Meal and Calories ===');
+    console.log('User ID:', userId);
+    console.log('Meal ID:', mealId);
+    console.log('Old meal data:', oldMealData);
+    console.log('New meal data:', newMealData);
+
+    if (!userId || !mealId) {
+      throw new Error('User ID and Meal ID are required');
+    }
+
+    // Path: users/{userId}/private/health_profile/meal_logs/main
+    const userMealLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, MEAL_LOGS_COLLECTION, MAIN_DOC);
+    
+    // Get the meal logs document
+    const docSnap = await getDoc(userMealLogsRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error('Meal logs not found');
+    }
+
+    const data = docSnap.data();
+    let dailyLogs = data.dailyLogs || [];
+
+    // Find the meal to update
+    const mealIndex = dailyLogs.findIndex(meal => meal.id === mealId);
+    
+    if (mealIndex === -1) {
+      throw new Error('Meal not found');
+    }
+
+    // Update the meal with new data
+    dailyLogs[mealIndex] = {
+      ...dailyLogs[mealIndex],
+      ...newMealData,
+      id: mealId, // Preserve the ID
+      timestamp: Timestamp.fromDate(newMealData.timestamp || new Date()),
+      updatedAt: Timestamp.now(),
+    };
+
+    // Update the meal logs document
+    await updateDoc(userMealLogsRef, {
+      dailyLogs: dailyLogs,
+      updatedAt: Timestamp.now()
+    });
+
+    console.log('✅ Meal updated successfully');
+
+    // Now adjust calorie tracking
+    // Calculate old meal calories
+    const oldCalories = (oldMealData.calories || 0) * (oldMealData.servingSize || 1);
+    const oldProtein = (oldMealData.protein || 0) * (oldMealData.servingSize || 1);
+    const oldCarbs = (oldMealData.carbs || 0) * (oldMealData.servingSize || 1);
+    const oldFats = (oldMealData.fat || 0) * (oldMealData.servingSize || 1);
+    const oldSodium = (oldMealData.sodium || 0) * (oldMealData.servingSize || 1);
+    const oldSugar = (oldMealData.sugar || 0) * (oldMealData.servingSize || 1);
+
+    // Calculate new meal calories
+    const newCalories = (newMealData.calories || 0) * (newMealData.servingSize || 1);
+    const newProtein = (newMealData.protein || 0) * (newMealData.servingSize || 1);
+    const newCarbs = (newMealData.carbs || 0) * (newMealData.servingSize || 1);
+    const newFats = (newMealData.fat || 0) * (newMealData.servingSize || 1);
+    const newSodium = (newMealData.sodium || 0) * (newMealData.servingSize || 1);
+    const newSugar = (newMealData.sugar || 0) * (newMealData.servingSize || 1);
+
+    // Get the date of the meal
+    const mealDate = new Date(oldMealData.timestamp);
+    const dateString = mealDate.toISOString().split('T')[0];
+
+    // Path: users/{userId}/private/health_profile/calorie_logs/main
+    const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
+    const calorieSnap = await getDoc(calorieLogsRef);
+
+    if (calorieSnap.exists()) {
+      const calorieData = calorieSnap.data();
+      let dailyCalorieLogs = calorieData.dailyLogs || [];
+
+      // Find the daily log for this meal's date
+      const logIndex = dailyCalorieLogs.findIndex(log => log.dateStart === dateString && log.dateEnd === dateString);
+
+      if (logIndex !== -1) {
+        // Update the daily log: subtract old values, add new values
+        dailyCalorieLogs[logIndex].caloriesConsumed = (dailyCalorieLogs[logIndex].caloriesConsumed || 0) - oldCalories + newCalories;
+        dailyCalorieLogs[logIndex].protein = (dailyCalorieLogs[logIndex].protein || 0) - oldProtein + newProtein;
+        dailyCalorieLogs[logIndex].carbs = (dailyCalorieLogs[logIndex].carbs || 0) - oldCarbs + newCarbs;
+        dailyCalorieLogs[logIndex].fats = (dailyCalorieLogs[logIndex].fats || 0) - oldFats + newFats;
+        dailyCalorieLogs[logIndex].sodium = (dailyCalorieLogs[logIndex].sodium || 0) - oldSodium + newSodium;
+        dailyCalorieLogs[logIndex].sugar = (dailyCalorieLogs[logIndex].sugar || 0) - oldSugar + newSugar;
+
+        // Recalculate calories remaining
+        dailyCalorieLogs[logIndex].caloriesRemaining = Math.max(0, (dailyCalorieLogs[logIndex].caloriesSet || 0) - dailyCalorieLogs[logIndex].caloriesConsumed);
+
+        // Update the calorie logs document
+        await updateDoc(calorieLogsRef, {
+          dailyLogs: dailyCalorieLogs,
+          updatedAt: Timestamp.now()
+        });
+
+        console.log('✅ Calorie tracking updated successfully');
+      }
+    }
+
+    console.log('Meal and calories updated successfully');
+  } catch (error) {
+    console.error('Error updating meal and calories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a meal and adjust calorie tracking accordingly
+ * @param {string} userId - The user's ID
+ * @param {string} mealId - The ID of the meal to delete
+ * @param {Object} mealData - The meal data (for calorie adjustment)
+ * @returns {Promise<void>}
+ */
+export const deleteMealAndCalories = async (userId, mealId, mealData) => {
+  try {
+    console.log('=== Deleting Meal and Calories ===');
+    console.log('User ID:', userId);
+    console.log('Meal ID:', mealId);
+    console.log('Meal data:', mealData);
+
+    if (!userId || !mealId) {
+      throw new Error('User ID and Meal ID are required');
+    }
+
+    // Path: users/{userId}/private/health_profile/meal_logs/main
+    const userMealLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, MEAL_LOGS_COLLECTION, MAIN_DOC);
+    
+    // Get the meal logs document
+    const docSnap = await getDoc(userMealLogsRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error('Meal logs not found');
+    }
+
+    const data = docSnap.data();
+    let dailyLogs = data.dailyLogs || [];
+
+    // Find and remove the meal
+    const mealIndex = dailyLogs.findIndex(meal => meal.id === mealId);
+    
+    if (mealIndex === -1) {
+      throw new Error('Meal not found');
+    }
+
+    // Remove the meal from the array
+    dailyLogs.splice(mealIndex, 1);
+
+    // Update the meal logs document
+    await updateDoc(userMealLogsRef, {
+      dailyLogs: dailyLogs,
+      updatedAt: Timestamp.now()
+    });
+
+    console.log('✅ Meal deleted successfully');
+
+    // Now adjust calorie tracking
+    // Calculate meal calories to subtract
+    const mealCalories = (mealData.calories || 0) * (mealData.servingSize || 1);
+    const mealProtein = (mealData.protein || 0) * (mealData.servingSize || 1);
+    const mealCarbs = (mealData.carbs || 0) * (mealData.servingSize || 1);
+    const mealFats = (mealData.fat || 0) * (mealData.servingSize || 1);
+    const mealSodium = (mealData.sodium || 0) * (mealData.servingSize || 1);
+    const mealSugar = (mealData.sugar || 0) * (mealData.servingSize || 1);
+
+    // Get the date of the meal
+    const mealDate = new Date(mealData.timestamp);
+    const dateString = mealDate.toISOString().split('T')[0];
+
+    // Path: users/{userId}/private/health_profile/calorie_logs/main
+    const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
+    const calorieSnap = await getDoc(calorieLogsRef);
+
+    if (calorieSnap.exists()) {
+      const calorieData = calorieSnap.data();
+      let dailyCalorieLogs = calorieData.dailyLogs || [];
+
+      // Find the daily log for this meal's date
+      const logIndex = dailyCalorieLogs.findIndex(log => log.dateStart === dateString && log.dateEnd === dateString);
+
+      if (logIndex !== -1) {
+        // Subtract the deleted meal's values
+        dailyCalorieLogs[logIndex].caloriesConsumed = Math.max(0, (dailyCalorieLogs[logIndex].caloriesConsumed || 0) - mealCalories);
+        dailyCalorieLogs[logIndex].protein = Math.max(0, (dailyCalorieLogs[logIndex].protein || 0) - mealProtein);
+        dailyCalorieLogs[logIndex].carbs = Math.max(0, (dailyCalorieLogs[logIndex].carbs || 0) - mealCarbs);
+        dailyCalorieLogs[logIndex].fats = Math.max(0, (dailyCalorieLogs[logIndex].fats || 0) - mealFats);
+        dailyCalorieLogs[logIndex].sodium = Math.max(0, (dailyCalorieLogs[logIndex].sodium || 0) - mealSodium);
+        dailyCalorieLogs[logIndex].sugar = Math.max(0, (dailyCalorieLogs[logIndex].sugar || 0) - mealSugar);
+
+        // Recalculate calories remaining
+        dailyCalorieLogs[logIndex].caloriesRemaining = Math.max(0, (dailyCalorieLogs[logIndex].caloriesSet || 0) - dailyCalorieLogs[logIndex].caloriesConsumed);
+
+        // Update the calorie logs document
+        await updateDoc(calorieLogsRef, {
+          dailyLogs: dailyCalorieLogs,
+          updatedAt: Timestamp.now()
+        });
+
+        console.log('✅ Calorie tracking updated successfully');
+      }
+    }
+
+    console.log('Meal and calories deleted successfully');
+  } catch (error) {
+    console.error('Error deleting meal and calories:', error);
+    throw error;
+  }
+};
+
