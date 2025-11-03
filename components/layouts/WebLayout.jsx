@@ -10,7 +10,7 @@ export default function WebLayout({ children }) {
   // Only render on web
   if (Platform.OS !== 'web') return children;
 
-  const { theme, colorScheme, toggleTheme } = useContext(ThemeContext);
+  const { theme, colorScheme } = useContext(ThemeContext);
   const { user, canAccessWeb, logout } = useAuth();
   const pathname = usePathname();
   const [showLoginModal, setShowLoginModal] = useState(false);
