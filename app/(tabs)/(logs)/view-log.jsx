@@ -25,10 +25,10 @@ import {
 } from "react-native";
 
 export default function ViewMealLogScreen() {
-  const { colorScheme, setColorScheme, theme } =
+  const {theme } =
     useContext(ThemeContext);
   const { user } = useContext(AuthContext);
-  const styles = createStyles(theme, colorScheme);
+  const styles = createStyles(theme);
 
   const { tab: initialTabParam } = useLocalSearchParams();
   const [tab, setTab] = useState("Meal log"); // "Meal log" | "Reflection"
@@ -105,9 +105,6 @@ export default function ViewMealLogScreen() {
     });
   }, [entries]);
 
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === "dark" ? "light" : "dark");
-  };
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -240,21 +237,6 @@ export default function ViewMealLogScreen() {
               ? "View Meal Log"
               : "Your Reflections"}
           </Text>
-
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={styles.themeButton}
-              onPress={toggleTheme}
-            >
-              <Text style={styles.themeIcon}>
-                {colorScheme === "dark" ? "☀️" : "🌙"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.profileButton}>
-              <Text style={styles.profileIcon}>👤</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* TAB SWITCH */}
@@ -590,7 +572,7 @@ export default function ViewMealLogScreen() {
   );
 }
 
-const createStyles = (theme, colorScheme) =>
+const createStyles = (theme) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -623,21 +605,6 @@ const createStyles = (theme, colorScheme) =>
       flex: 1,
       textAlign: "center",
       marginHorizontal: 20,
-    },
-    headerButtons: {
-      flexDirection: "row",
-      gap: 8,
-    },
-    themeButton: {
-      width: 32,
-      height: 32,
-      backgroundColor: theme.inactive,
-      borderRadius: 16,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    themeIcon: {
-      fontSize: 16,
     },
     profileButton: {
       width: 32,
