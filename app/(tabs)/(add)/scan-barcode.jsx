@@ -5,17 +5,19 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 const { width, height } = Dimensions.get('window');
+
+const ML_SERVER_URL = process.env.EXPO_PUBLIC_ML_SERVER_URL;
 
 export default function ScanBarcodeScreen() {
   const { theme } = useContext(ThemeContext);
@@ -74,7 +76,7 @@ export default function ScanBarcodeScreen() {
 
     try {
       // Lookup product in barcodes.json via the ML server API
-      const response = await fetch(`http://192.168.18.81:5174/api/barcodes/${barcode}`);
+      const response = await fetch(`${ML_SERVER_URL}/api/barcodes/${barcode}`);
       
       if (!response.ok) {
         throw new Error('Product not found');
@@ -209,7 +211,7 @@ export default function ScanBarcodeScreen() {
         <View style={styles.resultsCard}>
           {scannedProduct.localImage && (
             <Image 
-              source={{ uri: `http://192.168.18.81:5174/images/${scannedProduct.localImage}` }}
+              source={{ uri: `${ML_SERVER_URL}/images/${scannedProduct.localImage}` }}
               style={styles.photoImg}
               resizeMode="contain"
             />

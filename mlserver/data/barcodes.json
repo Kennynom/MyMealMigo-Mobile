@@ -19,6 +19,50 @@
    "sugar": 0,
    "sodium": 185,
    "localImage": "Monster0PeachyKeen.jpg"
+  },
+
+  {"code": "5000159461122", 
+   "name": "Snickers",             
+   "calories": 250, 
+   "protein": 4.4, 
+   "carbs": 29.5, 
+   "fat": 12.2,
+   "sugar": 26,
+   "sodium": 117,
+   "localImage": "Snickers.jpg"
+  },
+
+  {"code": "8886467100093", 
+   "name": "Pringles Cheesy Cheese",             
+   "calories": 156, 
+   "protein": 2, 
+   "carbs": 16, 
+   "fat": 9,
+   "sugar": 0.4,
+   "sodium": 168,
+   "localImage": "PringlesCheese.jpg"
+  },
+
+  {"code": "9556439887510", 
+   "name": "Munchy's Oat Krunch Crackers Chunky Hazelnut",             
+   "calories": 125, 
+   "protein": 2.3, 
+   "carbs": 16.5, 
+   "fat": 5.6,
+   "sugar": 4.6,
+   "sodium": 63,
+   "localImage": "Munchy'sOatKrunchCrackersChunkyHazelnut.jpg"
+  },
+
+  {"code": "4806531960013", 
+   "name": "Oh So Healthy! Fruit Crisps - Guava- Purple Yam- Banana",             
+   "calories": 80, 
+   "protein": 1, 
+   "carbs": 19, 
+   "fat": 0,
+   "sugar": 7,
+   "sodium": 8,
+   "localImage": "OSH!FruitCrispsGuavaPurpleYamBanana.jpg"
   }
 
 ]

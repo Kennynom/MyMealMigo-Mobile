@@ -25,9 +25,9 @@ import {
 } from "react-native";
 
 export default function ViewMealLogScreen() {
-  const { theme } = useContext(ThemeContext);
+  const { theme, colorScheme, setColorScheme } = useContext(ThemeContext);
   const { user } = useAuth();
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, colorScheme);
 
   const { tab: initialTabParam } = useLocalSearchParams();
   const [tab, setTab] = useState("Meal log"); // "Meal log" | "Reflection"
@@ -442,7 +442,10 @@ export default function ViewMealLogScreen() {
       {/* ADD BUTTON (bottom CTA) */}
       <View style={styles.addButtonContainer}>
         {isMealTab ? (
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/(add)')}
+          >
             <Text style={styles.addButtonText}>
               Add Meal
             </Text>
