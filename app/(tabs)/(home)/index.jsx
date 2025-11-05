@@ -30,15 +30,14 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
   const { user } = useAuth();
   const [userWeight, setUserWeight] = useState(null);
-
-  // for predictive graph
-  // Hardcoded weight data for chart-kit
-  const chartData = {
-    labels: ["1", "2", "3", "4", "5", "6", "7"],
+  const [userHeight, setUserHeight] = useState(null);
+  const [userBMI, setUserBMI] = useState(null);
+  const [calorieChartData, setCalorieChartData] = useState({
+    labels: ["7", "6", "5", "4", "3", "2", "1"],
     datasets: [
-      { data: [62, 66, 71, 67, 65, 61, 55] }
+      { data: [0, 0, 0, 0, 0, 0, 0] }
     ]
-  };
+  });
 
   // simple profile image URL (falls back to a generic avatar)
   const profileImageUrl =
@@ -54,44 +53,101 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // Fetch user's latest weight for display on mobile dashboard
+  // Fetch user's weight and BMI for display on mobile dashboard
   useEffect(() => {
     let cancelled = false;
-    const fetchWeight = async () => {
+    const fetchUserHealthData = async () => {
       if (!user) return;
       try {
-        // Try weight_log/main first (array of entries)
-        const weightLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'weight_log', 'main');
-        const weightLogSnap = await getDoc(weightLogRef);
+        // Fetch from users/{uid} document - profile object contains weightKg and currentBMI
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
         if (cancelled) return;
-
-        if (weightLogSnap.exists()) {
-          const data = weightLogSnap.data() || {};
-          const logs = Array.isArray(data.logs) ? data.logs : [];
-          if (logs.length > 0) {
-            const last = logs[logs.length - 1];
-            if (last && typeof last.weightKg === 'number') {
-              setUserWeight(last.weightKg);
-              return;
-            }
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data() || {};
+          const profile = userData.profile || {};
+          
+          // Get weight and BMI directly from profile
+          const weight = profile.weightKg;
+          const bmi = profile.currentBMI;
+          
+          if (typeof weight === 'number') {
+            setUserWeight(weight);
+          }
+          
+          if (typeof bmi === 'number') {
+            setUserBMI(bmi.toFixed(1));
           }
         }
-
-        // Fallback: check demographics.weightKg on health_profile
-        const hpRef = doc(db, 'users', user.uid, 'private', 'health_profile');
-        const hpSnap = await getDoc(hpRef);
-        if (cancelled) return;
-        if (hpSnap.exists()) {
-          const hp = hpSnap.data() || {};
-          const fallback = hp?.demographics?.weightKg;
-          if (typeof fallback === 'number') setUserWeight(fallback);
-        }
       } catch (err) {
-        console.error('Failed to fetch user weight:', err);
+        console.error('Failed to fetch user health data:', err);
       }
     };
 
-    fetchWeight();
+    fetchUserHealthData();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  // Fetch calorie logs for the chart (last 7 days)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCalorieLogs = async () => {
+      if (!user) return;
+      try {
+        const calorieLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'calorie_logs', 'main');
+        const calorieLogSnap = await getDoc(calorieLogRef);
+        if (cancelled) return;
+
+        if (calorieLogSnap.exists()) {
+          const data = calorieLogSnap.data() || {};
+          const dailyLogs = Array.isArray(data.dailyLogs) ? data.dailyLogs : [];
+          
+          // Get the last 7 days (today = day 1, yesterday = day 2, etc.)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const last7Days = [];
+          const dateLabels = [];
+          
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            
+            // Format date as MM/DD for display
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            dateLabels.push(`${month}/${day}`);
+            
+            // Find the log entry for this date
+            const logEntry = dailyLogs.find(log => {
+              if (log.dateStart) {
+                const logDate = log.dateStart.split('T')[0];
+                return logDate === dateStr;
+              }
+              return false;
+            });
+            
+            // Get calories consumed or default to 0
+            const caloriesConsumed = logEntry?.caloriesConsumed || 0;
+            last7Days.push(caloriesConsumed);
+          }
+          
+          // Update chart data with date labels
+          setCalorieChartData({
+            labels: dateLabels,
+            datasets: [
+              { data: last7Days }
+            ]
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch calorie logs:', err);
+      }
+    };
+
+    fetchCalorieLogs();
     return () => { cancelled = true; };
   }, [user]);
 
@@ -296,30 +352,32 @@ export default function HomeScreen() {
           </View>
           <View style={styles.indIsland}>
             <Text style={styles.altText1}>BMI:</Text>
-            <Text style={styles.altText2}>22.5</Text>
+            <Text style={styles.altText2}>{userBMI != null ? userBMI : '—'}</Text>
           </View>
         </View>
 
         {/* Predictive graph */}
         <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Calories Consumed (Last 7 Days)</Text>
           <LineChart
-            data={chartData}
-            width={320}
+            data={calorieChartData}
+            width={360}
             height={220}
             chartConfig={{
               backgroundColor: "#fff",
               backgroundGradientFrom: "#fff",
               backgroundGradientTo: "#fff",
-              color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+              color: (opacity = 1) => theme.primaryDark,
               labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
               style: { borderRadius: 18 },
               propsForDots: {
                 r: "4",
                 strokeWidth: "2",
-                stroke: "purple"
+                stroke: theme.primary
               }
             }}
             style={styles.chart}
+            fromZero={true}
           />
         </View>
 
@@ -429,6 +487,13 @@ function createStyle(theme) {
       marginBottom: 40, // Add bottom margin for better spacing
       marginHorizontal: 16,
       paddingHorizontal: 12,
+    },
+    chartTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 12,
+      textAlign: 'center',
     },
     chart: {
       backgroundColor: '#fff',

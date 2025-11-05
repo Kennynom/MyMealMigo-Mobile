@@ -1,4 +1,4 @@
-// app/(tabs)/(tracker)/health-calculator.jsx
+// app/(tabs)/(tracker)/(health-calculator)/index.jsx
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
@@ -20,6 +20,11 @@ export default function HealthCalculatorScreen() {
   const [sex, setSex] = useState('');
   const [bmi, setBMI] = useState(null);
   const [category, setCategory] = useState('');
+  
+  // Track original BMI values
+  const [originalBMIHeight, setOriginalBMIHeight] = useState('');
+  const [originalBMIWeight, setOriginalBMIWeight] = useState('');
+  const [bmiValuesChanged, setBmiValuesChanged] = useState(false);
 
   // BMR State
   const [bmrAge, setBmrAge] = useState('');
@@ -29,10 +34,21 @@ export default function HealthCalculatorScreen() {
   const [bmrActivity, setBmrActivity] = useState('sedentary');
   const [bmr, setBMR] = useState(null);
   const [tdee, setTDEE] = useState(null);
+  
+  // Track original BMR values
+  const [originalBMRAge, setOriginalBMRAge] = useState('');
+  const [originalBMRHeight, setOriginalBMRHeight] = useState('');
+  const [originalBMRWeight, setOriginalBMRWeight] = useState('');
+  const [originalBMRActivity, setOriginalBMRActivity] = useState('sedentary');
+  const [bmrValuesChanged, setBmrValuesChanged] = useState(false);
 
   // Deficit/Surplus State
   const [goalType, setGoalType] = useState('lose_0.5'); // lose_0.5, lose_1, maintain, gain_0.5, gain_1
   const [recommendation, setRecommendation] = useState(null);
+  
+  // Track original Goal values
+  const [originalGoalType, setOriginalGoalType] = useState('lose_0.5');
+  const [goalValuesChanged, setGoalValuesChanged] = useState(false);
 
   const styles = createStyles(theme);
 
@@ -50,13 +66,25 @@ export default function HealthCalculatorScreen() {
           const profile = userData.profile || {};
           
           // Auto-populate height and weight
-          if (profile.heightCm) setHeight(profile.heightCm.toString());
-          if (profile.weightKg) setWeight(profile.weightKg.toString());
+          if (profile.heightCm) {
+            setHeight(profile.heightCm.toString());
+            setOriginalBMIHeight(profile.heightCm.toString());
+          }
+          if (profile.weightKg) {
+            setWeight(profile.weightKg.toString());
+            setOriginalBMIWeight(profile.weightKg.toString());
+          }
           if (profile.sex) setSex(profile.sex);
           
           // For BMR
-          if (profile.heightCm) setBmrHeight(profile.heightCm.toString());
-          if (profile.weightKg) setBmrWeight(profile.weightKg.toString());
+          if (profile.heightCm) {
+            setBmrHeight(profile.heightCm.toString());
+            setOriginalBMRHeight(profile.heightCm.toString());
+          }
+          if (profile.weightKg) {
+            setBmrWeight(profile.weightKg.toString());
+            setOriginalBMRWeight(profile.weightKg.toString());
+          }
           if (profile.sex) setBmrSex(profile.sex === 'female' ? 'female' : 'male');
           
           // Retrieve existing BMI data
@@ -78,6 +106,7 @@ export default function HealthCalculatorScreen() {
           // Get age from profile.age first, fallback to birthday calculation
           if (profile.age) {
             setBmrAge(profile.age.toString());
+            setOriginalBMRAge(profile.age.toString());
           } else if (profile.birthday) {
             // Calculate age from birthday if age field not available
             const birthDate = new Date(profile.birthday);
@@ -89,8 +118,12 @@ export default function HealthCalculatorScreen() {
             }
             if (age > 0) {
               setBmrAge(age.toString());
+              setOriginalBMRAge(age.toString());
             }
           }
+          
+          // Set original BMR activity
+          setOriginalBMRActivity(bmrActivity);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -99,6 +132,28 @@ export default function HealthCalculatorScreen() {
 
     fetchUserData();
   }, [user]);
+
+  // Check if BMI values have changed
+  useEffect(() => {
+    const heightChanged = height !== originalBMIHeight;
+    const weightChanged = weight !== originalBMIWeight;
+    setBmiValuesChanged(heightChanged || weightChanged);
+  }, [height, weight, originalBMIHeight, originalBMIWeight]);
+
+  // Check if BMR values have changed
+  useEffect(() => {
+    const ageChanged = bmrAge !== originalBMRAge;
+    const heightChanged = bmrHeight !== originalBMRHeight;
+    const weightChanged = bmrWeight !== originalBMRWeight;
+    const activityChanged = bmrActivity !== originalBMRActivity;
+    setBmrValuesChanged(ageChanged || heightChanged || weightChanged || activityChanged);
+  }, [bmrAge, bmrHeight, bmrWeight, bmrActivity, originalBMRAge, originalBMRHeight, originalBMRWeight, originalBMRActivity]);
+
+  // Check if Goal values have changed
+  useEffect(() => {
+    const goalChanged = goalType !== originalGoalType;
+    setGoalValuesChanged(goalChanged);
+  }, [goalType, originalGoalType]);
 
   const calculateBMI = () => {
     const heightM = parseFloat(height) / 100; // Convert cm to m
@@ -139,6 +194,9 @@ export default function HealthCalculatorScreen() {
       });
 
       Alert.alert('Success', 'BMI saved to your profile!');
+      setOriginalBMIHeight(height);
+      setOriginalBMIWeight(weight);
+      setBmiValuesChanged(false);
     } catch (error) {
       console.error('Error saving BMI:', error);
       Alert.alert('Error', 'Failed to save BMI. Please try again.');
@@ -200,6 +258,11 @@ export default function HealthCalculatorScreen() {
       });
 
       Alert.alert('Success', 'BMR and TDEE saved to your profile!');
+      setOriginalBMRAge(bmrAge);
+      setOriginalBMRHeight(bmrHeight);
+      setOriginalBMRWeight(bmrWeight);
+      setOriginalBMRActivity(bmrActivity);
+      setBmrValuesChanged(false);
     } catch (error) {
       console.error('Error saving BMR/TDEE:', error);
       Alert.alert('Error', 'Failed to save BMR/TDEE. Please try again.');
@@ -290,12 +353,33 @@ export default function HealthCalculatorScreen() {
       });
 
       Alert.alert('Success', 'Goal saved to your profile!');
+      setOriginalGoalType(recommendation.goalType);
+      setGoalValuesChanged(false);
     } catch (error) {
       console.error('Error saving goal:', error);
       Alert.alert('Error', 'Failed to save goal. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetBMI = () => {
+    setHeight(originalBMIHeight);
+    setWeight(originalBMIWeight);
+    setBmiValuesChanged(false);
+  };
+
+  const resetBMR = () => {
+    setBmrAge(originalBMRAge);
+    setBmrHeight(originalBMRHeight);
+    setBmrWeight(originalBMRWeight);
+    setBmrActivity(originalBMRActivity);
+    setBmrValuesChanged(false);
+  };
+
+  const resetGoal = () => {
+    setGoalType(originalGoalType);
+    setGoalValuesChanged(false);
   };
 
   const resetAll = () => {
@@ -423,13 +507,26 @@ export default function HealthCalculatorScreen() {
             {bmi && (
               <>
                 <TouchableOpacity 
-                  style={[styles.saveBMIButton, loading && styles.disabledButton]} 
+                  style={[styles.saveBMIButton, (loading || bmiValuesChanged) && styles.disabledButton]} 
                   onPress={saveBMIToFirebase}
-                  disabled={loading}
+                  disabled={loading || bmiValuesChanged}
                 >
                   <Text style={styles.saveBMIButtonText}>
                     {loading ? 'Saving...' : 'Set BMI to Profile'}
                   </Text>
+                </TouchableOpacity>
+                
+                {bmiValuesChanged && (
+                  <Text style={styles.warningText}>
+                    ⚠️ You've changed height or weight. Please recalculate BMI before saving to ensure accurate data.
+                  </Text>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.resetSectionButton} 
+                  onPress={resetBMI}
+                >
+                  <Text style={styles.resetSectionButtonText}>Reset BMI Values</Text>
                 </TouchableOpacity>
 
                 <View style={styles.resultContainer}>
@@ -576,13 +673,26 @@ export default function HealthCalculatorScreen() {
             {bmr && (
               <>
                 <TouchableOpacity 
-                  style={[styles.saveBMIButton, loading && styles.disabledButton]} 
+                  style={[styles.saveBMIButton, (loading || bmrValuesChanged) && styles.disabledButton]} 
                   onPress={saveBMRToFirebase}
-                  disabled={loading}
+                  disabled={loading || bmrValuesChanged}
                 >
                   <Text style={styles.saveBMIButtonText}>
                     {loading ? 'Saving...' : 'Set BMR/TDEE to Profile'}
                   </Text>
+                </TouchableOpacity>
+                
+                {bmrValuesChanged && (
+                  <Text style={styles.warningText}>
+                    ⚠️ You've changed age, height, weight, or activity level. Please recalculate BMR before saving to ensure accurate data.
+                  </Text>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.resetSectionButton} 
+                  onPress={resetBMR}
+                >
+                  <Text style={styles.resetSectionButtonText}>Reset BMR Values</Text>
                 </TouchableOpacity>
 
                 <View style={styles.resultContainer}>
@@ -679,13 +789,26 @@ export default function HealthCalculatorScreen() {
             {recommendation && (
               <>
                 <TouchableOpacity 
-                  style={[styles.saveBMIButton, loading && styles.disabledButton]} 
+                  style={[styles.saveBMIButton, (loading || goalValuesChanged) && styles.disabledButton]} 
                   onPress={saveGoalToFirebase}
-                  disabled={loading}
+                  disabled={loading || goalValuesChanged}
                 >
                   <Text style={styles.saveBMIButtonText}>
                     {loading ? 'Saving...' : 'Set Goal to Profile'}
                   </Text>
+                </TouchableOpacity>
+                
+                {goalValuesChanged && (
+                  <Text style={styles.warningText}>
+                    ⚠️ You've changed your goal type. Please recalculate your goal before saving to ensure accurate data.
+                  </Text>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.resetSectionButton} 
+                  onPress={resetGoal}
+                >
+                  <Text style={styles.resetSectionButtonText}>Reset Goal</Text>
                 </TouchableOpacity>
 
                 <View style={styles.resultContainer}>
@@ -986,6 +1109,29 @@ const createStyles = (theme) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  warningText: {
+    fontSize: 12,
+    color: theme.warning || '#FFA726',
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  resetSectionButton: {
+    backgroundColor: theme.surface,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginBottom: 20,
+  },
+  resetSectionButtonText: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '500',
   },
   resetButton: {
     backgroundColor: theme.surface,
