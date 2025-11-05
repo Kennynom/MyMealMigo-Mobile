@@ -34,7 +34,7 @@ export default function TrackerMainScreen() {
 
           <TouchableOpacity 
             style={styles.trackerCard}
-            onPress={() => router.push('/(tabs)/(tracker)/progress-tracker')}
+            onPress={() => router.push('/(tabs)/(tracker)/(progress)')}
           >
             <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
               <MaterialIcons name="align-vertical-bottom" size={24} color={theme.primaryDark} />
