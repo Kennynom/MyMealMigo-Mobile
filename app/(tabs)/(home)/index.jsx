@@ -1,7 +1,7 @@
 // app/(tabs)/(home)/index.jsx - Add Features section
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -19,6 +19,7 @@ import { HowItWorks } from '@/components/how-it-works'; // ← ADD HOW IT WORKS 
 import { Pricing } from '@/components/pricing'; // ← ADD PRICING IMPORT
 import { Testimonials } from '@/components/testimonials'; // ← ADD TESTIMONIALS IMPORT
 
+import NutritionalTipCard from '@/components/dashboard/NutritionalTipCard';
 
 import ChatButton from '@/components/chat-button';
 
@@ -321,6 +322,11 @@ export default function HomeScreen() {
             }}
             style={styles.chart}
           />
+        </View>
+
+        {/* Nutritional Tip Card */}
+        <View style={{ marginTop: 16 }}>
+          <NutritionalTipCard />
         </View>
 
       </ScrollView>

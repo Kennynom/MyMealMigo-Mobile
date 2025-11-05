@@ -25,9 +25,9 @@ import {
 } from "react-native";
 
 export default function ViewMealLogScreen() {
-  const { theme } = useContext(ThemeContext);
+  const { theme, colorScheme, setColorScheme } = useContext(ThemeContext);
   const { user } = useAuth();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme, colorScheme), [theme, colorScheme]);
 
   const { tab: initialTabParam } = useLocalSearchParams();
   const [tab, setTab] = useState("Meal log"); // "Meal log" | "Reflection"
@@ -248,10 +248,6 @@ export default function ViewMealLogScreen() {
               <Text style={styles.themeIcon}>
                 {colorScheme === "dark" ? "☀️" : "🌙"}
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.profileButton}>
-              <Text style={styles.profileIcon}>👤</Text>
             </TouchableOpacity>
           </View>
         </View>
