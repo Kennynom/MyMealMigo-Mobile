@@ -1,12 +1,12 @@
 import { db } from '@/config/firebase';
 import {
-    arrayUnion,
-    deleteDoc,
-    doc,
-    getDoc,
-    setDoc,
-    Timestamp,
-    updateDoc
+  arrayUnion,
+  deleteDoc,
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+  updateDoc
 } from 'firebase/firestore';
 
 // Collection paths for nested structure
@@ -428,6 +428,85 @@ export const getUserCalorieGoal = async (userId) => {
   } catch (error) {
     console.error('Error getting user calorie goal:', error);
     return null;
+  }
+};
+
+/**
+ * Check if adding a meal will exceed the daily calorie goal
+ * @param {string} userId - The user's ID
+ * @param {number} mealCalories - The calories to be added
+ * @returns {Promise<Object>} Object with {willExceed: boolean, exceedBy: number, currentConsumed: number, calorieGoal: number}
+ */
+export const checkCalorieGoalExceedance = async (userId, mealCalories) => {
+  try {
+    console.log('=== Checking Calorie Goal Exceedance ===');
+    
+    // Get user's calorie goal
+    const calorieGoal = await getUserCalorieGoal(userId);
+    
+    if (!calorieGoal) {
+      // No goal set, can't check for exceedance
+      return {
+        willExceed: false,
+        exceedBy: 0,
+        currentConsumed: 0,
+        calorieGoal: null,
+        hasGoal: false
+      };
+    }
+
+    // Get today's date string in local timezone
+    const today = new Date();
+    const dateString = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    ).toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
+
+    // Get current calorie consumption for today
+    const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
+    const docSnap = await getDoc(calorieLogsRef);
+
+    let currentConsumed = 0;
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const dailyLogs = data.dailyLogs || [];
+      
+      // Find today's log
+      const todayLog = dailyLogs.find(log => 
+        log.dateStart && log.dateStart.startsWith(dateString)
+      );
+
+      if (todayLog) {
+        currentConsumed = todayLog.caloriesConsumed || 0;
+      }
+    }
+
+    // Calculate if adding this meal will exceed the goal
+    const totalAfterMeal = currentConsumed + mealCalories;
+    const willExceed = totalAfterMeal > calorieGoal;
+    const exceedBy = willExceed ? totalAfterMeal - calorieGoal : 0;
+
+    console.log(`Current: ${currentConsumed}, Adding: ${mealCalories}, Goal: ${calorieGoal}, Will exceed: ${willExceed}, Exceed by: ${exceedBy}`);
+
+    return {
+      willExceed,
+      exceedBy: Math.round(exceedBy),
+      currentConsumed: Math.round(currentConsumed),
+      calorieGoal,
+      hasGoal: true,
+      totalAfterMeal: Math.round(totalAfterMeal)
+    };
+  } catch (error) {
+    console.error('Error checking calorie goal exceedance:', error);
+    return {
+      willExceed: false,
+      exceedBy: 0,
+      currentConsumed: 0,
+      calorieGoal: null,
+      hasGoal: false
+    };
   }
 };
 
