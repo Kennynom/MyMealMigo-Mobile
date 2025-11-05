@@ -1,7 +1,7 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useContext } from 'react';
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
+import { useContext } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DiscoverMainScreen() {
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
@@ -28,7 +28,7 @@ export default function DiscoverMainScreen() {
       <View style={styles.discoverGrid}>
         <TouchableOpacity 
           style={styles.discoverCard}
-          onPress={() => router.push('/(tabs)/(discover)/food-dictionary')}
+          onPress={() => router.push('/(tabs)/(discover)/(foods)/browse-foods')}
         >
           <View style={styles.cardIcon}>
             <Text style={styles.cardEmoji}>📚</Text>
