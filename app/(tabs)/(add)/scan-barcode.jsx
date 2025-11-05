@@ -1,6 +1,6 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
@@ -17,6 +17,11 @@ import {
 } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
+const ML_SERVER_URL = process.env.EXPO_PUBLIC_ML_SERVER_URL || 'http://192.168.18.81:5174';
+
+// Debug: Log the ML server URL to verify it's loaded
+console.log('ML_SERVER_URL:', ML_SERVER_URL);
+
 export default function ScanBarcodeScreen() {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
@@ -28,6 +33,7 @@ export default function ScanBarcodeScreen() {
   const [isLogging, setIsLogging] = useState(false);
   const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
   const cameraRef = useRef(null);
+  const lastScannedRef = useRef({ barcode: null, timestamp: 0 });
   
   // Check if we're in edit mode
   const editMode = params.editMode === 'true';
@@ -69,12 +75,22 @@ export default function ScanBarcodeScreen() {
   const handleBarcodeScanned = async ({ data: barcode }) => {
     if (!isScanning) return;
     
+    // Debounce: Prevent scanning the same barcode within 2 seconds
+    const now = Date.now();
+    if (lastScannedRef.current.barcode === barcode && 
+        now - lastScannedRef.current.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last scanned barcode and timestamp
+    lastScannedRef.current = { barcode, timestamp: now };
+    
     setIsScanning(false);
     console.log('Barcode scanned:', barcode);
 
     try {
       // Lookup product in barcodes.json via the ML server API
-      const response = await fetch(`http://192.168.18.81:5174/api/barcodes/${barcode}`);
+      const response = await fetch(`${ML_SERVER_URL}/api/barcodes/${barcode}`);
       
       if (!response.ok) {
         throw new Error('Product not found');
@@ -86,13 +102,25 @@ export default function ScanBarcodeScreen() {
       setScannedProduct(product);
       
     } catch (error) {
-      console.error('Barcode lookup error:', error);
+      // Only log to console (not console.error to avoid bottom toast)
+      console.log('Barcode not found:', barcode);
+      
       Alert.alert(
         'Product Not Found',
         `Barcode "${barcode}" is not in our database. Would you like to add it manually?`,
         [
-          { text: 'Scan Again', onPress: () => setIsScanning(true) },
-          { text: 'Manual Entry', onPress: () => router.push('/(tabs)/(add)/manual-entry') }
+          { 
+            text: 'Scan Again', 
+            onPress: () => {
+              lastScannedRef.current = { barcode: null, timestamp: 0 };
+              setIsScanning(true);
+            },
+            style: 'cancel'
+          },
+          { 
+            text: 'Manual Entry', 
+            onPress: () => router.push('/(tabs)/(add)/manual-entry')
+          }
         ]
       );
     }
@@ -141,6 +169,54 @@ export default function ScanBarcodeScreen() {
         mealType: mealType            // Meal/Beverage
       };
 
+      // Check if this meal will exceed calorie goal (only for new meals, not edits)
+      if (!editMode) {
+        const totalCalories = mealEntry.calories * mealEntry.servingSize;
+        const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+        
+        if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+          // Show warning and ask for confirmation
+          setIsLogging(false);
+          Alert.alert(
+            '⚠️ Calorie Goal Warning',
+            `This meal will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+            `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+            `Adding: ${totalCalories} cal\n` +
+            `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+            `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+            `Do you want to continue?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              },
+              {
+                text: 'Log Anyway',
+                style: 'default',
+                onPress: async () => {
+                  setIsLogging(true);
+                  await proceedWithBarcodeLogging(mealEntry, mealCategory);
+                }
+              }
+            ]
+          );
+          return; // Stop here and wait for user decision
+        }
+      }
+
+      // If no warning or user confirmed, proceed with logging
+      await proceedWithBarcodeLogging(mealEntry, mealCategory);
+      
+    } catch (error) {
+      console.error('Error logging meal:', error);
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      setIsLogging(false);
+    }
+  };
+
+  // Separate function to handle the actual logging logic
+  const proceedWithBarcodeLogging = async (mealEntry, mealCategory) => {
+    try {
       if (editMode && mealId && existingMealData) {
         // UPDATE MODE: Update existing meal
         await updateMealAndCalories(user.uid, mealId, existingMealData, mealEntry);
@@ -175,10 +251,9 @@ export default function ScanBarcodeScreen() {
           ]
         );
       }
-      
     } catch (error) {
-      console.error('Error logging meal:', error);
-      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      console.error('Error in proceedWithBarcodeLogging:', error);
+      throw error;
     } finally {
       setIsLogging(false);
     }
@@ -186,6 +261,7 @@ export default function ScanBarcodeScreen() {
 
   const resetScanner = () => {
     setScannedProduct(null);
+    lastScannedRef.current = { barcode: null, timestamp: 0 };
     setIsScanning(true);
   };
 
@@ -209,7 +285,7 @@ export default function ScanBarcodeScreen() {
         <View style={styles.resultsCard}>
           {scannedProduct.localImage && (
             <Image 
-              source={{ uri: `http://192.168.18.81:5174/images/${scannedProduct.localImage}` }}
+              source={{ uri: `${ML_SERVER_URL}/images/${scannedProduct.localImage}` }}
               style={styles.photoImg}
               resizeMode="contain"
             />

@@ -1,6 +1,6 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
@@ -144,6 +144,57 @@ export default function ManualEntryScreen() {
         mealType: mealType            // Meal/Beverage
       };
 
+      // Check if this meal will exceed calorie goal (only for new meals, not edits)
+      if (!editMode) {
+        const totalCalories = mealEntry.calories * mealEntry.servingSize;
+        const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+        
+        if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+          // Show warning and ask for confirmation
+          setLoading(false);
+          Alert.alert(
+            '⚠️ Calorie Goal Warning',
+            `This meal will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+            `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+            `Adding: ${totalCalories} cal\n` +
+            `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+            `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+            `Do you want to continue?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  setLoading(false);
+                }
+              },
+              {
+                text: 'Log Anyway',
+                style: 'default',
+                onPress: async () => {
+                  setLoading(true);
+                  await proceedWithLogging(mealEntry, mealCategory);
+                }
+              }
+            ]
+          );
+          return; // Stop here and wait for user decision
+        }
+      }
+
+      // If no warning or user confirmed, proceed with logging
+      await proceedWithLogging(mealEntry, mealCategory);
+      
+    } catch (error) {
+      console.error('Error logging meal:', error);
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Separate function to handle the actual logging logic
+  const proceedWithLogging = async (mealEntry, mealCategory) => {
+    try {
       if (editMode && mealId && existingMealData) {
         // UPDATE MODE: Update existing meal
         await updateMealAndCalories(user.uid, mealId, existingMealData, mealEntry);
@@ -192,8 +243,8 @@ export default function ManualEntryScreen() {
         );
       }
     } catch (error) {
-      console.error('Error logging meal:', error);
-      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      console.error('Error in proceedWithLogging:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

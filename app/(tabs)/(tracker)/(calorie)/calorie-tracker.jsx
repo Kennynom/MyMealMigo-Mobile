@@ -133,7 +133,13 @@ export default function CalorieTrackerScreen() {
     );
 
     // Find daily log for selected date - ONLY show data for that specific date
-    const selectedDateString = selectedDate.toISOString().split('T')[0];
+    // Use local timezone instead of UTC to avoid timezone issues
+    const selectedDateString = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+    ).toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local timezone
+    
     const logForSelectedDate = allDailyLogs.find(
         log => log.dateStart && log.dateStart.startsWith(selectedDateString)
     );

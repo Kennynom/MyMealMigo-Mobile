@@ -56,7 +56,7 @@ export default function TrackerMainScreen() {
 
           <TouchableOpacity 
             style={styles.trackerCard}
-            onPress={() => router.push('/(tabs)/(tracker)/health-calculator')}
+            onPress={() => router.push('/(tabs)/(tracker)/(health-calculator)')}
           >
             <View style={{ alignItems: 'flex-start', justifyContent: 'space-between', flex: 1 }}>
               <MaterialIcons name="monitor-heart" size={24} color={theme.primaryDark} />

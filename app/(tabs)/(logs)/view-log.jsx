@@ -75,10 +75,21 @@ export default function ViewMealLogScreen() {
 
   // Group meals by category for today's date
   const mealsByCategory = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = today.toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local timezone
+    
     const todayMeals = meals.filter(meal => {
-      const mealDate = new Date(meal.timestamp).toISOString().split('T')[0];
-      return mealDate === today;
+      // Convert meal timestamp to local date string
+      const mealTimestamp = new Date(meal.timestamp);
+      const mealDateStr = new Date(
+        mealTimestamp.getFullYear(),
+        mealTimestamp.getMonth(),
+        mealTimestamp.getDate()
+      ).toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local timezone
+      
+      return mealDateStr === todayStr;
     });
 
     return {
@@ -438,7 +449,10 @@ export default function ViewMealLogScreen() {
       {/* ADD BUTTON (bottom CTA) */}
       <View style={styles.addButtonContainer}>
         {isMealTab ? (
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/(add)')}
+          >
             <Text style={styles.addButtonText}>
               Add Meal
             </Text>
