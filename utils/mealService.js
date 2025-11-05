@@ -294,12 +294,13 @@ export const updateCalorieTracking = async (userId, mealData) => {
     const docSnap = await getDoc(calorieLogsRef);
     
     // Calculate total calories from this meal (including serving size)
-    const mealCalories = (mealData.calories || 0) * (mealData.servingSize || 1);
-    const mealProtein = (mealData.protein || 0) * (mealData.servingSize || 1);
-    const mealCarbs = (mealData.carbs || 0) * (mealData.servingSize || 1);
-    const mealFats = (mealData.fat || 0) * (mealData.servingSize || 1);
-    const mealSodium = (mealData.sodium || 0) * (mealData.servingSize || 1);
-    const mealSugar = (mealData.sugar || 0) * (mealData.servingSize || 1);
+    // Round to 2 decimal places to avoid floating point precision issues
+    const mealCalories = Math.round(((mealData.calories || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealProtein = Math.round(((mealData.protein || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealCarbs = Math.round(((mealData.carbs || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealFats = Math.round(((mealData.fat || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealSodium = Math.round(((mealData.sodium || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealSugar = Math.round(((mealData.sugar || 0) * (mealData.servingSize || 1)) * 100) / 100;
     
     // Get today's date string in format YYYY-MM-DD
     const today = new Date();
@@ -316,14 +317,14 @@ export const updateCalorieTracking = async (userId, mealData) => {
       let todayLog = dailyLogs.find(log => log.dateStart === dateString && log.dateEnd === dateString);
       
       if (todayLog) {
-        // Update existing today's log
-        todayLog.caloriesConsumed = (todayLog.caloriesConsumed || 0) + mealCalories;
+        // Update existing today's log with rounded values
+        todayLog.caloriesConsumed = Math.round(((todayLog.caloriesConsumed || 0) + mealCalories) * 100) / 100;
         todayLog.caloriesRemaining = Math.max(0, (todayLog.caloriesSet || calorieGoal) - todayLog.caloriesConsumed);
-        todayLog.protein = (todayLog.protein || 0) + mealProtein;
-        todayLog.carbs = (todayLog.carbs || 0) + mealCarbs;
-        todayLog.fats = (todayLog.fats || 0) + mealFats;
-        todayLog.sodium = (todayLog.sodium || 0) + mealSodium;
-        todayLog.sugar = (todayLog.sugar || 0) + mealSugar;
+        todayLog.protein = Math.round(((todayLog.protein || 0) + mealProtein) * 100) / 100;
+        todayLog.carbs = Math.round(((todayLog.carbs || 0) + mealCarbs) * 100) / 100;
+        todayLog.fats = Math.round(((todayLog.fats || 0) + mealFats) * 100) / 100;
+        todayLog.sodium = Math.round(((todayLog.sodium || 0) + mealSodium) * 100) / 100;
+        todayLog.sugar = Math.round(((todayLog.sugar || 0) + mealSugar) * 100) / 100;
         
         // Update the dailyLogs array
         await updateDoc(calorieLogsRef, {
@@ -568,21 +569,21 @@ export const updateMealAndCalories = async (userId, mealId, oldMealData, newMeal
     console.log('✅ Meal updated successfully');
 
     // Now adjust calorie tracking
-    // Calculate old meal calories
-    const oldCalories = (oldMealData.calories || 0) * (oldMealData.servingSize || 1);
-    const oldProtein = (oldMealData.protein || 0) * (oldMealData.servingSize || 1);
-    const oldCarbs = (oldMealData.carbs || 0) * (oldMealData.servingSize || 1);
-    const oldFats = (oldMealData.fat || 0) * (oldMealData.servingSize || 1);
-    const oldSodium = (oldMealData.sodium || 0) * (oldMealData.servingSize || 1);
-    const oldSugar = (oldMealData.sugar || 0) * (oldMealData.servingSize || 1);
+    // Calculate old meal calories with rounding
+    const oldCalories = Math.round(((oldMealData.calories || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
+    const oldProtein = Math.round(((oldMealData.protein || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
+    const oldCarbs = Math.round(((oldMealData.carbs || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
+    const oldFats = Math.round(((oldMealData.fat || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
+    const oldSodium = Math.round(((oldMealData.sodium || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
+    const oldSugar = Math.round(((oldMealData.sugar || 0) * (oldMealData.servingSize || 1)) * 100) / 100;
 
-    // Calculate new meal calories
-    const newCalories = (newMealData.calories || 0) * (newMealData.servingSize || 1);
-    const newProtein = (newMealData.protein || 0) * (newMealData.servingSize || 1);
-    const newCarbs = (newMealData.carbs || 0) * (newMealData.servingSize || 1);
-    const newFats = (newMealData.fat || 0) * (newMealData.servingSize || 1);
-    const newSodium = (newMealData.sodium || 0) * (newMealData.servingSize || 1);
-    const newSugar = (newMealData.sugar || 0) * (newMealData.servingSize || 1);
+    // Calculate new meal calories with rounding
+    const newCalories = Math.round(((newMealData.calories || 0) * (newMealData.servingSize || 1)) * 100) / 100;
+    const newProtein = Math.round(((newMealData.protein || 0) * (newMealData.servingSize || 1)) * 100) / 100;
+    const newCarbs = Math.round(((newMealData.carbs || 0) * (newMealData.servingSize || 1)) * 100) / 100;
+    const newFats = Math.round(((newMealData.fat || 0) * (newMealData.servingSize || 1)) * 100) / 100;
+    const newSodium = Math.round(((newMealData.sodium || 0) * (newMealData.servingSize || 1)) * 100) / 100;
+    const newSugar = Math.round(((newMealData.sugar || 0) * (newMealData.servingSize || 1)) * 100) / 100;
 
     // Get the date of the meal
     const mealDate = new Date(oldMealData.timestamp);
@@ -600,13 +601,13 @@ export const updateMealAndCalories = async (userId, mealId, oldMealData, newMeal
       const logIndex = dailyCalorieLogs.findIndex(log => log.dateStart === dateString && log.dateEnd === dateString);
 
       if (logIndex !== -1) {
-        // Update the daily log: subtract old values, add new values
-        dailyCalorieLogs[logIndex].caloriesConsumed = (dailyCalorieLogs[logIndex].caloriesConsumed || 0) - oldCalories + newCalories;
-        dailyCalorieLogs[logIndex].protein = (dailyCalorieLogs[logIndex].protein || 0) - oldProtein + newProtein;
-        dailyCalorieLogs[logIndex].carbs = (dailyCalorieLogs[logIndex].carbs || 0) - oldCarbs + newCarbs;
-        dailyCalorieLogs[logIndex].fats = (dailyCalorieLogs[logIndex].fats || 0) - oldFats + newFats;
-        dailyCalorieLogs[logIndex].sodium = (dailyCalorieLogs[logIndex].sodium || 0) - oldSodium + newSodium;
-        dailyCalorieLogs[logIndex].sugar = (dailyCalorieLogs[logIndex].sugar || 0) - oldSugar + newSugar;
+        // Update the daily log: subtract old values, add new values (with rounding)
+        dailyCalorieLogs[logIndex].caloriesConsumed = Math.round(((dailyCalorieLogs[logIndex].caloriesConsumed || 0) - oldCalories + newCalories) * 100) / 100;
+        dailyCalorieLogs[logIndex].protein = Math.round(((dailyCalorieLogs[logIndex].protein || 0) - oldProtein + newProtein) * 100) / 100;
+        dailyCalorieLogs[logIndex].carbs = Math.round(((dailyCalorieLogs[logIndex].carbs || 0) - oldCarbs + newCarbs) * 100) / 100;
+        dailyCalorieLogs[logIndex].fats = Math.round(((dailyCalorieLogs[logIndex].fats || 0) - oldFats + newFats) * 100) / 100;
+        dailyCalorieLogs[logIndex].sodium = Math.round(((dailyCalorieLogs[logIndex].sodium || 0) - oldSodium + newSodium) * 100) / 100;
+        dailyCalorieLogs[logIndex].sugar = Math.round(((dailyCalorieLogs[logIndex].sugar || 0) - oldSugar + newSugar) * 100) / 100;
 
         // Recalculate calories remaining
         dailyCalorieLogs[logIndex].caloriesRemaining = Math.max(0, (dailyCalorieLogs[logIndex].caloriesSet || 0) - dailyCalorieLogs[logIndex].caloriesConsumed);
@@ -678,13 +679,13 @@ export const deleteMealAndCalories = async (userId, mealId, mealData) => {
     console.log('✅ Meal deleted successfully');
 
     // Now adjust calorie tracking
-    // Calculate meal calories to subtract
-    const mealCalories = (mealData.calories || 0) * (mealData.servingSize || 1);
-    const mealProtein = (mealData.protein || 0) * (mealData.servingSize || 1);
-    const mealCarbs = (mealData.carbs || 0) * (mealData.servingSize || 1);
-    const mealFats = (mealData.fat || 0) * (mealData.servingSize || 1);
-    const mealSodium = (mealData.sodium || 0) * (mealData.servingSize || 1);
-    const mealSugar = (mealData.sugar || 0) * (mealData.servingSize || 1);
+    // Calculate meal calories to subtract with rounding
+    const mealCalories = Math.round(((mealData.calories || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealProtein = Math.round(((mealData.protein || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealCarbs = Math.round(((mealData.carbs || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealFats = Math.round(((mealData.fat || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealSodium = Math.round(((mealData.sodium || 0) * (mealData.servingSize || 1)) * 100) / 100;
+    const mealSugar = Math.round(((mealData.sugar || 0) * (mealData.servingSize || 1)) * 100) / 100;
 
     // Get the date of the meal
     const mealDate = new Date(mealData.timestamp);
@@ -702,13 +703,13 @@ export const deleteMealAndCalories = async (userId, mealId, mealData) => {
       const logIndex = dailyCalorieLogs.findIndex(log => log.dateStart === dateString && log.dateEnd === dateString);
 
       if (logIndex !== -1) {
-        // Subtract the deleted meal's values
-        dailyCalorieLogs[logIndex].caloriesConsumed = Math.max(0, (dailyCalorieLogs[logIndex].caloriesConsumed || 0) - mealCalories);
-        dailyCalorieLogs[logIndex].protein = Math.max(0, (dailyCalorieLogs[logIndex].protein || 0) - mealProtein);
-        dailyCalorieLogs[logIndex].carbs = Math.max(0, (dailyCalorieLogs[logIndex].carbs || 0) - mealCarbs);
-        dailyCalorieLogs[logIndex].fats = Math.max(0, (dailyCalorieLogs[logIndex].fats || 0) - mealFats);
-        dailyCalorieLogs[logIndex].sodium = Math.max(0, (dailyCalorieLogs[logIndex].sodium || 0) - mealSodium);
-        dailyCalorieLogs[logIndex].sugar = Math.max(0, (dailyCalorieLogs[logIndex].sugar || 0) - mealSugar);
+        // Subtract the deleted meal's values with rounding
+        dailyCalorieLogs[logIndex].caloriesConsumed = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].caloriesConsumed || 0) - mealCalories) * 100) / 100);
+        dailyCalorieLogs[logIndex].protein = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].protein || 0) - mealProtein) * 100) / 100);
+        dailyCalorieLogs[logIndex].carbs = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].carbs || 0) - mealCarbs) * 100) / 100);
+        dailyCalorieLogs[logIndex].fats = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].fats || 0) - mealFats) * 100) / 100);
+        dailyCalorieLogs[logIndex].sodium = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].sodium || 0) - mealSodium) * 100) / 100);
+        dailyCalorieLogs[logIndex].sugar = Math.max(0, Math.round(((dailyCalorieLogs[logIndex].sugar || 0) - mealSugar) * 100) / 100);
 
         // Recalculate calories remaining
         dailyCalorieLogs[logIndex].caloriesRemaining = Math.max(0, (dailyCalorieLogs[logIndex].caloriesSet || 0) - dailyCalorieLogs[logIndex].caloriesConsumed);
