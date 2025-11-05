@@ -45,10 +45,6 @@ export default function HealthCalculatorScreen() {
   // Deficit/Surplus State
   const [goalType, setGoalType] = useState('lose_0.5'); // lose_0.5, lose_1, maintain, gain_0.5, gain_1
   const [recommendation, setRecommendation] = useState(null);
-  
-  // Track original Goal values
-  const [originalGoalType, setOriginalGoalType] = useState('lose_0.5');
-  const [goalValuesChanged, setGoalValuesChanged] = useState(false);
 
   const styles = createStyles(theme);
 
@@ -148,12 +144,6 @@ export default function HealthCalculatorScreen() {
     const activityChanged = bmrActivity !== originalBMRActivity;
     setBmrValuesChanged(ageChanged || heightChanged || weightChanged || activityChanged);
   }, [bmrAge, bmrHeight, bmrWeight, bmrActivity, originalBMRAge, originalBMRHeight, originalBMRWeight, originalBMRActivity]);
-
-  // Check if Goal values have changed
-  useEffect(() => {
-    const goalChanged = goalType !== originalGoalType;
-    setGoalValuesChanged(goalChanged);
-  }, [goalType, originalGoalType]);
 
   const calculateBMI = () => {
     const heightM = parseFloat(height) / 100; // Convert cm to m
@@ -353,8 +343,6 @@ export default function HealthCalculatorScreen() {
       });
 
       Alert.alert('Success', 'Goal saved to your profile!');
-      setOriginalGoalType(recommendation.goalType);
-      setGoalValuesChanged(false);
     } catch (error) {
       console.error('Error saving goal:', error);
       Alert.alert('Error', 'Failed to save goal. Please try again.');
@@ -375,11 +363,6 @@ export default function HealthCalculatorScreen() {
     setBmrWeight(originalBMRWeight);
     setBmrActivity(originalBMRActivity);
     setBmrValuesChanged(false);
-  };
-
-  const resetGoal = () => {
-    setGoalType(originalGoalType);
-    setGoalValuesChanged(false);
   };
 
   const resetAll = () => {
@@ -789,26 +772,13 @@ export default function HealthCalculatorScreen() {
             {recommendation && (
               <>
                 <TouchableOpacity 
-                  style={[styles.saveBMIButton, (loading || goalValuesChanged) && styles.disabledButton]} 
+                  style={[styles.saveBMIButton, loading && styles.disabledButton]} 
                   onPress={saveGoalToFirebase}
-                  disabled={loading || goalValuesChanged}
+                  disabled={loading}
                 >
                   <Text style={styles.saveBMIButtonText}>
                     {loading ? 'Saving...' : 'Set Goal to Profile'}
                   </Text>
-                </TouchableOpacity>
-                
-                {goalValuesChanged && (
-                  <Text style={styles.warningText}>
-                    ⚠️ You've changed your goal type. Please recalculate your goal before saving to ensure accurate data.
-                  </Text>
-                )}
-                
-                <TouchableOpacity 
-                  style={styles.resetSectionButton} 
-                  onPress={resetGoal}
-                >
-                  <Text style={styles.resetSectionButtonText}>Reset Goal</Text>
                 </TouchableOpacity>
 
                 <View style={styles.resultContainer}>
