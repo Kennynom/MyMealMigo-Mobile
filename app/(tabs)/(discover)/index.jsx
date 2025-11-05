@@ -4,12 +4,8 @@ import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DiscoverMainScreen() {
-  const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
-  const styles = createStyles(theme, colorScheme);
-
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
-  };
+  const { theme } = useContext(ThemeContext);
+  const styles = createStyles(theme);
 
   return (
     <ScrollView style={styles.container}>
@@ -19,9 +15,6 @@ export default function DiscoverMainScreen() {
           <Text style={styles.title}>Discover</Text>
           <Text style={styles.subtitle}>Explore foods, recipes, and meal ideas</Text>
         </View>
-        <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-          <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Discover Cards */}
@@ -86,7 +79,7 @@ export default function DiscoverMainScreen() {
   );
 }
 
-const createStyles = (theme, colorScheme) => StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -110,17 +103,6 @@ const createStyles = (theme, colorScheme) => StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: theme.textSecondary,
-  },
-  themeButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.surface,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  themeIcon: {
-    fontSize: 20,
   },
   discoverGrid: {
     paddingHorizontal: 20,

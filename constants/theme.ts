@@ -51,7 +51,7 @@ export const Colors = {
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#212324',
     altBackground: '#FFFFFF',
     surface: '#2d2d2d',
     textSecondary: '#9BA1A6',
@@ -85,7 +85,7 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     
     // Shadow
-    shadow: '#000000',
+    shadow: '#FFFFFF',
   },
 };
 

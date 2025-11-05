@@ -1,13 +1,14 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,17 +17,41 @@ import {
 } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
+const ML_SERVER_URL = process.env.EXPO_PUBLIC_ML_SERVER_URL || 'http://192.168.18.81:5174';
+
+// Debug: Log the ML server URL to verify it's loaded
+console.log('ML_SERVER_URL:', ML_SERVER_URL);
+
 export default function ScanBarcodeScreen() {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
+  const params = useLocalSearchParams();
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(true);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [isLogging, setIsLogging] = useState(false);
+  const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
   const cameraRef = useRef(null);
+  const lastScannedRef = useRef({ barcode: null, timestamp: 0 });
+  
+  // Check if we're in edit mode
+  const editMode = params.editMode === 'true';
+  const mealId = params.mealId;
+  const existingMealData = params.mealData ? JSON.parse(params.mealData) : null;
   
   const styles = createStyles(theme);
+
+  const mealCategories = [
+    { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { id: 'lunch', label: 'Lunch', icon: '🌞' },
+    { id: 'dinner', label: 'Dinner', icon: '🌙' }
+  ];
+
+  const mealTypes = [
+    { id: 'meal', label: 'Meal' },
+    { id: 'beverage', label: 'Beverage' }
+  ];
 
   if (!permission) {
     return (
@@ -50,12 +75,22 @@ export default function ScanBarcodeScreen() {
   const handleBarcodeScanned = async ({ data: barcode }) => {
     if (!isScanning) return;
     
+    // Debounce: Prevent scanning the same barcode within 2 seconds
+    const now = Date.now();
+    if (lastScannedRef.current.barcode === barcode && 
+        now - lastScannedRef.current.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last scanned barcode and timestamp
+    lastScannedRef.current = { barcode, timestamp: now };
+    
     setIsScanning(false);
     console.log('Barcode scanned:', barcode);
 
     try {
       // Lookup product in barcodes.json via the ML server API
-      const response = await fetch(`http://172.20.10.4:5174/api/barcodes/${barcode}`);
+      const response = await fetch(`${ML_SERVER_URL}/api/barcodes/${barcode}`);
       
       if (!response.ok) {
         throw new Error('Product not found');
@@ -67,19 +102,42 @@ export default function ScanBarcodeScreen() {
       setScannedProduct(product);
       
     } catch (error) {
-      console.error('Barcode lookup error:', error);
+      // Only log to console (not console.error to avoid bottom toast)
+      console.log('Barcode not found:', barcode);
+      
       Alert.alert(
         'Product Not Found',
         `Barcode "${barcode}" is not in our database. Would you like to add it manually?`,
         [
-          { text: 'Scan Again', onPress: () => setIsScanning(true) },
-          { text: 'Manual Entry', onPress: () => router.push('/(tabs)/(add)/manual-entry') }
+          { 
+            text: 'Scan Again', 
+            onPress: () => {
+              lastScannedRef.current = { barcode: null, timestamp: 0 };
+              setIsScanning(true);
+            },
+            style: 'cancel'
+          },
+          { 
+            text: 'Manual Entry', 
+            onPress: () => router.push('/(tabs)/(add)/manual-entry')
+          }
         ]
       );
     }
   };
 
-  const handleAddProduct = async () => {
+  const handleAddProductClick = () => {
+    setShowMealCategoryModal(true);
+  };
+
+  const handleMealCategorySelect = async (category, type) => {
+    setShowMealCategoryModal(false);
+    
+    // Proceed with logging
+    await handleAddProduct(category, type);
+  };
+
+  const handleAddProduct = async (mealCategory, mealType) => {
     if (!scannedProduct || isLogging) return;
     
     if (!user) {
@@ -107,30 +165,95 @@ export default function ScanBarcodeScreen() {
         timestamp: new Date(),
         userId: user.uid,
         barcode: scannedProduct.code, // Include barcode for reference
+        mealCategory: mealCategory,  // Breakfast/Lunch/Dinner
+        mealType: mealType            // Meal/Beverage
       };
 
-      // Log to Firebase
-      await logMealToFirebase(mealEntry);
-      await updateCalorieTracking(user.uid, mealEntry);
-      
-      Alert.alert(
-        'Success!', 
-        'Product logged and calories updated successfully!',
-        [
-          {
-            text: 'Scan Another',
-            onPress: () => resetScanner()
-          },
-          {
-            text: 'View Logs',
-            onPress: () => router.push('/(tabs)/(logs)')
-          }
-        ]
-      );
+      // Check if this meal will exceed calorie goal (only for new meals, not edits)
+      if (!editMode) {
+        const totalCalories = mealEntry.calories * mealEntry.servingSize;
+        const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+        
+        if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+          // Show warning and ask for confirmation
+          setIsLogging(false);
+          Alert.alert(
+            '⚠️ Calorie Goal Warning',
+            `This meal will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+            `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+            `Adding: ${totalCalories} cal\n` +
+            `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+            `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+            `Do you want to continue?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              },
+              {
+                text: 'Log Anyway',
+                style: 'default',
+                onPress: async () => {
+                  setIsLogging(true);
+                  await proceedWithBarcodeLogging(mealEntry, mealCategory);
+                }
+              }
+            ]
+          );
+          return; // Stop here and wait for user decision
+        }
+      }
+
+      // If no warning or user confirmed, proceed with logging
+      await proceedWithBarcodeLogging(mealEntry, mealCategory);
       
     } catch (error) {
       console.error('Error logging meal:', error);
-      Alert.alert('Error', 'Failed to log meal. Please try again.');
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      setIsLogging(false);
+    }
+  };
+
+  // Separate function to handle the actual logging logic
+  const proceedWithBarcodeLogging = async (mealEntry, mealCategory) => {
+    try {
+      if (editMode && mealId && existingMealData) {
+        // UPDATE MODE: Update existing meal
+        await updateMealAndCalories(user.uid, mealId, existingMealData, mealEntry);
+        
+        Alert.alert(
+          'Success!', 
+          `Meal updated successfully!`,
+          [
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
+            }
+          ]
+        );
+      } else {
+        // CREATE MODE: Log new meal
+        await logMealToFirebase(mealEntry);
+        await updateCalorieTracking(user.uid, mealEntry);
+        
+        Alert.alert(
+          'Success!', 
+          `Product logged to ${mealCategory} successfully!`,
+          [
+            {
+              text: 'Scan Another',
+              onPress: () => resetScanner()
+            },
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error in proceedWithBarcodeLogging:', error);
+      throw error;
     } finally {
       setIsLogging(false);
     }
@@ -138,6 +261,7 @@ export default function ScanBarcodeScreen() {
 
   const resetScanner = () => {
     setScannedProduct(null);
+    lastScannedRef.current = { barcode: null, timestamp: 0 };
     setIsScanning(true);
   };
 
@@ -161,7 +285,7 @@ export default function ScanBarcodeScreen() {
         <View style={styles.resultsCard}>
           {scannedProduct.localImage && (
             <Image 
-              source={{ uri: `http://172.20.10.4:5174/images/${scannedProduct.localImage}` }}
+              source={{ uri: `${ML_SERVER_URL}/images/${scannedProduct.localImage}` }}
               style={styles.photoImg}
               resizeMode="contain"
             />
@@ -222,11 +346,13 @@ export default function ScanBarcodeScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[styles.addButton, isLogging && styles.addButtonDisabled]}
-            onPress={handleAddProduct}
+            onPress={handleAddProductClick}
             disabled={isLogging}
           >
             <Text style={styles.addButtonText}>
-              {isLogging ? 'Adding to Meal...' : 'Add to Meal'}
+              {isLogging 
+                ? (editMode ? 'Updating Meal...' : 'Adding to Meal...') 
+                : (editMode ? 'Update Meal' : 'Add to Meal')}
             </Text>
           </TouchableOpacity>
 
@@ -238,6 +364,50 @@ export default function ScanBarcodeScreen() {
             <Text style={styles.retakeButtonText}>Scan Another</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Meal Category Selection Modal */}
+        <Modal
+          visible={showMealCategoryModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowMealCategoryModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Meal Category</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowMealCategoryModal(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+                {mealCategories.map((category) => (
+                  <View key={category.id} style={styles.categorySection}>
+                    <Text style={styles.categoryLabel}>
+                      {category.icon} {category.label}
+                    </Text>
+                    
+                    <View style={styles.typeButtonsRow}>
+                      {mealTypes.map((type) => (
+                        <TouchableOpacity
+                          key={`${category.id}-${type.id}`}
+                          style={styles.typeButton}
+                          onPress={() => handleMealCategorySelect(category.id, type.id)}
+                        >
+                          <Text style={styles.typeButtonText}>{type.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     );
   }
@@ -501,6 +671,74 @@ const createStyles = (theme) => StyleSheet.create({
     margin: 20,
   },
   buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: theme.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: theme.textSecondary,
+    fontWeight: '300',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 12,
+  },
+  typeButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  typeButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',

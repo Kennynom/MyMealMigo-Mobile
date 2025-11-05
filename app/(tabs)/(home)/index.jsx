@@ -20,6 +20,8 @@ import { Pricing } from '@/components/pricing'; // ← ADD PRICING IMPORT
 import { Testimonials } from '@/components/testimonials'; // ← ADD TESTIMONIALS IMPORT
 
 
+import ChatButton from '@/components/chat-button';
+
 export default function HomeScreen() {
   const { theme } = useContext(ThemeContext);
   const styles = createStyle(theme);
@@ -255,10 +257,11 @@ export default function HomeScreen() {
       <AuthDebug />
       <View style={styles.headerAI}>
         <TouchableOpacity
-          onPress={() => router.push('(ai)')}
+          onPress={() => router.push('/chat')}
           accessibilityLabel="AI Assistant Button"
           style={styles.buttonAI}
         >
+          <ChatButton onPress={() => router.push('/chat')} />
           <Text> AI Assistant</Text>
         </TouchableOpacity>
       </View>

@@ -1,4 +1,3 @@
-// Create: app/(tabs)/(tracker)/calorie-tracker.jsx
 import { ThemeContext } from '@/context/ThemeContext';
 import { db } from '@/lib/firebase'; // or the correct path
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -55,6 +54,7 @@ export default function CalorieTrackerScreen() {
 
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [allDailyLogs, setAllDailyLogs] = useState([]);
+    const [defaultCalorieGoal, setDefaultCalorieGoal] = useState(null); // Store user's default calorie goal
 
     // Function to calculate remaining calories
     const calculateRemaining = (caloriesSet, consumed) => {
@@ -75,20 +75,22 @@ export default function CalorieTrackerScreen() {
         if (!uid) return;
 
         try {
+            let userCalorieGoal = null; 
+            
+            // First, try to get the calorie logs to find the user's caloriesSet
             const calorieLogDocRef = doc(db, 'users', uid, 'private', 'health_profile', 'calorie_logs', 'main');
             const docSnap = await getDoc(calorieLogDocRef);
+            
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setAllDailyLogs(data.dailyLogs || []);
                 
-                // Find today's log or use the latest log
-                const today = new Date().toISOString().split('T')[0];
-                const todayLog = data.dailyLogs?.find(log => log.dateStart === today);
-                
-                if (todayLog) {
-                    setDailyIntake(todayLog);
-                } else if (data.dailyLogs && data.dailyLogs.length > 0) {
-                    setDailyIntake(data.dailyLogs[data.dailyLogs.length - 1]);
+                // Get the caloriesSet from the most recent daily log (this is what the user has been using)
+                if (data.dailyLogs && data.dailyLogs.length > 0) {
+                    const latestLog = data.dailyLogs[data.dailyLogs.length - 1];
+                    if (latestLog.caloriesSet) {
+                        userCalorieGoal = latestLog.caloriesSet;
+                    }
                 }
                 
                 // Get latest weekly log
@@ -100,6 +102,20 @@ export default function CalorieTrackerScreen() {
                     setMonthlyIntake(data.monthlyLogs[data.monthlyLogs.length - 1]);
                 }
             }
+            
+            // If no logs exist, fall back to health profile's dailyCalorieGoal
+            if (userCalorieGoal === null) {
+                const healthProfileRef = doc(db, 'users', uid, 'private', 'health_profile');
+                const healthProfileSnap = await getDoc(healthProfileRef);
+                
+                if (healthProfileSnap.exists()) {
+                    const healthData = healthProfileSnap.data();
+                    userCalorieGoal = healthData.dailyCalorieGoal || null;
+                }
+            }
+            
+            setDefaultCalorieGoal(userCalorieGoal);
+            
         } catch (error) {
             console.error('Error fetching calorie logs:', error);
         }
@@ -116,11 +132,31 @@ export default function CalorieTrackerScreen() {
         }, [fetchCalorieLogs])
     );
 
-    // Find daily log for selected date
-    const selectedDateString = selectedDate.toISOString().split('T')[0];
-    const dailyLogForDate = allDailyLogs.find(
+    // Find daily log for selected date - ONLY show data for that specific date
+    // Use local timezone instead of UTC to avoid timezone issues
+    const selectedDateString = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+    ).toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local timezone
+    
+    const logForSelectedDate = allDailyLogs.find(
         log => log.dateStart && log.dateStart.startsWith(selectedDateString)
-    ) || dailyIntake;
+    );
+    
+    // If no log exists for selected date, create empty log with default calorie goal
+    const dailyLogForDate = logForSelectedDate || {
+        dateStart: selectedDateString,
+        dateEnd: selectedDateString,
+        carbs: 0,
+        protein: 0,
+        fats: 0,
+        sodium: 0,
+        sugar: 0,
+        caloriesSet: defaultCalorieGoal,
+        caloriesConsumed: 0,
+        caloriesRemaining: defaultCalorieGoal
+    };
 
     // Choose which intake to show
     const currentIntake =
@@ -205,7 +241,9 @@ export default function CalorieTrackerScreen() {
                             </View>
                             <View>
                                 <Text style={styles.rightText}>Goal:</Text>
-                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesSet}</Text>
+                                <Text style={styles.rightNumber}>
+                                    {dailyLogForDate.caloriesSet ? dailyLogForDate.caloriesSet : 'Not Set'}
+                                </Text>
                             </View>
                         </View>
 
@@ -275,6 +313,7 @@ export default function CalorieTrackerScreen() {
                             value={selectedDate}
                             mode="date"
                             display="default"
+                            maximumDate={new Date()} // Block future dates - only allow today and past
                             onChange={(event, date) => {
                                 if (date) setSelectedDate(date);
                             }}
@@ -286,7 +325,9 @@ export default function CalorieTrackerScreen() {
                         <View style={styles.row}>
                             <Text style={styles.rowLabel}>Goal:</Text>
                             <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.caloriesSet : currentIntake.caloriesSet}
+                                {period === 'daily' 
+                                    ? (dailyLogForDate.caloriesSet || 'Not Set')
+                                    : (currentIntake.caloriesSet || 'Not Set')}
                             </Text>
                         </View>
                         <View style={styles.row}>

@@ -1,5 +1,5 @@
 import { ThemeContext } from '@/context/ThemeContext';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext } from "react";
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -8,7 +8,13 @@ import CameraScreen from "@/components/camera/CameraScreen";
 
 export default function PhotoCaptureScreen() {
   const { theme } = useContext(ThemeContext);
+  const params = useLocalSearchParams();
   const styles = createStyles(theme);
+
+  // Check if we're in edit mode
+  const editMode = params.editMode === 'true';
+  const mealId = params.mealId;
+  const mealData = params.mealData ? JSON.parse(params.mealData) : null;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -20,13 +26,17 @@ export default function PhotoCaptureScreen() {
         >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Take Photo</Text>
+        <Text style={styles.title}>{editMode ? 'Edit Meal Photo' : 'Take Photo'}</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Camera Screen Content - includes ML Engine */}
       <View style={{ flex: 1 }}>
-        <CameraScreen />
+        <CameraScreen 
+          editMode={editMode}
+          mealId={mealId}
+          existingMealData={mealData}
+        />
       </View>
     </SafeAreaView>
   );

@@ -1,16 +1,17 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
 import { router } from 'expo-router';
 import React, { useContext } from 'react';
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function FoodRecognitionResults({ 
@@ -18,15 +19,45 @@ export default function FoodRecognitionResults({
   foodData, 
   confidence,
   onRetakePhoto, 
-  onAddMeal 
+  onAddMeal,
+  editMode = false,
+  mealId = null,
+  existingMealData = null
 }) {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
   const [isLogging, setIsLogging] = React.useState(false);
+  const [showMealCategoryModal, setShowMealCategoryModal] = React.useState(false);
+  const [selectedMealCategory, setSelectedMealCategory] = React.useState(null);
+  const [selectedMealType, setSelectedMealType] = React.useState(null);
   
   const styles = createStyles(theme);
 
-  const handleAddToMeal = async () => {
+  const mealCategories = [
+    { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { id: 'lunch', label: 'Lunch', icon: '🌞' },
+    { id: 'dinner', label: 'Dinner', icon: '🌙' }
+  ];
+
+  const mealTypes = [
+    { id: 'meal', label: 'Meal' },
+    { id: 'beverage', label: 'Beverage' }
+  ];
+
+  const handleAddToMealClick = () => {
+    setShowMealCategoryModal(true);
+  };
+
+  const handleMealCategorySelect = async (category, type) => {
+    setSelectedMealCategory(category);
+    setSelectedMealType(type);
+    setShowMealCategoryModal(false);
+    
+    // Proceed with logging or updating
+    await handleAddToMeal(category, type);
+  };
+
+  const handleAddToMeal = async (mealCategory, mealType) => {
     if (!user) {
       Alert.alert('Error', 'You must be logged in to log meals');
       return;
@@ -49,33 +80,100 @@ export default function FoodRecognitionResults({
         timestamp: new Date(),
         userId: user.uid,
         photoUri: photoUri,
-        confidence: confidence
+        confidence: confidence,
+        mealCategory: mealCategory,  // Breakfast/Lunch/Dinner
+        mealType: mealType            // Meal/Beverage
       };
 
-      await logMealToFirebase(mealEntry);
-      await updateCalorieTracking(user.uid, mealEntry);
+      // Check if this meal will exceed calorie goal (only for new meals, not edits)
+      if (!editMode) {
+        const totalCalories = mealEntry.calories * mealEntry.servingSize;
+        const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+        
+        if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+          // Show warning and ask for confirmation
+          setIsLogging(false);
+          Alert.alert(
+            '⚠️ Calorie Goal Warning',
+            `This meal will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+            `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+            `Adding: ${totalCalories} cal\n` +
+            `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+            `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+            `Do you want to continue?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              },
+              {
+                text: 'Log Anyway',
+                style: 'default',
+                onPress: async () => {
+                  setIsLogging(true);
+                  await proceedWithPhotoLogging(mealEntry, mealCategory);
+                }
+              }
+            ]
+          );
+          return; // Stop here and wait for user decision
+        }
+      }
+
+      // If no warning or user confirmed, proceed with logging
+      await proceedWithPhotoLogging(mealEntry, mealCategory);
       
-      Alert.alert(
-        'Success!', 
-        'Meal logged and calories updated successfully!',
-        [
-          {
-            text: 'Take Another Photo',
-            onPress: () => {
-              onRetakePhoto?.();
+    } catch (error) {
+      console.error('Error logging meal:', error);
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      setIsLogging(false);
+    }
+  };
+
+  // Separate function to handle the actual logging logic
+  const proceedWithPhotoLogging = async (mealEntry, mealCategory) => {
+    try {
+      if (editMode && mealId && existingMealData) {
+        // UPDATE MODE: Update existing meal
+        await updateMealAndCalories(user.uid, mealId, existingMealData, mealEntry);
+        
+        Alert.alert(
+          'Success!', 
+          `Meal updated successfully!`,
+          [
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
             }
-          },
-          {
-            text: 'View Logs',
-            onPress: () => router.push('/(tabs)/(logs)')
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        // CREATE MODE: Log new meal
+        await logMealToFirebase(mealEntry);
+        await updateCalorieTracking(user.uid, mealEntry);
+        
+        Alert.alert(
+          'Success!', 
+          `Meal logged to ${mealCategory} successfully!`,
+          [
+            {
+              text: 'Take Another Photo',
+              onPress: () => {
+                onRetakePhoto?.();
+              }
+            },
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
+            }
+          ]
+        );
+      }
       
       onAddMeal?.(mealEntry);
     } catch (error) {
-      console.error('Error logging meal:', error);
-      Alert.alert('Error', 'Failed to log meal. Please try again.');
+      console.error('Error in proceedWithPhotoLogging:', error);
+      throw error;
     } finally {
       setIsLogging(false);
     }
@@ -159,11 +257,13 @@ export default function FoodRecognitionResults({
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={[styles.addButton, isLogging && styles.addButtonDisabled]}
-          onPress={handleAddToMeal}
+          onPress={handleAddToMealClick}
           disabled={isLogging}
         >
           <Text style={styles.addButtonText}>
-            {isLogging ? 'Adding to Meal...' : 'Add to Meal'}
+            {isLogging 
+              ? (editMode ? 'Updating Meal...' : 'Adding to Meal...') 
+              : (editMode ? 'Update Meal' : 'Add to Meal')}
           </Text>
         </TouchableOpacity>
 
@@ -175,6 +275,50 @@ export default function FoodRecognitionResults({
           <Text style={styles.retakeButtonText}>Take Another Photo</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Meal Category Selection Modal */}
+      <Modal
+        visible={showMealCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMealCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Meal Category</Text>
+              <TouchableOpacity 
+                onPress={() => setShowMealCategoryModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {mealCategories.map((category) => (
+                <View key={category.id} style={styles.categorySection}>
+                  <Text style={styles.categoryLabel}>
+                    {category.icon} {category.label}
+                  </Text>
+                  
+                  <View style={styles.typeButtonsRow}>
+                    {mealTypes.map((type) => (
+                      <TouchableOpacity
+                        key={`${category.id}-${type.id}`}
+                        style={styles.typeButton}
+                        onPress={() => handleMealCategorySelect(category.id, type.id)}
+                      >
+                        <Text style={styles.typeButtonText}>{type.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -368,5 +512,73 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: theme.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: theme.textSecondary,
+    fontWeight: '300',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 12,
+  },
+  typeButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  typeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -5,12 +5,8 @@ import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LogsMainScreen() {
-  const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
-  const styles = createStyles(theme, colorScheme);
-
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
-  };
+  const { theme } = useContext(ThemeContext);
+  const styles = createStyles(theme);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -26,25 +22,6 @@ export default function LogsMainScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Meal Logs</Text>
           <Text style={styles.subtitle}>Track and review your daily nutrition</Text>
-        </View>
-        <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-          <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>3</Text>
-          <Text style={styles.statLabel}>Meals Today</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>1,850</Text>
-          <Text style={styles.statLabel}>Calories</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>85%</Text>
-          <Text style={styles.statLabel}>Goal Progress</Text>
         </View>
       </View>
 
@@ -91,23 +68,6 @@ export default function LogsMainScreen() {
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
 
-        {/* Add New Meal */}
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => router.push('/(tabs)/(logs)/add-meal')}
-        >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>➕</Text>
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>Add New Meal</Text>
-            <Text style={styles.optionSubtitle}>
-              Log a new meal or snack with photos
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
         {/* History */}
         <TouchableOpacity
           style={styles.optionCard}
@@ -120,23 +80,6 @@ export default function LogsMainScreen() {
             <Text style={styles.optionTitle}>Meal History</Text>
             <Text style={styles.optionSubtitle}>
               Browse and analyze previous days
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* Favorites */}
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => router.push('/(tabs)/(logs)/favorites')}
-        >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>⭐</Text>
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>Favorite Meals</Text>
-            <Text style={styles.optionSubtitle}>
-              Quick access to your go-to meals
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
@@ -175,7 +118,7 @@ export default function LogsMainScreen() {
   );
 }
 
-const createStyles = (theme, colorScheme) =>
+const createStyles = (theme) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -200,17 +143,6 @@ const createStyles = (theme, colorScheme) =>
     subtitle: {
       fontSize: 16,
       color: theme.textSecondary,
-    },
-    themeButton: {
-      width: 40,
-      height: 40,
-      backgroundColor: theme.surface,
-      borderRadius: 20,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    themeIcon: {
-      fontSize: 20,
     },
     statsContainer: {
       flexDirection: 'row',
@@ -255,7 +187,7 @@ const createStyles = (theme, colorScheme) =>
       alignItems: 'center',
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
+      shadowOpacity: 0.2,
       shadowRadius: 3.84,
       elevation: 5,
     },

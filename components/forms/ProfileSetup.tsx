@@ -137,11 +137,24 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
     setSaving(true);
     setErr(null);
     try {
+      // Calculate age from birthday
+      let age = null;
+      if (birthday) {
+        const birthDate = new Date(birthday);
+        const today = new Date();
+        age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+      }
+
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         name: displayName || null,
         profile: {
           birthday: birthday || null,
+          age: age,
           heightCm: heightCm ? Number(heightCm) : null,
           weightKg: weightKg ? Number(weightKg) : null,
           sex: sex || 'other',
@@ -309,7 +322,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
                 value={birthdayDate ?? new Date(2000,0,1)}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                maximumDate={new Date()}
                 onChange={(e, d) => {
                   setShowDatePicker(Platform.OS === 'ios');
                   if (d) {
