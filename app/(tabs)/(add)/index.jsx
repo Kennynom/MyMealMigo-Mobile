@@ -4,12 +4,8 @@ import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AddMealMainScreen() {
-  const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
-  const styles = createStyles(theme, colorScheme);
-
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
-  };
+  const { theme } = useContext(ThemeContext);
+  const styles = createStyles(theme);
 
   return (
     <ScrollView style={styles.container}>
@@ -19,9 +15,6 @@ export default function AddMealMainScreen() {
           <Text style={styles.title}>Add Meal</Text>
           <Text style={styles.subtitle}>Choose how you'd like to log your meal</Text>
         </View>
-        <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-          <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Quick Actions */}
@@ -30,7 +23,10 @@ export default function AddMealMainScreen() {
         
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/photo-capture')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/photo-capture',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>📷</Text>
@@ -44,7 +40,10 @@ export default function AddMealMainScreen() {
 
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/scan-barcode')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/scan-barcode',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>📱</Text>
@@ -63,7 +62,10 @@ export default function AddMealMainScreen() {
         
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/search-food')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/search-food',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>🔍</Text>
@@ -77,7 +79,10 @@ export default function AddMealMainScreen() {
 
         <TouchableOpacity 
           style={styles.actionCard}
-          onPress={() => router.push('/(tabs)/(add)/manual-entry')}
+          onPress={() => router.push({
+            pathname: '/(tabs)/(add)/manual-entry',
+            params: {}
+          })}
         >
           <View style={styles.actionIcon}>
             <Text style={styles.actionEmoji}>✏️</Text>
@@ -120,7 +125,7 @@ export default function AddMealMainScreen() {
   );
 }
 
-const createStyles = (theme, colorScheme) => StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -144,17 +149,6 @@ const createStyles = (theme, colorScheme) => StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: theme.textSecondary,
-  },
-  themeButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.surface,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  themeIcon: {
-    fontSize: 20,
   },
   quickActions: {
     paddingHorizontal: 20,

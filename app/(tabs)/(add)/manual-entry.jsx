@@ -1,11 +1,12 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
-import { router } from 'expo-router';
-import React, { useContext, useState } from 'react';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
@@ -18,7 +19,19 @@ import {
 export default function ManualEntryScreen() {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
+  const params = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
+  const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
+  
+  // Check if we're in edit mode
+  const editMode = params.editMode === 'true';
+  const mealId = params.mealId;
+  
+  // Stabilize the parsed object to prevent infinite re-renders
+  const existingMealData = useMemo(() => 
+    params.mealData ? JSON.parse(params.mealData) : null,
+    [params.mealData]
+  );
   
   const [mealData, setMealData] = useState({
     foodName: '',
@@ -30,7 +43,33 @@ export default function ManualEntryScreen() {
     servingUnit: 'serving',
   });
 
+  // Populate form with existing data if in edit mode
+  useEffect(() => {
+    if (editMode && existingMealData) {
+      setMealData({
+        foodName: existingMealData.foodName || '',
+        calories: String(existingMealData.calories || ''),
+        protein: String(existingMealData.protein || ''),
+        carbs: String(existingMealData.carbs || ''),
+        fat: String(existingMealData.fat || ''),
+        servingSize: String(existingMealData.servingSize || '1'),
+        servingUnit: existingMealData.servingUnit || 'serving',
+      });
+    }
+  }, [editMode, existingMealData]);
+
   const styles = createStyles(theme);
+
+  const mealCategories = [
+    { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { id: 'lunch', label: 'Lunch', icon: '🌞' },
+    { id: 'dinner', label: 'Dinner', icon: '🌙' }
+  ];
+
+  const mealTypes = [
+    { id: 'meal', label: 'Meal' },
+    { id: 'beverage', label: 'Beverage' }
+  ];
 
   const handleInputChange = (field, value) => {
     setMealData(prev => ({
@@ -62,7 +101,19 @@ export default function ManualEntryScreen() {
     return true;
   };
 
-  const handleLogMeal = async () => {
+  const handleLogMealClick = () => {
+    if (!validateForm()) return;
+    setShowMealCategoryModal(true);
+  };
+
+  const handleMealCategorySelect = async (category, type) => {
+    setShowMealCategoryModal(false);
+    
+    // Proceed with logging
+    await handleLogMeal(category, type);
+  };
+
+  const handleLogMeal = async (mealCategory, mealType) => {
     if (!validateForm()) return;
 
     if (!user) {
@@ -89,41 +140,111 @@ export default function ManualEntryScreen() {
         entryMethod: 'manual',
         timestamp: new Date(),
         userId: user.uid,
+        mealCategory: mealCategory,  // Breakfast/Lunch/Dinner
+        mealType: mealType            // Meal/Beverage
       };
 
-      await logMealToFirebase(mealEntry);
+      // Check if this meal will exceed calorie goal (only for new meals, not edits)
+      if (!editMode) {
+        const totalCalories = mealEntry.calories * mealEntry.servingSize;
+        const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+        
+        if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+          // Show warning and ask for confirmation
+          setLoading(false);
+          Alert.alert(
+            '⚠️ Calorie Goal Warning',
+            `This meal will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+            `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+            `Adding: ${totalCalories} cal\n` +
+            `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+            `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+            `Do you want to continue?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  setLoading(false);
+                }
+              },
+              {
+                text: 'Log Anyway',
+                style: 'default',
+                onPress: async () => {
+                  setLoading(true);
+                  await proceedWithLogging(mealEntry, mealCategory);
+                }
+              }
+            ]
+          );
+          return; // Stop here and wait for user decision
+        }
+      }
+
+      // If no warning or user confirmed, proceed with logging
+      await proceedWithLogging(mealEntry, mealCategory);
       
-      // Update calorie tracking
-      await updateCalorieTracking(user.uid, mealEntry);
-      
-      Alert.alert(
-        'Success', 
-        'Meal logged and calories updated successfully!',
-        [
-          {
-            text: 'Add Another',
-            onPress: () => {
-              // Reset form
-              setMealData({
-                foodName: '',
-                calories: '',
-                protein: '',
-                carbs: '',
-                fat: '',
-                servingSize: '1',
-                servingUnit: 'serving',
-              });
-            }
-          },
-          {
-            text: 'View Logs',
-            onPress: () => router.push('/(tabs)/(logs)')
-          }
-        ]
-      );
     } catch (error) {
       console.error('Error logging meal:', error);
-      Alert.alert('Error', 'Failed to log meal. Please try again.');
+      Alert.alert('Error', 'Failed to save meal. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Separate function to handle the actual logging logic
+  const proceedWithLogging = async (mealEntry, mealCategory) => {
+    try {
+      if (editMode && mealId && existingMealData) {
+        // UPDATE MODE: Update existing meal
+        await updateMealAndCalories(user.uid, mealId, existingMealData, mealEntry);
+        
+        Alert.alert(
+          'Success', 
+          `Meal updated successfully!`,
+          [
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
+            }
+          ]
+        );
+      } else {
+        // CREATE MODE: Log new meal
+        await logMealToFirebase(mealEntry);
+        
+        // Update calorie tracking
+        await updateCalorieTracking(user.uid, mealEntry);
+        
+        Alert.alert(
+          'Success', 
+          `Meal logged to ${mealCategory} successfully!`,
+          [
+            {
+              text: 'Add Another',
+              onPress: () => {
+                // Reset form
+                setMealData({
+                  foodName: '',
+                  calories: '',
+                  protein: '',
+                  carbs: '',
+                  fat: '',
+                  servingSize: '1',
+                  servingUnit: 'serving',
+                });
+              }
+            },
+            {
+              text: 'View Logs',
+              onPress: () => router.push('/(tabs)/(logs)')
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error in proceedWithLogging:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -143,7 +264,7 @@ export default function ManualEntryScreen() {
           >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Manual Entry</Text>
+          <Text style={styles.title}>{editMode ? 'Edit Meal' : 'Manual Entry'}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -272,14 +393,60 @@ export default function ManualEntryScreen() {
       <View style={styles.footer}>
         <TouchableOpacity 
           style={[styles.logButton, loading && styles.logButtonDisabled]} 
-          onPress={handleLogMeal}
+          onPress={handleLogMealClick}
           disabled={loading}
         >
           <Text style={styles.logButtonText}>
-            {loading ? 'Logging Meal...' : 'Log Meal'}
+            {loading 
+              ? (editMode ? 'Updating Meal...' : 'Logging Meal...') 
+              : (editMode ? 'Update Meal' : 'Log Meal')}
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Meal Category Selection Modal */}
+      <Modal
+        visible={showMealCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMealCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Meal Category</Text>
+              <TouchableOpacity 
+                onPress={() => setShowMealCategoryModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {mealCategories.map((category) => (
+                <View key={category.id} style={styles.categorySection}>
+                  <Text style={styles.categoryLabel}>
+                    {category.icon} {category.label}
+                  </Text>
+                  
+                  <View style={styles.typeButtonsRow}>
+                    {mealTypes.map((type) => (
+                      <TouchableOpacity
+                        key={`${category.id}-${type.id}`}
+                        style={styles.typeButton}
+                        onPress={() => handleMealCategorySelect(category.id, type.id)}
+                      >
+                        <Text style={styles.typeButtonText}>{type.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -436,5 +603,73 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     color: theme.textSecondary,
     fontStyle: 'italic',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: theme.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: theme.textSecondary,
+    fontWeight: '300',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 12,
+  },
+  typeButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  typeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
