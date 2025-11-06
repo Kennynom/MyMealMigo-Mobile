@@ -1,9 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, useColorScheme, RefreshControl, TextInput } from 'react-native';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useFocusEffect } from 'expo-router';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png'); // put any 1:1 image here
 

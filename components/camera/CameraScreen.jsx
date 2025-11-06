@@ -18,7 +18,7 @@ import FoodRecognitionResults from './FoodRecognitionResults';
 
 const { width, height } = Dimensions.get('window');
 
-export default function CameraScreen({ editMode = false, mealId = null, existingMealData = null }) {
+export default function CameraScreen() {
   const { theme } = useContext(ThemeContext);
   const { user } = useContext(AuthContext);
   const [facing, setFacing] = useState('back');
@@ -196,9 +196,6 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
         confidence={recognitionResults.confidence}
         onRetakePhoto={handleRetakePhoto}
         onAddMeal={handleMealAdded}
-        editMode={editMode}
-        mealId={mealId}
-        existingMealData={existingMealData}
       />
     );
   }
