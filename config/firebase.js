@@ -1,6 +1,6 @@
 // config/firebase.js - Platform-safe Firebase config
 import { initializeApp } from "firebase/app";
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, serverTimestamp } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 
@@ -21,6 +21,9 @@ const app = initializeApp(firebaseConfig);
 // Initialize services
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Export serverTimestamp for Firestore operations
+export { serverTimestamp };
 
 // Only initialize analytics on web platform
 let analytics = null;

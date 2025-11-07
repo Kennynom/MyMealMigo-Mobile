@@ -37,8 +37,15 @@ export default function NutritionalTipCard() {
   useEffect(() => {
     (async () => {
       if (!user || !current?.url) { setSaved(false); return; }
-      const docs = await listSaved(user.uid);
-      setSaved(docs.some(d => d.url === current.url));
+      try {
+        console.log('🔍 [TIP CARD] Fetching saved tips for user:', user.uid);
+        const docs = await listSaved(user.uid);
+        setSaved(docs.some(d => d.url === current.url));
+        console.log('✅ [TIP CARD] Successfully fetched saved tips');
+      } catch (err) {
+        console.error('❌ [TIP CARD] ERROR fetching saved tips:', err.code, err.message);
+        setSaved(false);
+      }
     })();
   }, [user, current?.url]);
 
@@ -47,8 +54,11 @@ export default function NutritionalTipCard() {
     (async () => {
       if (!user?.uid || !current?.url) return;
       try {
+        console.log('🔍 [TIP CARD] Recording tip to history for user:', user.uid);
         await recordTipShownToday(user.uid, current);
+        console.log('✅ [TIP CARD] Successfully recorded tip to history');
       } catch (e) {
+        console.error('❌ [TIP CARD] ERROR recording tip to history:', e.code, e.message);
         // ignore if rules forbid duplicates; recordTipShownToday handles idempotence
       }
     })();

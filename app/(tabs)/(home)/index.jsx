@@ -60,6 +60,7 @@ export default function HomeScreen() {
     const fetchUserHealthData = async () => {
       if (!user) return;
       try {
+        console.log('🔍 [HOME] Fetching user health data for uid:', user.uid);
         // Fetch from users/{uid} document - profile object contains weightKg and currentBMI
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
@@ -80,9 +81,12 @@ export default function HomeScreen() {
           if (typeof bmi === 'number') {
             setUserBMI(bmi.toFixed(1));
           }
+          console.log('✅ [HOME] Successfully fetched user health data');
+        } else {
+          console.log('⚠️ [HOME] User document does not exist');
         }
       } catch (err) {
-        console.error('Failed to fetch user health data:', err);
+        console.error('❌ [HOME] ERROR fetching user health data from users/' + user.uid + ':', err.code, err.message);
       }
     };
 
@@ -96,6 +100,7 @@ export default function HomeScreen() {
     const fetchCalorieLogs = async () => {
       if (!user) return;
       try {
+        console.log('🔍 [HOME] Fetching calorie logs for uid:', user.uid);
         const calorieLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'calorie_logs', 'main');
         const calorieLogSnap = await getDoc(calorieLogRef);
         if (cancelled) return;
@@ -142,9 +147,12 @@ export default function HomeScreen() {
               { data: last7Days }
             ]
           });
+          console.log('✅ [HOME] Successfully fetched calorie logs');
+        } else {
+          console.log('⚠️ [HOME] Calorie logs document does not exist');
         }
       } catch (err) {
-        console.error('Failed to fetch calorie logs:', err);
+        console.error('❌ [HOME] ERROR fetching calorie logs from users/' + user.uid + '/private/health_profile/calorie_logs/main:', err.code, err.message);
       }
     };
 
@@ -156,7 +164,7 @@ export default function HomeScreen() {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔥 Fetching landing page data from Firebase...');
+      console.log('� [HOME] Fetching landing page data from landingPageContent/main...');
       
       // 🎯 FETCH FROM YOUR EXACT STRUCTURE: landingPageContent/main
       const landingPageDocRef = doc(db, 'landingPageContent', 'main');
@@ -164,10 +172,10 @@ export default function HomeScreen() {
       
       if (landingPageSnapshot.exists()) {
         const data = landingPageSnapshot.data();
-        console.log('✅ Landing page data found:', data);
+        console.log('✅ [HOME] Landing page data found');
         setLandingPageData(data);
       } else {
-        console.log('❌ No landingPageContent/main document found');
+        console.log('⚠️ [HOME] No landingPageContent/main document found');
         // Set fallback data
         setLandingPageData({
           hero: {
@@ -182,7 +190,7 @@ export default function HomeScreen() {
       }
       
     } catch (error) {
-      console.error('🚨 Firebase Error:', error);
+      console.error('❌ [HOME] ERROR fetching landingPageContent/main:', error.code, error.message);
       setError(error.message);
       // Fallback data on error
       setLandingPageData({
