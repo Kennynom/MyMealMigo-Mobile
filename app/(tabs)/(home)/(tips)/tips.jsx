@@ -8,7 +8,7 @@ import { ThemeContext } from '@/context/ThemeContext';
 import { useDailyContent } from '@/hooks/useDailyContent';
 import { listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
 
-import { db } from '@/config/firebase'; // <— adjust if your firebase export path differs
+import { db } from '@/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 function palette(theme) {

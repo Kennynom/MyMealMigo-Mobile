@@ -257,5 +257,43 @@
   "url": "https://www.myplate.gov/eat-healthy/protein-foods/beans-peas-lentils",
   "type": "article",
   "tags": ["protein","plant-based","fibre"]
- }
+ },
+ 
+  {"title":"8 tips for healthy eating","sourceTitle":"NHS","url":"https://www.nhs.uk/live-well/eat-well/8-tips-for-healthy-eating/","type":"article","tags":["diet","basics"]},
+  {"title":"How to cut down on saturated fat","sourceTitle":"NHS","url":"https://www.nhs.uk/live-well/eat-well/how-to-cut-down-on-saturated-fat/","type":"article","tags":["fats","heart"]},
+  {"title":"Portion sizes explained","sourceTitle":"NHS","url":"https://www.nhs.uk/live-well/eat-well/food-portions-and-healthy-eating/","type":"article","tags":["portion","weight"]},
+  {"title":"Snack smarter: healthy swaps","sourceTitle":"NHS","url":"https://www.nhs.uk/live-well/eat-well/healthier-food-swaps/","type":"article","tags":["snacks","swaps"]},
+  {"title":"Healthy weight: check your BMI","sourceTitle":"NHS","url":"https://www.nhs.uk/live-well/healthy-weight/","type":"article","tags":["weight","bmi"]},
+
+  {"title":"Healthy eating for a healthy weight","sourceTitle":"CDC","url":"https://www.cdc.gov/healthyweight/healthy_eating/index.html","type":"article","tags":["diet","weight"]},
+  {"title":"Limit trans fat & replace with healthier oils","sourceTitle":"CDC","url":"https://www.cdc.gov/cholesterol/ldl_hdl.htm","type":"article","tags":["fats","heart"]},
+  {"title":"Rethink your drink (cut sugary beverages)","sourceTitle":"CDC","url":"https://www.cdc.gov/healthyweight/healthy_eating/drinks.html","type":"article","tags":["sugar","beverages"]},
+  {"title":"Add more whole grains","sourceTitle":"CDC","url":"https://www.cdc.gov/nutrition/resources-publications/benefits-of-healthy-eating.html","type":"article","tags":["whole-grains","fibre"]},
+  {"title":"Fruits & veggies: make half your plate","sourceTitle":"CDC","url":"https://www.cdc.gov/nutrition/resources-publications/benefits-of-healthy-eating.html#fruits-vegetables","type":"article","tags":["fruit-veg","portion"]},
+
+  {"title":"Healthy oils (what to choose)","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/healthy-oils/","type":"article","tags":["fats","oils"]},
+  {"title":"Carbohydrates: quality matters","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/carbohydrates/","type":"article","tags":["carbs","glycemic"]},
+  {"title":"Glycemic index & load","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/glycemic-index/","type":"article","tags":["carbs","blood-sugar"]},
+  {"title":"Fiber: why it matters","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/carbohydrates/fiber/","type":"article","tags":["fibre","gut"]},
+  {"title":"Healthy drinks (what to sip)","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/healthy-drinks/","type":"article","tags":["hydration","sugar"]},
+  {"title":"Vegetables & fruits: power up your plate","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/healthy-eating-plate/vegetables-and-fruits/","type":"article","tags":["fruit-veg","micronutrients"]},
+  {"title":"Whole grains: a better choice","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/what-should-you-eat/whole-grains/","type":"article","tags":["whole-grains"]},
+  {"title":"Healthy protein choices","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/what-should-you-eat/protein/","type":"article","tags":["protein"]},
+
+  {"title":"MyPlate: Fruits Group","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/eat-healthy/fruits","type":"article","tags":["fruit"]},
+  {"title":"MyPlate: Vegetables Group","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/eat-healthy/vegetables","type":"article","tags":["vegetables"]},
+  {"title":"MyPlate: Oils (choose healthy fats)","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/eat-healthy/oils","type":"article","tags":["oils","fats"]},
+  {"title":"MyPlate: Make half your grains whole","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/eat-healthy/grains/why-grains-are-important","type":"article","tags":["whole-grains"]},
+  {"title":"MyPlate: Vary your protein routine","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/eat-healthy/protein-foods/variety","type":"article","tags":["protein","variety"]},
+  {"title":"MyPlate: Start Simple with Meals","sourceTitle":"USDA MyPlate","url":"https://www.myplate.gov/tip-sheet/start-simple-myplate-meals","type":"article","tags":["meal-planning"]},
+
+  {"title":"Obesity & overweight (what to know)","sourceTitle":"WHO","url":"https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight","type":"article","tags":["weight","risk"]},
+  {"title":"Trans fat: why to avoid and how","sourceTitle":"WHO","url":"https://www.who.int/news-room/questions-and-answers/item/trans-fatty-acids-and-their-effects-on-health","type":"article","tags":["fats","trans-fat"]},
+  {"title":"Reduce salt intake","sourceTitle":"WHO","url":"https://www.who.int/news-room/fact-sheets/detail/salt-reduction","type":"article","tags":["sodium","blood-pressure"]},
+
+  {"title":"The brain-changing benefits of exercise","sourceTitle":"TED (Wendy Suzuki)","url":"https://www.youtube.com/watch?v=BHY0FxzoKZE","type":"video","tags":["exercise","brain"]},
+  {"title":"Sleep is your superpower","sourceTitle":"TED (Matt Walker)","url":"https://www.youtube.com/watch?v=5MuIMqhT8DM","type":"video","tags":["sleep"]},
+  {"title":"Why dieting doesn’t usually work","sourceTitle":"TED (Sandra Aamodt)","url":"https://www.youtube.com/watch?v=jn0Ygp7pMbA","type":"video","tags":["diet","behavior"]},
+  {"title":"How to make stress your friend","sourceTitle":"TED (Kelly McGonigal)","url":"https://www.youtube.com/watch?v=RcGyVTAoXEU","type":"video","tags":["stress","mind"]},
+  {"title":"Blue Zones: how to live to 100+","sourceTitle":"TEDx (Dan Buettner)","url":"https://www.youtube.com/watch?v=ff40YiMmVkU","type":"video","tags":["longevity","lifestyle"]}
 ]

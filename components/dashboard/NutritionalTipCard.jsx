@@ -59,7 +59,6 @@ export default function NutritionalTipCard() {
         console.log('✅ [TIP CARD] Successfully recorded tip to history');
       } catch (e) {
         console.error('❌ [TIP CARD] ERROR recording tip to history:', e.code, e.message);
-        // ignore if rules forbid duplicates; recordTipShownToday handles idempotence
       }
     })();
   }, [user?.uid, current?.url]);
@@ -123,21 +122,12 @@ export default function NutritionalTipCard() {
       </Pressable>
 
       <View style={styles.footerRow}>
-        {/* Back button */}
-        <Pressable onPress={prev} style={[styles.actionPill, { marginRight: 8 }]}>
-          <Text style={styles.actionText}>Back</Text>
-        </Pressable>
-
         <Pressable onPress={open} style={[styles.actionPill, { marginRight: 8 }]}>
           <Text style={styles.actionText}>Open</Text>
         </Pressable>
 
         <Pressable onPress={toggleSave} style={[styles.actionPill, { marginRight: 8 }]}>
           <Text style={styles.actionText}>{saved ? 'Unsave' : 'Save'}</Text>
-        </Pressable>
-
-        <Pressable onPress={next} style={styles.actionPill}>
-          <Text style={styles.actionText}>Next</Text>
         </Pressable>
       </View>
     </View>

@@ -1,10 +1,22 @@
 // app/(tabs)/(home)/(tips)/tips-history.jsx
+import manifest from '@/assets/data/content_manifest.json';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { listHistory, listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+function urlToDayIndex(url) {
+  if (!url) return null;
+  const idx = manifest.findIndex(item => item.url === url);
+  return idx >= 0 ? idx + 1 : null; // 1..N
+}
+
+function todaysCutoffDay() {
+  const d = new Date().getDate(); // 1..31
+  return Math.min(30, Math.max(1, d)); // cap to your 30-day cycle
+}
 
 export default function TipsHistoryScreen() {
   const { theme } = useTheme();
@@ -18,6 +30,7 @@ export default function TipsHistoryScreen() {
   const [history, setHistory] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
+  // Load raw lists
   useEffect(() => {
     if (!user?.uid) return;
     (async () => {
@@ -27,7 +40,21 @@ export default function TipsHistoryScreen() {
     })();
   }, [user?.uid]);
 
-  const list = tab === 'Saved' ? saved : history;
+  // Filter “up to today” using manifest order
+  const cutoff = todaysCutoffDay();
+  const filterUpToToday = (items) =>
+    items.filter(it => {
+      const idx = urlToDayIndex(it.url);
+      // If URL isn’t in manifest, still show it (could be ad-hoc saved link)
+      if (idx == null) return true;
+      return idx <= cutoff;
+    });
+
+  const viewSaved = tab === 'Saved';
+  const list = useMemo(
+    () => filterUpToToday(viewSaved ? saved : history),
+    [viewSaved, saved, history, cutoff]
+  );
 
   async function handleToggleSave(item) {
     if (!user?.uid) return;
@@ -36,9 +63,8 @@ export default function TipsHistoryScreen() {
       const isInSaved = saved.some(s => (s.id === item.id) || (s.url === item.url));
       if (isInSaved) {
         await removeSavedTip(user.uid, item.id || item.url);
-        setSaved(prev => prev.filter(s => s.id !== item.id));
+        setSaved(prev => prev.filter(s => s.id !== item.id && s.url !== item.url));
       } else {
-        // item from history → allow save
         const newId = await saveTip(user.uid, item);
         setSaved(prev => [{ id: newId, ...item }, ...prev]);
       }
@@ -61,16 +87,16 @@ export default function TipsHistoryScreen() {
       {/* TABS */}
       <View style={styles.tabs}>
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'History' ? styles.tabActive : null]}
+          style={[styles.tabBtn, !viewSaved ? styles.tabActive : null]}
           onPress={() => setTab('History')}
         >
-          <Text style={[styles.tabText, tab === 'History' ? styles.tabTextActive : null]}>History</Text>
+          <Text style={[styles.tabText, !viewSaved ? styles.tabTextActive : null]}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'Saved' ? styles.tabActive : null]}
+          style={[styles.tabBtn, viewSaved ? styles.tabActive : null]}
           onPress={() => setTab('Saved')}
         >
-          <Text style={[styles.tabText, tab === 'Saved' ? styles.tabTextActive : null]}>Saved</Text>
+          <Text style={[styles.tabText, viewSaved ? styles.tabTextActive : null]}>Saved</Text>
         </TouchableOpacity>
       </View>
 
@@ -90,6 +116,12 @@ export default function TipsHistoryScreen() {
                 {item.title}
               </Text>
               <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+
+              {/* Show "Day X of 30" if the tip exists in the manifest */}
+              {urlToDayIndex(item.url) != null && (
+                <Text style={styles.metaText}>Day {urlToDayIndex(item.url)} of 30</Text>
+              )}
+
               <View style={styles.actions}>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
                   <Text style={styles.actionText}>Open</Text>
@@ -111,10 +143,15 @@ export default function TipsHistoryScreen() {
         {list.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {tab === 'Saved' ? "No saved tips yet." : "No history yet."}
+              {viewSaved ? "No saved tips available up to today." : "No history yet."}
             </Text>
           </View>
         )}
+
+        {/* Footnote explaining the cutoff */}
+        <View style={{ padding: 12, alignItems: 'center' }}>
+          <Text style={styles.cutoffNote}>Showing tips up to day {cutoff} of 30.</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -157,15 +194,16 @@ function createStyles(theme) {
     thumbEmoji: { fontSize: 28 },
     cardText: { flex: 1 },
     cardTitle: { color: theme.text, fontSize: 15, fontWeight: '700' },
-    cardSource: { color: theme.textSecondary, marginTop: 4, marginBottom: 8 },
+    cardSource: { color: theme.textSecondary, marginTop: 4, marginBottom: 6 },
+    metaText: { color: theme.textSecondary, fontSize: 12, marginBottom: 8 },
+
     actions: { flexDirection: 'row', gap: 8 },
-    actionBtn: {
-      backgroundColor: theme.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8,
-    },
+    actionBtn: { backgroundColor: theme.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
     secondaryBtn: { backgroundColor: theme.altBackground },
     actionText: { color: theme.buttonText, fontWeight: '700' },
 
     empty: { padding: 32, alignItems: 'center' },
     emptyText: { color: theme.textSecondary },
+    cutoffNote: { color: theme.textSecondary, fontSize: 12, opacity: 0.8 },
   });
 }
