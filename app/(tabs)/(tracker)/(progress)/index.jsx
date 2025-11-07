@@ -316,11 +316,11 @@ export default function ProgressTrackerScreen() {
             height={220}
             yAxisSuffix=" kg"
             chartConfig={{
-              backgroundColor: '#fff',
-              backgroundGradientFrom: '#fff',
-              backgroundGradientTo: '#fff',
+              backgroundColor: theme.background,
+              backgroundGradientFrom: theme.background,
+              backgroundGradientTo: theme.background,
               decimalPlaces: 1,
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              color: (opacity = 1) => theme.background,
               labelColor: (opacity = 1) => theme.text,
               style: {
                 borderRadius: 16,
@@ -415,7 +415,6 @@ export default function ProgressTrackerScreen() {
           </View>
         </View>
       </Modal>
-
     </View>
     
   );

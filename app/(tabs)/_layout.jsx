@@ -1,31 +1,14 @@
 // app/(tabs)/_layout.jsx - Smart platform detection
-import WebLayout from '@/components/layouts/WebLayout';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { ThemeContext } from '@/context/ThemeContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Tabs } from 'expo-router';
 import React, { useContext } from 'react';
-import { Platform } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { theme } = useContext(ThemeContext);
-
-  // ON WEB: Use WebLayout wrapper + hide tabs
-  if (Platform.OS === 'web') {
-    return (
-      <WebLayout>
-        <Tabs
-          screenOptions={{
-            tabBarStyle: { display: 'none' }, // ← HIDE TABS ON WEB
-            headerShown: false,
-          }}
-          initialRouteName='(home)'>
-        </Tabs>
-      </WebLayout>
-    );
-  }
 
   // ON MOBILE: Keep your existing tab layout unchanged
   return (
