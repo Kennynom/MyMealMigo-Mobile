@@ -2,7 +2,7 @@
 import { ThemeContext } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
-import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 // 🔥 Firebase imports
@@ -12,12 +12,6 @@ import { doc, getDoc } from 'firebase/firestore';
 
 // Import components
 import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
-import { Features } from '@/components/features'; // ← ADD THIS IMPORT
-import { Footer } from '@/components/footer'; // ← ADD FOOTER IMPORT
-import { Hero } from '@/components/hero';
-import { HowItWorks } from '@/components/how-it-works'; // ← ADD HOW IT WORKS IMPORT
-import { Pricing } from '@/components/pricing'; // ← ADD PRICING IMPORT
-import { Testimonials } from '@/components/testimonials'; // ← ADD TESTIMONIALS IMPORT
 
 import NutritionalTipCard from '@/components/dashboard/NutritionalTipCard';
 
@@ -44,15 +38,6 @@ export default function HomeScreen() {
   const profileImageUrl =
     landingPageData?.profile?.photoURL ?? 'https://www.gravatar.com/avatar/?d=mp&s=200';
 
-  // 🔥 FETCH DATA FROM FIREBASE WITH BETTER ERROR HANDLING
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      fetchLandingPageData();
-    } else {
-      // Skip Firebase on mobile for now
-      setLoading(false);
-    }
-  }, []);
 
   // Fetch user's weight and BMI for display on mobile dashboard
   useEffect(() => {
@@ -160,163 +145,6 @@ export default function HomeScreen() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const fetchLandingPageData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('� [HOME] Fetching landing page data from landingPageContent/main...');
-      
-      // 🎯 FETCH FROM YOUR EXACT STRUCTURE: landingPageContent/main
-      const landingPageDocRef = doc(db, 'landingPageContent', 'main');
-      const landingPageSnapshot = await getDoc(landingPageDocRef);
-      
-      if (landingPageSnapshot.exists()) {
-        const data = landingPageSnapshot.data();
-        console.log('✅ [HOME] Landing page data found');
-        setLandingPageData(data);
-      } else {
-        console.log('⚠️ [HOME] No landingPageContent/main document found');
-        // Set fallback data
-        setLandingPageData({
-          hero: {
-            title1: "Eat Smart,",
-            title2: "Live Better.",
-            description: "MyMealMigo is your all-in-one nutrition companion that makes healthy eating simple, personalized, and fun. Take our Quiz to get a personal meal plan.",
-            imageURL: null,
-            mediaType: "image"
-          },
-          features: []
-        });
-      }
-      
-    } catch (error) {
-      console.error('❌ [HOME] ERROR fetching landingPageContent/main:', error.code, error.message);
-      setError(error.message);
-      // Fallback data on error
-      setLandingPageData({
-        hero: {
-          title1: "Eat Smart,",
-          title2: "Live Better.",
-          description: "MyMealMigo nutrition companion",
-          imageURL: null,
-          mediaType: "image"
-        },
-        features: []
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Create the Male/Female buttons as children for Hero
-  const HeroButtons = () => (
-    <View style={styles.heroButtonsContainer}>
-      <TouchableOpacity 
-        style={styles.heroButton}
-        onPress={() => router.push('/(tabs)/(add)/?sex=male')}
-      >
-        <Text style={styles.heroButtonText}>Male</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.heroButton}
-        onPress={() => router.push('/(tabs)/(add)/?sex=female')}
-      >
-        <Text style={styles.heroButtonText}>Female</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  // Loading state
-  if (loading && Platform.OS === 'web') {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>🔥 Loading... </Text>
-      </View>
-    );
-  }
-
-  // Error state
-  if (error && Platform.OS === 'web') {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>⚠️ Error loading data</Text>
-        <Text style={styles.errorDetail}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchLandingPageData}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-
-
-  // ON WEB: Show MyMealMigo website with real Firebase data
-  if (Platform.OS === 'web') {
-    return (
-      <View style={{ flex: 1 }}>
-        <AuthDebug />
-        <ScrollView style={styles.webContainer} showsVerticalScrollIndicator={false}>
-        {/* 🎯 HERO SECTION */}
-        {landingPageData?.hero && (
-          <Hero
-            title1={landingPageData.hero.title1}
-            title2={landingPageData.hero.title2}
-            description={landingPageData.hero.description}
-            imageURL={landingPageData.hero.imageURL}
-            videoURL={landingPageData.hero.videoURL}
-            mediaType={landingPageData.hero.mediaType}
-          >
-            <HeroButtons />
-          </Hero>
-        )}
-        
-        {/* 🎯 FEATURES SECTION - NEW! */}
-        {landingPageData?.features && (
-          <Features features={landingPageData.features} />
-        )}
-
-        {/* 🎯 PRICING SECTION */}
-        {landingPageData?.pricing && (
-          <View style={styles.pricingSection}>
-            <Text style={styles.pricingTitle}>Choose Your Plan</Text>
-            <View style={styles.pricingCardsContainer}>
-            {landingPageData.pricing.map((plan, index) => (
-              <Pricing
-                key={index}
-                name={plan.name}
-                price={plan.price}
-                buttonText={plan.buttonText}
-                description={plan.description}
-                featured={plan.featured}
-                features={plan.features}
-              />
-            ))}
-            </View>
-          </View>
-        )}
-
-        {/* 🎯 TESTIMONIALS SECTION */}
-        {landingPageData?.testimonial && (
-          <Testimonials testimonials={landingPageData.testimonial} />
-        )}
-        
-        {/* 🎯 HOW IT WORKS SECTION */}
-        {landingPageData?.howItWorks && (
-          <HowItWorks howItWorks={landingPageData.howItWorks} />
-        )}
-
-        {/* 🎯 FOOTER SECTION */}
-        <Footer />
-
-      </ScrollView>
-      
-
-      </View>
-    );
-  }
-
-  // ON MOBILE: Keep existing mobile screen
   return (
     <View style={styles.mobileContainer}>
       <AuthDebug />
@@ -447,21 +275,6 @@ function createStyle(theme) {
     webContainer: {
       flex: 1,
       backgroundColor: theme.background,
-    },
-    heroButtonsContainer: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    heroButton: {
-      backgroundColor: theme.primary,
-      paddingHorizontal: 32,
-      paddingVertical: 12,
-      borderRadius: 25,
-    },
-    heroButtonText: {
-      color: theme.buttonText,
-      fontSize: 16,
-      fontWeight: '500',
     },
     sectionsPlaceholder: {
       backgroundColor: theme.sectionBackground,
