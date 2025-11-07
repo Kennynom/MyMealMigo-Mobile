@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, StyleSheet, useColorScheme } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
+import { logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
@@ -10,8 +12,22 @@ export default function RecipeDetail() {
   const { id } = useLocalSearchParams();          // recipe doc id
   const scheme = useColorScheme();
   const c = colors(scheme);
+  const { user } = useAuth();
 
   const [item, setItem] = useState(null);
+  const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
+  const [logging, setLogging] = useState(false);
+
+  const mealCategories = [
+    { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { id: 'lunch', label: 'Lunch', icon: '🌞' },
+    { id: 'dinner', label: 'Dinner', icon: '🌙' },
+  ];
+
+  const mealTypes = [
+    { id: 'meal', label: 'Meal' },
+    { id: 'beverage', label: 'Beverage' },
+  ];
 
   useEffect(() => {
     (async () => {
@@ -19,6 +35,56 @@ export default function RecipeDetail() {
       if (snap.exists()) setItem({ id: snap.id, ...snap.data() });
     })();
   }, [id]);
+
+  const handleLogMeal = async (mealCategory, mealType) => {
+    if (!user?.uid || !item) return;
+    
+    setShowMealCategoryModal(false);
+    setLogging(true);
+
+    try {
+      const mealData = {
+        userId: user.uid,
+        foodName: item.title || 'Recipe',
+        calories: item.Macros?.calories || item.calories || 0,
+        protein: item.Macros?.protein || 0,
+        carbs: item.Macros?.carbs || 0,
+        fat: item.Macros?.fat || 0,
+        sodium: item.Macros?.sodium || 0,
+        sugar: item.Macros?.sugar || 0,
+        servingSize: 1,
+        servingUnit: 'serving',
+        mealCategory: mealCategory,
+        mealType: mealType,
+        entryMethod: 'recipes',
+        recipeId: item.id,
+        timestamp: new Date(),
+      };
+
+      await logMealToFirebase(mealData);
+      await updateCalorieTracking(user.uid, mealData);
+
+      Alert.alert(
+        'Success',
+        `Recipe logged to ${mealCategory} successfully!`,
+        [
+          {
+            text: 'View Logs',
+            onPress: () => router.push('/(tabs)/(logs)'),
+          },
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error logging recipe:', error);
+      Alert.alert('Error', 'Failed to log recipe. Please try again.');
+    } finally {
+      setLogging(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -64,6 +130,51 @@ export default function RecipeDetail() {
             )}
           </View>
 
+          {/* Macros */}
+          {!!item.Macros && (
+            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.sectionTitle, { color: c.text }]}>Nutrition Facts (Per 1 Serving)</Text>
+              <View style={styles.macrosGrid}>
+                {item.Macros.calories && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.calories}</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>cal</Text>
+                  </View>
+                )}
+                {item.Macros.carbs && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.carbs}g</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>carbs</Text>
+                  </View>
+                )}
+                {item.Macros.protein && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.protein}g</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>protein</Text>
+                  </View>
+                )}
+                {item.Macros.fat && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.fat}g</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>fat</Text>
+                  </View>
+                )}
+                {item.Macros.sodium && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.sodium}</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>sodium</Text>
+                  </View>
+                )}
+                {item.Macros.sugar && (
+                  <View style={styles.macroItem}>
+                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.sugar}g</Text>
+                    <Text style={[styles.macroLabel, { color: c.muted }]}>sugar</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Ingredients */}
           {!!item.ingredients?.length && (
             <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -83,8 +194,65 @@ export default function RecipeDetail() {
               ))}
             </View>
           )}
+
+          {/* Log Meal Button */}
+          <View style={styles.logButtonContainer}>
+            <TouchableOpacity
+              style={[styles.logMealButton, { backgroundColor: c.accent }]}
+              onPress={() => setShowMealCategoryModal(true)}
+              disabled={logging}
+            >
+              <Text style={styles.logMealButtonText}>
+                {logging ? 'Logging...' : 'Add to Meal Log'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       )}
+
+      {/* Meal Category Selection Modal */}
+      <Modal
+        visible={showMealCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMealCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: c.bg }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: c.border }]}>
+              <Text style={[styles.modalTitle, { color: c.text }]}>Select Meal Category</Text>
+              <TouchableOpacity 
+                onPress={() => setShowMealCategoryModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={[styles.modalCloseText, { color: c.muted }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {mealCategories.map((category) => (
+                <View key={category.id} style={styles.categorySection}>
+                  <Text style={[styles.categoryLabel, { color: c.text }]}>
+                    {category.icon} {category.label}
+                  </Text>
+                  
+                  <View style={styles.typeButtonsRow}>
+                    {mealTypes.map((type) => (
+                      <TouchableOpacity
+                        key={`${category.id}-${type.id}`}
+                        style={styles.typeButton}
+                        onPress={() => handleLogMeal(category.id, type.id)}
+                      >
+                        <Text style={styles.typeButtonText}>{type.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -99,8 +267,112 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12 },
   tags: { fontSize: 12, marginTop: 6 },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  macrosGrid: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(0,0,0,0.03)', 
+    borderRadius: 10, 
+    padding: 12,
+    gap: 6,
+  },
+  macroItem: { 
+    flex: 1, 
+    alignItems: 'center', 
+    paddingVertical: 8,
+  },
+  macroValue: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    marginBottom: 4,
+  },
+  macroLabel: { 
+    fontSize: 10, 
+    textTransform: 'uppercase', 
+    fontWeight: '600',
+  },
   li: { fontSize: 14, lineHeight: 22, marginBottom: 4 },
   step: { fontSize: 15, lineHeight: 24, marginBottom: 8 },
+  logButtonContainer: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 20,
+  },
+  logMealButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logMealButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    fontWeight: '300',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  typeButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  typeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 function colors(scheme) {
@@ -111,5 +383,6 @@ function colors(scheme) {
     text: dark ? '#F5F6F8' : '#121319',
     muted: dark ? 'rgba(234,236,240,0.68)' : 'rgba(21,23,28,0.68)',
     border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    accent: dark ? '#1DB954' : '#1DB954',
   };
 }

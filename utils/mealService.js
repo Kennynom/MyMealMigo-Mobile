@@ -398,29 +398,21 @@ export const updateCalorieTracking = async (userId, mealData) => {
  */
 export const getUserCalorieGoal = async (userId) => {
   try {
-    // First priority: Check existing daily logs for caloriesSet
-    const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
-    const logsSnap = await getDoc(calorieLogsRef);
-    
-    if (logsSnap.exists()) {
-      const logsData = logsSnap.data();
-      // Get caloriesSet from the most recent daily log
-      if (logsData.dailyLogs && logsData.dailyLogs.length > 0) {
-        const latestLog = logsData.dailyLogs[logsData.dailyLogs.length - 1];
-        if (latestLog.caloriesSet) {
-          return latestLog.caloriesSet;
-        }
-      }
-    }
-    
-    // Second priority: Fall back to health profile's dailyCalorieGoal
+    // First priority: Check health profile for Goal.items.targetCalories (from Health Calculator)
     const healthProfileRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC);
-    const docSnap = await getDoc(healthProfileRef);
+    const healthProfileSnap = await getDoc(healthProfileRef);
     
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      if (data.dailyCalorieGoal) {
-        return data.dailyCalorieGoal;
+    if (healthProfileSnap.exists()) {
+      const healthData = healthProfileSnap.data();
+      
+      // Primary: Use Goal.items.targetCalories from Health Calculator
+      if (healthData.Goal && healthData.Goal.items && healthData.Goal.items.targetCalories) {
+        return healthData.Goal.items.targetCalories;
+      }
+      
+      // Fallback: Use dailyCalorieGoal if Goal.items.targetCalories doesn't exist
+      if (healthData.dailyCalorieGoal) {
+        return healthData.dailyCalorieGoal;
       }
     }
     

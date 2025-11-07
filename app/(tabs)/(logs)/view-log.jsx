@@ -864,7 +864,8 @@ const createStyles = (theme, colorScheme) =>
     },
     nutritionText: {
       fontSize: 13,
-      color: theme.textSecondary,
+      color: theme.primary,
+      fontWeight: 'bold',
     },
     nutritionDivider: {
       fontSize: 13,
