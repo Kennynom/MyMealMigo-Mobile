@@ -77,21 +77,42 @@ export default function CalorieTrackerScreen() {
         try {
             let userCalorieGoal = null; 
             
-            // First, try to get the calorie logs to find the user's caloriesSet
+            console.log('=== Fetching Calorie Goal ===');
+            console.log('User ID:', uid);
+            
+            // First, get targetCalories from health_profile Goal
+            const healthProfileRef = doc(db, 'users', uid, 'private', 'health_profile');
+            const healthProfileSnap = await getDoc(healthProfileRef);
+            
+            console.log('Health profile exists:', healthProfileSnap.exists());
+            
+            if (healthProfileSnap.exists()) {
+                const healthData = healthProfileSnap.data();
+                console.log('Health data Goal:', healthData.Goal);
+                console.log('Health data Goal.items:', healthData.Goal?.items);
+                console.log('Health data Goal.items.targetCalories:', healthData.Goal?.items?.targetCalories);
+                
+                // Use targetCalories from Goal.items as the primary source
+                if (healthData.Goal && healthData.Goal.items && healthData.Goal.items.targetCalories) {
+                    userCalorieGoal = healthData.Goal.items.targetCalories;
+                    console.log('✅ Found targetCalories:', userCalorieGoal);
+                }
+                // Fall back to dailyCalorieGoal if targetCalories doesn't exist
+                else if (healthData.dailyCalorieGoal) {
+                    userCalorieGoal = healthData.dailyCalorieGoal;
+                    console.log('✅ Using dailyCalorieGoal:', userCalorieGoal);
+                }
+            }
+            
+            console.log('Final userCalorieGoal:', userCalorieGoal);
+            
+            // Get the calorie logs
             const calorieLogDocRef = doc(db, 'users', uid, 'private', 'health_profile', 'calorie_logs', 'main');
             const docSnap = await getDoc(calorieLogDocRef);
             
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setAllDailyLogs(data.dailyLogs || []);
-                
-                // Get the caloriesSet from the most recent daily log (this is what the user has been using)
-                if (data.dailyLogs && data.dailyLogs.length > 0) {
-                    const latestLog = data.dailyLogs[data.dailyLogs.length - 1];
-                    if (latestLog.caloriesSet) {
-                        userCalorieGoal = latestLog.caloriesSet;
-                    }
-                }
                 
                 // Get latest weekly log
                 if (data.weeklyLogs && data.weeklyLogs.length > 0) {
@@ -103,18 +124,8 @@ export default function CalorieTrackerScreen() {
                 }
             }
             
-            // If no logs exist, fall back to health profile's dailyCalorieGoal
-            if (userCalorieGoal === null) {
-                const healthProfileRef = doc(db, 'users', uid, 'private', 'health_profile');
-                const healthProfileSnap = await getDoc(healthProfileRef);
-                
-                if (healthProfileSnap.exists()) {
-                    const healthData = healthProfileSnap.data();
-                    userCalorieGoal = healthData.dailyCalorieGoal || null;
-                }
-            }
-            
             setDefaultCalorieGoal(userCalorieGoal);
+            console.log('Set defaultCalorieGoal to:', userCalorieGoal);
             
         } catch (error) {
             console.error('Error fetching calorie logs:', error);
@@ -157,6 +168,11 @@ export default function CalorieTrackerScreen() {
         caloriesConsumed: 0,
         caloriesRemaining: defaultCalorieGoal
     };
+
+    console.log('=== Daily Log for Date ===');
+    console.log('Selected date:', selectedDateString);
+    console.log('dailyLogForDate.caloriesSet:', dailyLogForDate.caloriesSet);
+    console.log('defaultCalorieGoal:', defaultCalorieGoal);
 
     // Choose which intake to show
     const currentIntake =

@@ -293,9 +293,6 @@ export default function MealHistoryScreen() {
                                     {meal.mealType === 'beverage' ? '🥤' : '🍽️'}
                                   </Text>
                                 </View>
-                                <Text style={styles.mealTime}>
-                                  {formatTime(meal.timestamp)}
-                                </Text>
                               </View>
                             </View>
                           </View>
