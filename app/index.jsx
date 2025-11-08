@@ -1,13 +1,21 @@
-import { Redirect } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { router } from 'expo-router';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useEffect } from 'react';
 
-// On web: keep current behavior (redirect into tabs)
-// On mobile: redirect to full-screen login route first
-export default function RootIndex() {
-  if (Platform.OS === 'web') {
-    return <Redirect href='/(tabs)/(home)' />;
-  }
+export default function Index() {
+  useEffect(() => {
+    const auth = getAuth();
+    const sub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // already logged in -> app
+        router.replace('/(tabs)/(home)');
+      } else {
+        // signed out -> landing
+        router.replace('/(auth)/landing');
+      }
+    });
+    return () => sub();
+  }, []);
 
-  return <Redirect href='/(auth)/login' />;
+  return null; // nothing to render; we just redirect
 }
