@@ -1,12 +1,19 @@
 // app/(tabs)/(logs)/index.jsx
+import { db } from '@/config/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { router } from 'expo-router';
-import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getUserMeals } from '@/utils/mealService';
+import { router, useFocusEffect } from 'expo-router';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { useCallback, useContext, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LogsMainScreen() {
   const { theme } = useContext(ThemeContext);
+  const { user } = useAuth();
   const styles = createStyles(theme);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -14,6 +21,94 @@ export default function LogsMainScreen() {
     month: 'long',
     day: 'numeric',
   });
+
+  // Fetch recent activities when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const fetchRecentActivities = async () => {
+        if (!user?.uid) {
+          setLoadingActivities(false);
+          return;
+        }
+
+        try {
+          setLoadingActivities(true);
+          const activities = [];
+
+          // Fetch recent meals
+          const meals = await getUserMeals(user.uid, 10); // Get last 10 meals
+          meals.forEach(meal => {
+            activities.push({
+              type: 'meal',
+              title: `${meal.mealCategory || 'Meal'} logged`,
+              subtitle: meal.foodName,
+              emoji: getMealEmoji(meal.mealCategory),
+              timestamp: meal.timestamp,
+            });
+          });
+
+          // Fetch recent journal entries
+          try {
+            const journalRef = collection(db, 'users', user.uid, 'private', 'health_profile', 'reflection_log');
+            const journalQuery = query(journalRef, orderBy('createdAt', 'desc'), limit(10));
+            const journalSnap = await getDocs(journalQuery);
+            
+            journalSnap.forEach(doc => {
+              const data = doc.data();
+              activities.push({
+                type: 'reflection',
+                title: 'Reflection added',
+                subtitle: data.text?.substring(0, 40) + (data.text?.length > 40 ? '...' : '') || 'Journal entry',
+                emoji: '📝',
+                timestamp: data.createdAt?.toDate() || new Date(),
+              });
+            });
+          } catch (journalError) {
+            console.log('No journal entries found or error fetching:', journalError);
+          }
+
+          // Sort all activities by timestamp (newest first)
+          activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+          // Take only the 3 most recent
+          setRecentActivities(activities.slice(0, 3));
+        } catch (error) {
+          console.error('Error fetching recent activities:', error);
+        } finally {
+          setLoadingActivities(false);
+        }
+      };
+
+      fetchRecentActivities();
+    }, [user?.uid])
+  );
+
+  // Helper function to get emoji based on meal category
+  const getMealEmoji = (category) => {
+    const emojiMap = {
+      breakfast: '🌅',
+      lunch: '☀️',
+      dinner: '🌙',
+    };
+    return emojiMap[category?.toLowerCase()] || '🍴';
+  };
+
+  // Helper function to format relative time
+  const getRelativeTime = (timestamp) => {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffInMs = now - date;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -90,29 +185,29 @@ export default function LogsMainScreen() {
       <View style={styles.recentContainer}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
 
-        <View style={styles.activityCard}>
-          <Text style={styles.activityEmoji}>🍳</Text>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>Breakfast logged</Text>
-            <Text style={styles.activityTime}>2 hours ago</Text>
+        {loadingActivities ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <Text style={styles.loadingText}>Loading activities...</Text>
           </View>
-        </View>
-
-        <View style={styles.activityCard}>
-          <Text style={styles.activityEmoji}>🥗</Text>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>Lunch logged</Text>
-            <Text style={styles.activityTime}>Yesterday</Text>
+        ) : recentActivities.length > 0 ? (
+          recentActivities.map((activity, index) => (
+            <View key={index} style={styles.activityCard}>
+              <Text style={styles.activityEmoji}>{activity.emoji}</Text>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>{activity.title}</Text>
+                <Text style={styles.activitySubtitle}>{activity.subtitle}</Text>
+                <Text style={styles.activityTime}>{getRelativeTime(activity.timestamp)}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>📭</Text>
+            <Text style={styles.emptyText}>No recent activities</Text>
+            <Text style={styles.emptySubtext}>Start logging meals or add reflections to see them here</Text>
           </View>
-        </View>
-
-        <View style={styles.activityCard}>
-          <Text style={styles.activityEmoji}>📝</Text>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>Reflection added</Text>
-            <Text style={styles.activityTime}>{currentDate}</Text>
-          </View>
-        </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -246,9 +341,49 @@ const createStyles = (theme) =>
       fontWeight: '500',
       color: theme.text,
     },
-    activityTime: {
+    activitySubtitle: {
       fontSize: 12,
       color: theme.textSecondary,
       marginTop: 2,
+    },
+    activityTime: {
+      fontSize: 11,
+      color: theme.textSecondary,
+      marginTop: 2,
+      fontStyle: 'italic',
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      backgroundColor: theme.surface,
+      borderRadius: 8,
+    },
+    loadingText: {
+      marginLeft: 10,
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    emptyState: {
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      padding: 30,
+      alignItems: 'center',
+    },
+    emptyEmoji: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    emptyText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: 6,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      textAlign: 'center',
     },
   });

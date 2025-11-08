@@ -4,16 +4,16 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, u
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function ManualEntryScreen() {
@@ -39,6 +39,8 @@ export default function ManualEntryScreen() {
     protein: '',
     carbs: '',
     fat: '',
+    sodium: '',
+    sugar: '',
     servingSize: '1',
     servingUnit: 'serving',
   });
@@ -52,6 +54,8 @@ export default function ManualEntryScreen() {
         protein: String(existingMealData.protein || ''),
         carbs: String(existingMealData.carbs || ''),
         fat: String(existingMealData.fat || ''),
+        sodium: String(existingMealData.sodium || ''),
+        sugar: String(existingMealData.sugar || ''),
         servingSize: String(existingMealData.servingSize || '1'),
         servingUnit: existingMealData.servingUnit || 'serving',
       });
@@ -90,7 +94,7 @@ export default function ManualEntryScreen() {
     }
 
     // Protein, carbs, and fat are optional but should be valid numbers if provided
-    const numericFields = ['protein', 'carbs', 'fat'];
+    const numericFields = ['protein', 'carbs', 'fat', 'sodium', 'sugar'];
     for (const field of numericFields) {
       if (mealData[field] && (isNaN(mealData[field]) || parseFloat(mealData[field]) < 0)) {
         Alert.alert('Error', `Please enter a valid ${field} value`);
@@ -135,6 +139,8 @@ export default function ManualEntryScreen() {
         protein: parseFloat(mealData.protein) || 0,
         carbs: parseFloat(mealData.carbs) || 0,
         fat: parseFloat(mealData.fat) || 0,
+        sodium: parseFloat(mealData.sodium) || 0,
+        sugar: parseFloat(mealData.sugar) || 0,
         servingSize: parseFloat(mealData.servingSize) || 1,
         servingUnit: mealData.servingUnit,
         entryMethod: 'manual',
@@ -281,7 +287,6 @@ export default function ManualEntryScreen() {
               style={styles.input}
               value={mealData.foodName}
               onChangeText={(text) => handleInputChange('foodName', text)}
-              placeholder="e.g., Grilled Chicken Breast"
               placeholderTextColor={theme.textSecondary}
             />
           </View>
@@ -358,6 +363,31 @@ export default function ManualEntryScreen() {
             </View>
           </View>
 
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Sodium (mg)</Text>
+              <TextInput
+                style={styles.input}
+                value={mealData.sodium}
+                onChangeText={(text) => handleInputChange('sodium', text)}
+                placeholder="0"
+                keyboardType="numeric"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </View>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Sugar (g)</Text>
+              <TextInput
+                style={styles.input}
+                value={mealData.sugar}
+                onChangeText={(text) => handleInputChange('sugar', text)}
+                placeholder="0"
+                keyboardType="numeric"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </View>
+          </View>
+
           {/* Summary */}
           {mealData.calories && (
             <View style={styles.summary}>
@@ -382,6 +412,18 @@ export default function ManualEntryScreen() {
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Fat:</Text>
                   <Text style={styles.summaryValue}>{mealData.fat}g</Text>
+                </View>
+              )}
+              {mealData.sodium && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Sodium:</Text>
+                  <Text style={styles.summaryValue}>{mealData.sodium}mg</Text>
+                </View>
+              )}
+              {mealData.sugar && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Sugar:</Text>
+                  <Text style={styles.summaryValue}>{mealData.sugar}g</Text>
                 </View>
               )}
             </View>

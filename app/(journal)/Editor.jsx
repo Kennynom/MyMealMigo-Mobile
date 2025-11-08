@@ -5,12 +5,14 @@ import dayjs from "dayjs";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 const MOOD_OPTIONS = [
@@ -304,13 +306,20 @@ export default function Editor() {
   );
 
   return (
-    <ScrollView
-      style={{
-        flex: 1,
-        backgroundColor: Colors.light.background,
-      }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={100}
     >
-      <View style={{ padding: 16 }}>
+      <ScrollView
+        style={{
+          flex: 1,
+          backgroundColor: Colors.light.background,
+        }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ padding: 16 }}>
         <Text
           style={{
             fontSize: 18,
@@ -522,5 +531,6 @@ export default function Editor() {
         </Pressable>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

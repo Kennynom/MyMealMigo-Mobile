@@ -1,6 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
+import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
@@ -61,6 +61,55 @@ export default function RecipeDetail() {
         timestamp: new Date(),
       };
 
+      // Check if this recipe will exceed calorie goal
+      const totalCalories = mealData.calories * mealData.servingSize;
+      const exceedanceCheck = await checkCalorieGoalExceedance(user.uid, totalCalories);
+      
+      if (exceedanceCheck.hasGoal && exceedanceCheck.willExceed) {
+        // Show warning and ask for confirmation
+        setLogging(false);
+        Alert.alert(
+          '⚠️ Calorie Goal Warning',
+          `This recipe will exceed your daily calorie goal by ${exceedanceCheck.exceedBy} calories.\n\n` +
+          `Current: ${exceedanceCheck.currentConsumed} cal\n` +
+          `Adding: ${totalCalories} cal\n` +
+          `Total: ${exceedanceCheck.totalAfterMeal} cal\n` +
+          `Goal: ${exceedanceCheck.calorieGoal} cal\n\n` +
+          `Do you want to continue?`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setLogging(false);
+              }
+            },
+            {
+              text: 'Log Anyway',
+              style: 'default',
+              onPress: async () => {
+                setLogging(true);
+                await proceedWithLogging(mealData, mealCategory);
+              }
+            }
+          ]
+        );
+        return; // Stop here and wait for user decision
+      }
+
+      // If no warning, proceed with logging
+      await proceedWithLogging(mealData, mealCategory);
+      
+    } catch (error) {
+      console.error('Error logging recipe:', error);
+      Alert.alert('Error', 'Failed to log recipe. Please try again.');
+      setLogging(false);
+    }
+  };
+
+  // Separate function to handle the actual logging
+  const proceedWithLogging = async (mealData, mealCategory) => {
+    try {
       await logMealToFirebase(mealData);
       await updateCalorieTracking(user.uid, mealData);
 

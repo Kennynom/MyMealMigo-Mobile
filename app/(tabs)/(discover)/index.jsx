@@ -55,23 +55,23 @@ export default function DiscoverMainScreen() {
 
       {/* Featured Section */}
       <View style={styles.featuredSection}>
-        <Text style={styles.sectionTitle}>Featured Today</Text>
+        <Text style={styles.sectionTitle}>Featured Recipes Today</Text>
         
         <View style={styles.featuredCard}>
-          <Text style={styles.featuredEmoji}>🥗</Text>
+          <Text style={styles.featuredEmoji}>🍽️</Text>
           <View style={styles.featuredContent}>
-            <Text style={styles.featuredTitle}>Quinoa Power Bowl</Text>
-            <Text style={styles.featuredSubtitle}>High protein, nutrient-dense meal</Text>
-            <Text style={styles.featuredCalories}>420 kcal</Text>
+            <Text style={styles.featuredTitle}>Mee Rebus</Text>
+            <Text style={styles.featuredSubtitle}>Yellow noodles coated in thick sweet gravy</Text>
+            <Text style={styles.featuredCalories}>520 kcal</Text>
           </View>
         </View>
 
         <View style={styles.featuredCard}>
-          <Text style={styles.featuredEmoji}>🍎</Text>
+          <Text style={styles.featuredEmoji}>🥤</Text>
           <View style={styles.featuredContent}>
-            <Text style={styles.featuredTitle}>Apple</Text>
-            <Text style={styles.featuredSubtitle}>Rich in fiber and vitamins</Text>
-            <Text style={styles.featuredCalories}>52 kcal per 100g</Text>
+            <Text style={styles.featuredTitle}>Chendol</Text>
+            <Text style={styles.featuredSubtitle}>Coconut milk dessert with gula melaka</Text>
+            <Text style={styles.featuredCalories}>380 kcal</Text>
           </View>
         </View>
       </View>
