@@ -32,7 +32,7 @@ export default function TrackerMainScreen() {
       subtitle: 'Log your workouts',
       icon: 'directions-run',
       color: '#95E1D3',
-      route: '/(tabs)/(tracker)/activity-tracker'
+      route: '/(tabs)/(tracker)/(activity)'
     },
     {
       id: 'calculator',

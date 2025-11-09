@@ -1,4 +1,4 @@
-// app/(tabs)/(home)/tips/tips-history.jsx
+// app/(tabs)/(home)/(tips)/tips-history.jsx
 import manifest from '@/assets/data/content_manifest.json';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -169,11 +169,11 @@ export default function TipsHistoryScreen() {
                   <Text style={styles.actionText}>Open</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, styles.secondaryBtn]}
+                  style={styles.actionBtnOutline}
                   onPress={() => handleToggleSave(item)}
                   disabled={busyId === (item.id || item.url)}
                 >
-                  <Text style={styles.actionText}>
+                  <Text style={styles.actionTextOutline}>
                     {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
                   </Text>
                 </TouchableOpacity>
@@ -244,6 +244,24 @@ function createStyles(theme) {
     actionBtn: { backgroundColor: theme.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
     secondaryBtn: { backgroundColor: theme.altBackground },
     actionText: { color: theme.buttonText, fontWeight: '700' },
+
+    actionBtn: {
+    backgroundColor: theme.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+    actionText: { color: theme.buttonText || '#fff', fontWeight: '800' },
+    // Outline (for "Save"/"Unsave") – works in light & dark
+    actionBtnOutline: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: theme.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+    },
+    actionTextOutline: { color: theme.primary, fontWeight: '800' },
 
     empty: { padding: 32, alignItems: 'center' },
     emptyText: { color: theme.textSecondary },

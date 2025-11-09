@@ -424,23 +424,6 @@ export default function ViewMealLogScreen() {
               ))
             )}
 
-            {/* TREND / GRAPH PLACEHOLDER */}
-            <View style={styles.trendCard}>
-              <Text style={styles.trendTitle}>
-                Wellness Trends
-              </Text>
-              <View style={styles.trendBody}>
-                <Text style={styles.trendEmoji}>
-                  📈
-                </Text>
-                <Text style={styles.trendNote}>
-                  This is where your mood / sleep /
-                  stress / hydration over time will
-                  be plotted from Smart Dashboard.
-                </Text>
-              </View>
-            </View>
-
             <View style={styles.bottomSpacing} />
           </>
         )}
