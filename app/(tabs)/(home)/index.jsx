@@ -346,7 +346,7 @@ function createStyle(theme) {
       backgroundColor: theme.background,
       borderRadius: 20,
       padding: 20,
-      shadowColor: theme.shadow || '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.08,
       shadowRadius: 12,

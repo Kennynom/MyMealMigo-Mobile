@@ -16,7 +16,7 @@ export default function TrackerMainScreen() {
       subtitle: 'Track daily intake',
       icon: 'restaurant',
       color: '#4ECDC4',
-      route: 'calorie-tracker'
+      route: '/(tabs)/(tracker)/(calorie)/calorie-tracker'
     },
     {
       id: 'progress',
@@ -59,6 +59,7 @@ export default function TrackerMainScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
       >
         <View style={styles.cardsContainer}>
           {trackers.map((tracker) => (
@@ -112,6 +113,7 @@ const createStyles = (theme) => StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingTop: 10,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -126,11 +128,11 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   iconCircle: {
     width: 64,

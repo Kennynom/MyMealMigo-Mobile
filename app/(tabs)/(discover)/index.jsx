@@ -1,4 +1,5 @@
 import { ThemeContext } from '@/context/ThemeContext';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -7,75 +8,110 @@ export default function DiscoverMainScreen() {
   const { theme } = useContext(ThemeContext);
   const styles = createStyles(theme);
 
+  const discoverItems = [
+    {
+      id: 'foods',
+      title: 'Food Dictionary',
+      subtitle: 'Search nutrition info',
+      icon: 'restaurant-menu',
+      color: '#4ECDC4',
+      route: '/(tabs)/(discover)/(foods)/browse-foods'
+    },
+    {
+      id: 'recipes',
+      title: 'Browse Recipes',
+      subtitle: 'Healthy & delicious',
+      icon: 'menu-book',
+      color: '#FF6B6B',
+      route: '/(tabs)/(discover)/(recipes)/browse-recipes'
+    },
+    {
+      id: 'recommendations',
+      title: 'Meal Recommendations',
+      subtitle: 'Personalized for you',
+      icon: 'recommend',
+      color: '#F38181',
+      route: '/(tabs)/(discover)/meal-recommendations'
+    }
+  ];
+
+  const featuredMeals = [
+    {
+      id: 'mee-rebus',
+      emoji: '🍜',
+      title: 'Mee Rebus',
+      subtitle: 'Yellow noodles in sweet gravy',
+      calories: 520
+    },
+    {
+      id: 'chendol',
+      emoji: '🥤',
+      title: 'Chendol',
+      subtitle: 'Coconut milk with gula melaka',
+      calories: 380
+    }
+  ];
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Discover</Text>
-          <Text style={styles.subtitle}>Explore foods, recipes, and meal ideas</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerSubtitle}>Explore foods & recipes</Text>
         </View>
       </View>
 
-      {/* Discover Cards */}
-      <View style={styles.discoverGrid}>
-        <TouchableOpacity 
-          style={styles.discoverCard}
-          onPress={() => router.push('/(tabs)/(discover)/(foods)/browse-foods')}
-        >
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardEmoji}>📚</Text>
-          </View>
-          <Text style={styles.cardTitle}>Food Dictionary</Text>
-          <Text style={styles.cardSubtitle}>Search nutrition info for thousands of foods</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.discoverCard}
-          onPress={() => router.push('/(tabs)/(discover)/(recipes)/browse-recipes')}
-        >
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardEmoji}>👨‍🍳</Text>
-          </View>
-          <Text style={styles.cardTitle}>Browse Recipes</Text>
-          <Text style={styles.cardSubtitle}>Discover healthy and delicious recipes</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.discoverCard}
-          onPress={() => router.push('/(tabs)/(discover)/meal-recommendations')}
-        >
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardEmoji}>🎯</Text>
-          </View>
-          <Text style={styles.cardTitle}>Meal Recommendations</Text>
-          <Text style={styles.cardSubtitle}>Personalized meal suggestions for you</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Featured Section */}
-      <View style={styles.featuredSection}>
-        <Text style={styles.sectionTitle}>Featured Recipes Today</Text>
-        
-        <View style={styles.featuredCard}>
-          <Text style={styles.featuredEmoji}>🍽️</Text>
-          <View style={styles.featuredContent}>
-            <Text style={styles.featuredTitle}>Mee Rebus</Text>
-            <Text style={styles.featuredSubtitle}>Yellow noodles coated in thick sweet gravy</Text>
-            <Text style={styles.featuredCalories}>520 kcal</Text>
-          </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Discover Cards */}
+        <View style={styles.cardsContainer}>
+          {discoverItems.map((item) => (
+            <TouchableOpacity 
+              key={item.id}
+              style={styles.discoverCard}
+              onPress={() => router.push(item.route)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
+                <MaterialIcons name={item.icon} size={32} color={item.color} />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={styles.featuredCard}>
-          <Text style={styles.featuredEmoji}>🥤</Text>
-          <View style={styles.featuredContent}>
-            <Text style={styles.featuredTitle}>Chendol</Text>
-            <Text style={styles.featuredSubtitle}>Coconut milk dessert with gula melaka</Text>
-            <Text style={styles.featuredCalories}>380 kcal</Text>
+        {/* Featured Section */}
+        <View style={styles.featuredSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Today</Text>
+            <MaterialIcons name="local-fire-department" size={20} color={theme.primary} />
           </View>
+          
+          {featuredMeals.map((meal) => (
+            <View key={meal.id} style={styles.featuredCard}>
+              <View style={styles.featuredEmojiCircle}>
+                <Text style={styles.featuredEmoji}>{meal.emoji}</Text>
+              </View>
+              <View style={styles.featuredContent}>
+                <Text style={styles.featuredTitle}>{meal.title}</Text>
+                <Text style={styles.featuredSubtitle}>{meal.subtitle}</Text>
+                <View style={styles.calorieTag}>
+                  <MaterialIcons name="local-fire-department" size={14} color={theme.primary} />
+                  <Text style={styles.featuredCalories}>{meal.calories} kcal</Text>
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -86,104 +122,131 @@ const createStyles = (theme) => StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    paddingTop: 60,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.textSecondary,
-  },
-  discoverGrid: {
-    paddingHorizontal: 20,
-    gap: 15,
-    marginBottom: 30,
-  },
-  discoverCard: {
-    backgroundColor: theme.surface,
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  cardIcon: {
-    width: 60,
-    height: 60,
-    backgroundColor: theme.primary,
-    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: theme.background,
   },
-  cardEmoji: {
-    fontSize: 28,
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  cardsContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  discoverCard: {
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  cardContent: {
+    flex: 1,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: theme.text,
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 14,
     color: theme.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
   },
   featuredSection: {
-    paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: theme.text,
-    marginBottom: 15,
   },
   featuredCard: {
-    backgroundColor: theme.surface,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  featuredEmojiCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   featuredEmoji: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: 28,
   },
   featuredContent: {
     flex: 1,
   },
   featuredTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: theme.text,
+    marginBottom: 4,
   },
   featuredSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.textSecondary,
-    marginTop: 2,
+    marginBottom: 6,
+  },
+  calorieTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   featuredCalories: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.primary,
-    marginTop: 4,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
