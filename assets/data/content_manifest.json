@@ -295,5 +295,6 @@
   {"title":"Sleep is your superpower","sourceTitle":"TED (Matt Walker)","url":"https://www.youtube.com/watch?v=5MuIMqhT8DM","type":"video","tags":["sleep"]},
   {"title":"Why dieting doesn’t usually work","sourceTitle":"TED (Sandra Aamodt)","url":"https://www.youtube.com/watch?v=jn0Ygp7pMbA","type":"video","tags":["diet","behavior"]},
   {"title":"How to make stress your friend","sourceTitle":"TED (Kelly McGonigal)","url":"https://www.youtube.com/watch?v=RcGyVTAoXEU","type":"video","tags":["stress","mind"]},
-  {"title":"Blue Zones: how to live to 100+","sourceTitle":"TEDx (Dan Buettner)","url":"https://www.youtube.com/watch?v=ff40YiMmVkU","type":"video","tags":["longevity","lifestyle"]}
+  {"title":"Blue Zones: how to live to 100+","sourceTitle":"TEDx (Dan Buettner)","url":"https://www.youtube.com/watch?v=ff40YiMmVkU","type":"video","tags":["longevity","lifestyle"]},
+  {"title":"Mediterranean diet: a practical guide","sourceTitle":"Harvard T.H. Chan","url":"https://www.hsph.harvard.edu/nutritionsource/healthy-weight/diet-reviews/mediterranean-diet/","type":"article","tags":["diet","heart","longevity"]}
 ]

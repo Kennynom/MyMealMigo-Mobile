@@ -1,4 +1,5 @@
 // components/dashboard/NutritionalTipCard.jsx
+import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { useDailyContent } from '@/hooks/useDailyContent';
@@ -6,6 +7,7 @@ import { listSaved, recordTipShownToday, removeSavedTip, saveTip } from '@/lib/d
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { doc, getDoc } from 'firebase/firestore';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -36,7 +38,24 @@ export default function NutritionalTipCard() {
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [saved, setSaved] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
+// load plan/role once
+useEffect(() => {
+  (async () => {
+    if (!user?.uid) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const plan = data?.subscription?.plan ?? data?.role; // support both fields
+      const active = data?.subscription?.active ?? true;
+      setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
+    } catch {
+      setIsPremium(false);
+    }
+  })();
+}, [user?.uid]);
+  
   // Check saved state whenever tip changes
   useEffect(() => {
     (async () => {
@@ -102,14 +121,24 @@ export default function NutritionalTipCard() {
           <Text style={styles.header}>Tip of the day</Text>
         </View>
 
-        {/* History / Saved pill → your new screen */}
+        <View style={styles.pillsRow}>
+        {isPremium && (
+          <Pressable
+            onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'history' } })}
+            style={styles.historyPill}
+            hitSlop={10}
+          >
+            <Text style={styles.historyText}>History</Text>
+          </Pressable>
+        )}
         <Pressable
-          onPress={() => router.push('/(tabs)/(home)/(tips)/tips-history?tab=history')}
+          onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'saved' } })}
           style={styles.historyPill}
           hitSlop={10}
         >
-          <Text style={styles.historyText}>History / Saved</Text>
+          <Text style={styles.historyText}>Saved</Text>
         </Pressable>
+        </View>
       </View>
 
       <Pressable onPress={open} style={styles.rowCard} android_ripple={{ color: theme.primary + '20' }}>
@@ -152,6 +181,7 @@ function createStyles(C) {
     },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     header: { color: C.cardSub, fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+    pillsRow: { flexDirection: 'row', gap: 8 },
     historyPill: { 
       paddingHorizontal: 12, 
       paddingVertical: 6, 

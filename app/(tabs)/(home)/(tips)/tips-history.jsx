@@ -1,36 +1,47 @@
-// app/(tabs)/(home)/(tips)/tips-history.jsx
+// app/(tabs)/(home)/tips/tips-history.jsx
 import manifest from '@/assets/data/content_manifest.json';
+import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { listHistory, listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
+import { dateForDayIndex, inclusiveCountUpToToday, tipIndexForDate } from '@/lib/dnt/schedule';
 import { router, useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-function urlToDayIndex(url) {
-  if (!url) return null;
-  const idx = manifest.findIndex(item => item.url === url);
-  return idx >= 0 ? idx + 1 : null; // 1..N
-}
-
-function todaysCutoffDay() {
-  const d = new Date().getDate(); // 1..31
-  return Math.min(30, Math.max(1, d)); // cap to your 30-day cycle
-}
 
 export default function TipsHistoryScreen() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { user } = useAuth();
-
   const { tab: init } = useLocalSearchParams(); // "saved" | "history"
-  const [tab, setTab] = useState(init === 'saved' ? 'Saved' : 'History');
 
+  // plan state
+  const [isPremium, setIsPremium] = useState(false);
+
+  // lists
+  const [tab, setTab] = useState(init === 'saved' ? 'Saved' : 'History');
   const [saved, setSaved] = useState([]);
   const [history, setHistory] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
-  // Load raw lists
+  // --- Fetch plan from users/{uid}
+  useEffect(() => {
+    (async () => {
+      if (!user?.uid) return;
+      try {
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+        const data = snap.exists() ? snap.data() : {};
+        const plan = data?.subscription?.plan ?? data?.role;
+        const active = data?.subscription?.active ?? true;setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
+      } catch {
+        setIsPremium(false);
+      }
+    })();
+  }, [user?.uid]);
+
+  // --- Fetch saved + history documents
   useEffect(() => {
     if (!user?.uid) return;
     (async () => {
@@ -40,21 +51,37 @@ export default function TipsHistoryScreen() {
     })();
   }, [user?.uid]);
 
-  // Filter “up to today” using manifest order
-  const cutoff = todaysCutoffDay();
-  const filterUpToToday = (items) =>
-    items.filter(it => {
-      const idx = urlToDayIndex(it.url);
-      // If URL isn’t in manifest, still show it (could be ad-hoc saved link)
-      if (idx == null) return true;
-      return idx <= cutoff;
-    });
+  // If free tries to open History, force to Saved
+  useEffect(() => {
+    if (tab === 'History' && !isPremium) {
+      setTab('Saved');
+    }
+  }, [tab, isPremium]);
 
-  const viewSaved = tab === 'Saved';
-  const list = useMemo(
-    () => filterUpToToday(viewSaved ? saved : history),
-    [viewSaved, saved, history, cutoff]
-  );
+  // ----- Build canonical history from anchor → today (continuous)
+  const today = new Date();
+  const countUpToToday = inclusiveCountUpToToday(today);
+
+  const canonicalHistory = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < countUpToToday; i++) {
+      const date = dateForDayIndex(i);                 // Oct 1 + i
+      const tipIdx = tipIndexForDate(date, manifest.length);
+      const tip = manifest[tipIdx];
+      if (tip) {
+        out.push({
+          ...tip,
+          id: tip.url,
+          dateISO: date.toISOString().slice(0,10),
+          dayNumberSinceAnchor: i + 1,                 // 1..N
+        });
+      }
+    }
+    return out.reverse(); // newest first (today on top)
+  }, [today, countUpToToday, manifest.length]);
+
+  // Saved policy: show ALL saved to everyone (even if not in manifest).
+  const list = tab === 'Saved' ? saved : canonicalHistory;
 
   async function handleToggleSave(item) {
     if (!user?.uid) return;
@@ -86,19 +113,34 @@ export default function TipsHistoryScreen() {
 
       {/* TABS */}
       <View style={styles.tabs}>
+        {/* History tab (premium only) */}
         <TouchableOpacity
-          style={[styles.tabBtn, !viewSaved ? styles.tabActive : null]}
+          style={[styles.tabBtn, tab === 'History' ? styles.tabActive : null, !isPremium && { opacity: 0.5 }]}
+          disabled={!isPremium}
           onPress={() => setTab('History')}
         >
-          <Text style={[styles.tabText, !viewSaved ? styles.tabTextActive : null]}>History</Text>
+          <Text style={[styles.tabText, tab === 'History' ? styles.tabTextActive : null]}>
+            History{isPremium ? ` (${countUpToToday})` : ''}
+          </Text>
         </TouchableOpacity>
+
+        {/* Saved tab (everyone) */}
         <TouchableOpacity
-          style={[styles.tabBtn, viewSaved ? styles.tabActive : null]}
+          style={[styles.tabBtn, tab === 'Saved' ? styles.tabActive : null]}
           onPress={() => setTab('Saved')}
         >
-          <Text style={[styles.tabText, viewSaved ? styles.tabTextActive : null]}>Saved</Text>
+          <Text style={[styles.tabText, tab === 'Saved' ? styles.tabTextActive : null]}>Saved</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Upsell strip for free users */}
+      {!isPremium && tab !== 'Saved' && (
+        <View style={styles.upsell}>
+          <Text style={styles.upsellText}>
+            Upgrade to Premium to unlock your full Tips History.
+          </Text>
+        </View>
+      )}
 
       {/* LIST */}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
@@ -112,14 +154,14 @@ export default function TipsHistoryScreen() {
               )}
             </View>
             <View style={styles.cardText}>
-              <Text numberOfLines={2} style={styles.cardTitle}>
-                {item.title}
-              </Text>
+              <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
               <Text style={styles.cardSource}>{item.sourceTitle}</Text>
 
-              {/* Show "Day X of 30" if the tip exists in the manifest */}
-              {urlToDayIndex(item.url) != null && (
-                <Text style={styles.metaText}>Day {urlToDayIndex(item.url)} of 30</Text>
+              {/* Show date & running day number if it came from the canonical history */}
+              {item.dateISO && (
+                <Text style={styles.metaText}>
+                  {item.dateISO} • Day {item.dayNumberSinceAnchor}
+                </Text>
               )}
 
               <View style={styles.actions}>
@@ -143,15 +185,10 @@ export default function TipsHistoryScreen() {
         {list.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {viewSaved ? "No saved tips available up to today." : "No history yet."}
+              {tab === 'Saved' ? "No saved tips yet." : isPremium ? "No history yet." : "History is Premium-only."}
             </Text>
           </View>
         )}
-
-        {/* Footnote explaining the cutoff */}
-        <View style={{ padding: 12, alignItems: 'center' }}>
-          <Text style={styles.cutoffNote}>Showing tips up to day {cutoff} of 30.</Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -181,6 +218,12 @@ function createStyles(theme) {
     tabText: { fontWeight: '700', color: theme.textSecondary },
     tabTextActive: { color: theme.buttonText },
 
+    upsell: {
+      backgroundColor: theme.altBackground, padding: 10, marginHorizontal: 16, borderRadius: 10,
+      borderWidth: 1, borderColor: theme.border,
+    },
+    upsellText: { color: theme.textSecondary, fontWeight: '600', textAlign: 'center' },
+
     card: {
       flexDirection: 'row', backgroundColor: theme.surface, borderRadius: 12,
       padding: 12, marginBottom: 12, borderWidth: 1, borderColor: theme.border,
@@ -204,6 +247,5 @@ function createStyles(theme) {
 
     empty: { padding: 32, alignItems: 'center' },
     emptyText: { color: theme.textSecondary },
-    cutoffNote: { color: theme.textSecondary, fontSize: 12, opacity: 0.8 },
   });
 }
