@@ -12,21 +12,6 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { theme } = useContext(ThemeContext);
 
-  // ON WEB: Use WebLayout wrapper + hide tabs
-  if (Platform.OS === 'web') {
-    return (
-      <WebLayout>
-        <Tabs
-          screenOptions={{
-            tabBarStyle: { display: 'none' }, // ← HIDE TABS ON WEB
-            headerShown: false,
-          }}
-          initialRouteName='(home)'>
-        </Tabs>
-      </WebLayout>
-    );
-  }
-
   // ON MOBILE: Keep your existing tab layout unchanged
   return (
     <Tabs
