@@ -2,6 +2,7 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ export default function ProgressTrackerScreen() {
   const [newCurrentWeight, setNewCurrentWeight] = useState('');
   const [loading, setLoading] = useState(false);
   const [weightLogs, setWeightLogs] = useState([]);
+  const [goalRate, setGoalRate] = useState(0); // Weekly weight change goal (e.g., 0.5 for gain, -0.5 for loss)
 
   const styles = createStyles(theme);
 
@@ -55,6 +57,26 @@ export default function ProgressTrackerScreen() {
           else if (typeof healthData.targetWeight === 'number') {
             setTargetWeight(healthData.targetWeight);
           }
+
+          // Fetch weekly weight change goal (e.g., 0.5 for gain, -0.5 for loss)
+          if (healthData.Goal?.items?.weeklyWeightChange && typeof healthData.Goal.items.weeklyWeightChange === 'number') {
+            // Check the goal type to determine if it should be positive or negative
+            const goalType = healthData.Goal?.items?.type || '';
+            const weeklyChange = healthData.Goal.items.weeklyWeightChange;
+            
+            // If goal is weight loss (lose/loss), make it negative
+            if (goalType.toLowerCase().includes('loss') || goalType.toLowerCase().includes('lose')) {
+              setGoalRate(-Math.abs(weeklyChange));
+            } 
+            // If goal is weight gain, make it positive
+            else if (goalType.toLowerCase().includes('gain')) {
+              setGoalRate(Math.abs(weeklyChange));
+            }
+            // Otherwise use the value as-is
+            else {
+              setGoalRate(weeklyChange);
+            }
+          }
         }
 
         // Fetch weight logs from weight_log
@@ -65,11 +87,10 @@ export default function ProgressTrackerScreen() {
           const logData = weightLogSnap.data() || {};
           const logs = logData.logs || [];
           
-          // Sort by date (newest first) and take last 7 entries
+          // Sort by date (newest first) and take last 7 entries - keep newest to oldest for display
           const sortedLogs = logs
             .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 7)
-            .reverse(); // Reverse so oldest comes first in chart
+            .slice(0, 7);
           
           setWeightLogs(sortedLogs);
         }
@@ -205,8 +226,7 @@ export default function ProgressTrackerScreen() {
             color: (opacity = 1) => theme.primaryDark || '#4ECDC4',
             strokeWidth: 3
           }
-        ],
-        legend: ['Target Weight', 'Current Weight']
+        ]
       };
     }
 
@@ -247,8 +267,7 @@ export default function ProgressTrackerScreen() {
           strokeWidth: 0,
           color: (opacity = 0) => 'transparent'
         }
-      ],
-      legend: ['Target Weight', 'Current Weight']
+      ]
     };
   })();
 
@@ -258,62 +277,97 @@ export default function ProgressTrackerScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Progress Tracker</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Progress Tracker</Text>
+          <Text style={styles.headerSubtitle}>Your weight journey</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView>
-      {/* Combined Bar Chart */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Current Weight Progress</Text>
-      </View>
-      <View style={styles.chartContainer}>
-        <BarChart
-          data={chartData}
-          width={300}
-          height={400}
-          yAxisSuffix=" kg"
-          chartConfig={{
-            backgroundColor: theme.background,
-            backgroundGradientFrom: theme.background,
-            backgroundGradientTo: theme.background,
-            decimalPlaces: 1,
-            color: (opacity = 1, index) => {
-              // Target bar in altAccent, Current bar in primaryDark
-              return index === 0 ? theme.altAccent : theme.primaryDark;
-            },
-            labelColor: (opacity = 1) => theme.text,
-            style: {
-              borderRadius: 16,
-            },
-            propsForBackgroundLines: {
-              strokeDasharray: '',
-              stroke: theme.border || '#333',
-            },
-            barPercentage: 2,
-          }}
-          style={styles.combinedChart}
-          showValuesOnTopOfBars={true}
-          fromZero={true}
-          withInnerLines={true}
-          withVerticalLabels={true}
-          withHorizontalLabels={true}
-        />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { backgroundColor: theme.altAccent + '15' }]}>
+            <Text style={styles.statLabel}>Target</Text>
+            <Text style={[styles.statValue, { color: theme.altAccent }]}>{targetWeight || '—'}</Text>
+            <Text style={styles.statUnit}>kg</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.primaryDark + '15' }]}>
+            <Text style={styles.statLabel}>Current</Text>
+            <Text style={[styles.statValue, { color: theme.primaryDark }]}>{currentWeight || '—'}</Text>
+            <Text style={styles.statUnit}>kg</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.accent + '15' }]}>
+            <Text style={styles.statLabel}>Variance</Text>
+            <Text style={[styles.statValue, { color: theme.accent }]}>
+              {currentWeight && targetWeight 
+                ? Math.abs(currentWeight - targetWeight).toFixed(1) 
+                : '—'}
+            </Text>
+            <Text style={styles.statUnit}>kg</Text>
+          </View>
+        </View>
+
+      {/* Bar Chart Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Current Snapshot</Text>
+          <View style={styles.sectionIcon}>
+            <MaterialIcons name="camera" size={24} color={theme.text} />
+          </View>
+        </View>
+        <View style={styles.chartCard}>
+          <BarChart
+            data={chartData}
+            width={320}
+            height={380}
+            yAxisSuffix=" kg"
+            chartConfig={{
+              backgroundColor: theme.background,
+              backgroundGradientFrom: theme.background,
+              backgroundGradientTo: theme.background,
+              decimalPlaces: 1,
+              color: (opacity = 1, index) => {
+                // Target bar in altAccent, Current bar in primaryDark
+                return index === 0 ? theme.altAccent : theme.primaryDark;
+              },
+              labelColor: (opacity = 1) => theme.text,
+              style: {
+                borderRadius: 16,
+              },
+              propsForBackgroundLines: {
+                strokeDasharray: '',
+                stroke: theme.border || '#333',
+              },
+              barPercentage: 2,
+            }}
+            style={styles.chart}
+            showValuesOnTopOfBars={true}
+            fromZero={true}
+            withInnerLines={true}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+          />
+        </View>
       </View>
       
-      {/* Weight Progress Over Time - Line Chart */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Weight Progress Over Time</Text>
-      </View>
+      {/* Line Chart Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Progress Over Time</Text>
+          <View style={styles.sectionIcon}>
+            <MaterialIcons name="auto-graph" size={24} color={theme.text} />
+          </View>
+        </View>
       
       {weightLogs.length > 0 ? (
-        <View style={styles.chartContainer}>
+        <View style={styles.chartCard}>
           <LineChart
             data={lineChartData}
-            width={360}
-            height={220}
+            width={320}
+            height={200}
             yAxisSuffix=" kg"
             chartConfig={{
               backgroundColor: theme.background,
@@ -334,8 +388,7 @@ export default function ProgressTrackerScreen() {
                 stroke: theme.border || '#e0e0e0',
               }
             }}
-            style={styles.lineChart}
-            bezier
+            style={styles.chart}
             fromZero={false}
             withInnerLines={true}
             withVerticalLabels={true}
@@ -343,21 +396,52 @@ export default function ProgressTrackerScreen() {
             withVerticalLines={false}
           />
           
-          
+          {/* Legend */}
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.altAccent || '#FF6B35' }]} />
+              <Text style={styles.legendText}>Target</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.primaryDark || '#4ECDC4' }]} />
+              <Text style={styles.legendText}>Current</Text>
+            </View>
+          </View>
+
+          {/* Goal Progress Message */}
+          {currentWeight > 0 && targetWeight > 0 && (
+            <View style={styles.goalMessageContainer}>
+              <Text style={styles.goalMessageText}>
+                {currentWeight < targetWeight 
+                  ? `${(targetWeight - currentWeight).toFixed(1)} kg more to gain to reach your goal` 
+                  : currentWeight > targetWeight
+                  ? `${(currentWeight - targetWeight).toFixed(1)} kg more to lose to reach your goal`
+                  : 'You have reached your goal weight! 🎉'}
+              </Text>
+            </View>
+          )}
         </View>
       ) : (
-        <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No weight history yet. Start logging your weights!</Text>
+        <View style={styles.noDataCard}>
+          <Text style={styles.noDataIcon}>📊</Text>
+          <Text style={styles.noDataText}>No weight history yet</Text>
+          <Text style={styles.noDataSubtext}>Start logging your weights to see progress!</Text>
         </View>
       )}
+      </View>
+
+      <View style={styles.placeholder2}></View>
       </ScrollView>
 
-      {/* Edit Weights Button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
-          <Text style={styles.editButtonText}>Edit Weights</Text>
+      {/* Floating Edit Button */}
+      <View style={styles.floatingButtonContainer}>
+        <TouchableOpacity style={styles.floatingButton} onPress={openEditModal}>
+          <MaterialIcons name="edit" size={24} color={theme.text} />
+          <Text style={styles.floatingButtonText}>Edit Weights</Text>
         </TouchableOpacity>
       </View>
+
+      
 
       {/* Modal for Editing Weights */}
       <Modal
@@ -429,131 +513,274 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: theme.background,
   },
   backButton: {
-    padding: 5,
-  },
-  backText: {
-    color: theme.text,
-    fontSize: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.text,
-  },
-  placeholder: {
-    width: 50,
-  },
-  chartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-    width: '100%',
-  },
-  combinedChart: {
-    borderRadius: 16,
-    alignSelf: 'center',
-  },
-  cardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  weightCard: {
-    backgroundColor: theme.surface,
-    borderRadius: 30,
-    padding: 16,
-    alignItems: 'center',
-    width: 150,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  colorIndicator: {
     width: 40,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  weightLabel: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  weightValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.text,
-  },
-  buttonContainer: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  editButton: {
-    backgroundColor: theme.primaryDark,
-    borderRadius: 15,
-    paddingVertical: 16,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
+    elevation: 2,
+  },
+  backText: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+  },
+  placeholder: {
+    width: 40,
+  },
+  placeholder2: {
+    height: 100,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    gap: 12,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 3,
   },
-  editButtonText: {
-    color: '#fff',
+  statLabel: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginBottom: 8,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  statUnit: {
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  section: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text,
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+
+  },
+  chartCard: {
+    backgroundColor: theme.background,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  chart: {
+    borderRadius: 16,
+    marginVertical: 0,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 13,
+    color: theme.text,
+    fontWeight: '500',
+  },
+  goalMessageContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    alignItems: 'center',
+  },
+  goalMessageText: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  noDataCard: {
+    backgroundColor: theme.surface,
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  noDataIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  noDataText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 8,
+  },
+  noDataSubtext: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+  },
+  floatingButton: {
+    flexDirection: 'row',
+    backgroundColor: theme.primary,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+    gap: 10,
+  },
+  floatingButtonIcon: {
+    fontSize: 20,
+  },
+  floatingButtonText: {
+    color: theme.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: theme.background,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 24,
+    padding: 28,
     width: '85%',
     maxWidth: 400,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: theme.text,
-    marginBottom: 20,
+    marginBottom: 24,
     textAlign: 'center',
   },
   modalLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: theme.text,
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   modalInput: {
     backgroundColor: theme.surface,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: theme.text,
     borderWidth: 1,
     borderColor: theme.border,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 8,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   cancelButton: {
@@ -568,6 +795,11 @@ const createStyles = (theme) => StyleSheet.create({
   },
   saveButton: {
     backgroundColor: theme.primary,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   saveButtonText: {
     color: '#fff',
@@ -576,51 +808,5 @@ const createStyles = (theme) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: theme.text,
-  },
-  lineChart: {
-    borderRadius: 16,
-    marginVertical: 8,
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-    gap: 20,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  legendDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  legendText: {
-    fontSize: 14,
-    color: theme.text,
-    fontWeight: '500',
-  },
-  noDataContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  noDataText: {
-    fontSize: 16,
-    color: theme.textSecondary,
-    textAlign: 'center',
   },
 });

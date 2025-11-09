@@ -24,6 +24,7 @@ export const Colors = {
     transparent: 'transparent',
     translucent: '#FFFFFF86',
     altText: '#fff',
+    tab: '#fff',
     
     // MyMealMigo brand colors
     primary: primaryGreen,
@@ -61,6 +62,7 @@ export const Colors = {
     transparent: 'transparent',
     translucent: '#38383883',
     altText: '#000000',
+    tab: '#212324',
     
     // MyMealMigo brand colors (same in dark mode)
     primary: primaryGreen,

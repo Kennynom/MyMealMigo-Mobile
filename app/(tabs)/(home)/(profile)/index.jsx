@@ -1,12 +1,12 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
-import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { deleteUser } from 'firebase/auth';
 import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
@@ -16,7 +16,6 @@ export default function ProfileScreen() {
     const [userDoc, setUserDoc] = useState(null);
     const [profileDoc, setProfileDoc] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedTab, setSelectedTab] = useState('about');
 
     // For logout navigation
     const handleLogout = async () => {
@@ -106,26 +105,6 @@ export default function ProfileScreen() {
     // Personal Info
     const displayName = userDoc?.name || user?.displayName || 'Unknown';
     const displayEmail = userDoc?.email || user?.email || 'Unknown';
-    const displayBirthday = userDoc?.profile?.birthday || profileDoc?.birthday || '-';
-    const displaySex = userDoc?.profile?.sex || profileDoc?.sex || '-';
-    const displayLocation = userDoc?.location || '-';
-    // Health Info
-    const displayHeight = userDoc?.profile?.heightCm || profileDoc?.heightCm || '-';
-    const displayWeight = userDoc?.profile?.weightKg || profileDoc?.weightKg || '-';
-    const displayAllergies = profileDoc?.allergies?.items?.other || 'None';
-    const displayConditions = profileDoc?.conditions?.items?.other || 'None';
-    // PAR-Q
-    const parq = profileDoc?.parqPlus || {};
-    const parqQuestions = [
-        { key: 'q1_chestPain', label: 'Chest Pain' },
-        { key: 'q2_dizziness', label: 'Dizziness' },
-        { key: 'q3_boneJointProblem', label: 'Bone/Joint Problem' },
-        { key: 'q4_prescriptionMeds', label: 'Prescription Meds' },
-        { key: 'q5_heartCondition', label: 'Heart Condition' },
-        { key: 'q6_bloodPressureIssue', label: 'Blood Pressure Issue' },
-        { key: 'q7_otherReason', label: 'Other Reason' },
-    ];
-    // const profileImageUrl = userDoc?.photoURL || 'https://www.gravatar.com/avatar/?d=mp&s=200';
     const profileImageUrl = 'https://www.gravatar.com/avatar/?d=mp&s=200';
 
     if (authLoading || loading) {
@@ -137,57 +116,93 @@ export default function ProfileScreen() {
     }
 
     return (
-        <View style={styles.wrapper}>
-            {/* Header Card */}
-            <View style={styles.headerCard}>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitleBig}>My Profile</Text>
-                    <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
-                        <Text style={styles.themeIcon}>{colorScheme === 'dark' ? '☀️' : '🌙'}</Text>
-                    </TouchableOpacity>
+        <ScrollView style={styles.wrapper} contentContainerStyle={styles.scrollContent}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Text style={styles.backText}>←</Text>
+                </TouchableOpacity>
+                <View style={styles.headerCenter}>
+                    <Text style={styles.headerTitle}>Profile</Text>
+                    <Text style={styles.headerSubtitle}>Manage your account</Text>
                 </View>
-                <View style={styles.profileImageWrapper}>
-                    <Image source={{ uri: profileImageUrl }} style={styles.profileImageBig} />
-                </View>
+                <TouchableOpacity onPress={toggleTheme} style={styles.themeToggleButton}>
+                    <Ionicons 
+                        name={colorScheme === 'dark' ? 'moon' : 'sunny'} 
+                        size={22} 
+                        color={colorScheme === 'dark' ? '#FFD700' : '#FFA500'} 
+                    />
+                </TouchableOpacity>
             </View>
 
-            <View style={styles.menuList}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(personal)')}>
-                    <FontAwesome5 name="user" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                    <Text style={styles.menuText}>Personal Information</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+            {/* Profile Header */}
+            <View style={styles.profileHeader}>
+                <View style={styles.profileImageContainer}>
+                    <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />
+                    <TouchableOpacity style={styles.editIconButton}>
+                        <Ionicons name="pencil" size={18} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.profileName}>{displayName}</Text>
+                <Text style={styles.profileEmail}>{displayEmail}</Text>
+            </View>
+
+            {/* Menu Section */}
+            <View style={styles.menuSection}>
+                {/* Personal Information */}
+                <TouchableOpacity 
+                    style={styles.menuItem} 
+                    onPress={() => router.push('/(tabs)/(home)/(profile)/(personal)')}>
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconCircle, { backgroundColor: theme.primary + '20' }]}>
+                            <Ionicons name="person-outline" size={22} color={theme.primary} />
+                        </View>
+                        <Text style={styles.menuItemText}>Personal Information</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(health)')}>
-                    <FontAwesome5 name="heartbeat" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                    <Text style={styles.menuText}>Health Information</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
+
+                {/* Health Information */}
+                <TouchableOpacity 
+                    style={styles.menuItem} 
+                    onPress={() => router.push('/(tabs)/(home)/(profile)/(health)')}>
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconCircle, { backgroundColor: '#FF6B6B20' }]}>
+                            <Ionicons name="fitness-outline" size={22} color="#FF6B6B" />
+                        </View>
+                        <Text style={styles.menuItemText}>Health Information</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(questionnaire)')}>
-                    <FontAwesome5 name="clipboard-list" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                    <Text style={styles.menuText}>Questionnaire</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('(subscription)')}>
-                    <FontAwesome5 name="file-invoice-dollar" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                    <Text style={styles.menuText}>Subscription</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
-                    <MaterialIcons name="logout" size={20} color={theme.primaryDark} style={styles.menuIcon} />
-                    <Text style={styles.menuText}>Logout</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.primaryDark} style={{marginLeft: 'auto'}} />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleDeleteAccount}>
-                    <MaterialIcons name="delete" size={20} color={theme.error || '#F44336'} style={styles.menuIcon} />
-                    <Text style={[styles.menuText, {color: theme.error || '#F44336'}]}>Delete Account</Text>
-                    <MaterialIcons name="keyboard-arrow-right" size={24} color={theme.error || '#F44336'} style={{marginLeft: 'auto'}} />
+
+                {/* Subscription */}
+                <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => router.push('/(tabs)/(home)/(profile)/(subscription)')}>
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconCircle, { backgroundColor: '#1ABC9C20' }]}>
+                            <Ionicons name="cash-outline" size={22} color="#1ABC9C" />
+                        </View>
+                        <Text style={styles.menuItemText}>Subscription</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                 </TouchableOpacity>
             </View>
+
+            {/* Logout Button */}
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={22} color="#FF6B6B" />
+                <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+
+            {/* Delete Account Button */}
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Text style={styles.deleteText}>Delete Account</Text>
+            </TouchableOpacity>
             
-        </View>
+            <View style={{height: 30}} />
+        </ScrollView>
     );
 }
 
@@ -196,165 +211,205 @@ const createStyles = (theme) => StyleSheet.create({
         flex: 1,
         backgroundColor: theme.background,
     },
-    headerCard: {
-        backgroundColor: theme.primaryDark,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
-        paddingBottom: 30,
-        paddingTop: 20,
-        paddingHorizontal: 20,
-        alignItems: 'center',
-        shadowColor: theme.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+    scrollContent: {
+        paddingBottom: 40,
     },
-    headerRow: {
+    header: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        width: '100%',
-        marginBottom: 10,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 20,
+        backgroundColor: theme.background,
     },
-    headerTitleBig: {
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    backText: {
+        color: theme.text,
+        fontSize: 20,
+        fontWeight: '600',
+    },
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    headerTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: theme.altText,
+        color: theme.text,
+        marginBottom: 2,
     },
-    profileImageWrapper: {
-        marginTop: 10,
-        marginBottom: 10,
+    headerSubtitle: {
+        fontSize: 13,
+        color: theme.textSecondary,
+    },
+    themeToggleButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    profileHeader: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    profileImageContainer: {
+        position: 'relative',
+        marginBottom: 16,
+    },
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
         borderWidth: 4,
-        borderColor: '#fff',
-        borderRadius: 999,
-        padding: 4,
-        backgroundColor: '#fff',
+        borderColor: theme.primary,
+    },
+    editIconButton: {
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: theme.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
+        borderWidth: 3,
+        borderColor: theme.background,
     },
-    profileImageBig: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        resizeMode: 'cover',
+    profileName: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: theme.text,
+        marginBottom: 4,
     },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 8,
-        width: '100%',
+    profileEmail: {
+        fontSize: 14,
+        color: theme.textSecondary,
     },
-    menuList: {
-        backgroundColor: theme.background || '#fff',
-        borderRadius: 28,
-        marginHorizontal: 18,
-        marginTop: -30,
-        paddingTop: 30,
-        paddingBottom: 10,
-        shadowColor: theme.shadow || '#000',
-        shadowOpacity: 0.5,
+    menuSection: {
+        marginHorizontal: 20,
+        marginTop: 10,
+        backgroundColor: theme.cardBackground,
+        borderRadius: 16,
+        padding: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 18,
-        paddingHorizontal: 18,
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        backgroundColor: theme.background,
-        borderRadius: 28,
-        marginBottom: 8,
+        borderBottomColor: theme.border || '#f0f0f0',
     },
-    menuIcon: {
-        marginRight: 16,
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
     },
-    menuText: {
-        fontSize: 16,
-        color: theme.primaryDark,
-        fontWeight: 'bold',
-    },
-    backButton: {
+    iconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
         marginRight: 12,
-        padding: 6,
-        borderRadius: 28,
-        backgroundColor: theme.translucent,
     },
-    themeButton: {
-        marginLeft: 'auto',
-        padding: 6,
-        borderRadius: 28,
-        backgroundColor: theme.translucent,
+    menuItemText: {
+        fontSize: 16,
+        color: theme.text,
+        fontWeight: '500',
     },
-    themeIcon: {
-        fontSize: 20,
+    menuItemRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
-    detailCard: {
-        backgroundColor: theme.cardBackground || '#fff',
-        borderRadius: 18,
-        marginHorizontal: 18,
-        marginTop: 0,
-        paddingTop: 30,
-        paddingBottom: 20,
-        paddingHorizontal: 20,
-        shadowColor: theme.shadow || '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+    languageText: {
+        fontSize: 14,
+        color: theme.textSecondary,
+        marginRight: 4,
+    },
+    toggle: {
+        width: 50,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#E0E0E0',
+        padding: 2,
+        justifyContent: 'center',
+    },
+    toggleActive: {
+        backgroundColor: theme.primary,
+    },
+    toggleCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
         elevation: 2,
     },
-    detailScroll: {
-        flexGrow: 0,
-        backgroundColor: 'transparent',
-        borderRadius: 18,
-        marginHorizontal: 0,
-        marginTop: 210,
-        marginBottom: 0,
-        padding: 15,
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
+    toggleCircleActive: {
+        alignSelf: 'flex-end',
     },
-    detailTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: theme.primaryDark,
-        marginBottom: 18,
-        textAlign: 'center',
-    },
-    detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    detailLabel: {
-        fontSize: 16,
-        color: theme.textSecondary || '#888',
-        fontWeight: 'bold',
-    },
-    detailValue: {
-        fontSize: 16,
-        color: theme.primaryDark,
-        fontWeight: 'bold',
-    },
-    detailBackBtn: {
+    logoutButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        marginTop: 18,
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 16,
-        backgroundColor: theme.translucent || '#eaeaea',
+        justifyContent: 'center',
+        marginHorizontal: 20,
+        marginTop: 30,
+        paddingVertical: 16,
+        backgroundColor: theme.cardBackground,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FF6B6B',
+        gap: 8,
     },
-    detailBackText: {
+    logoutText: {
         fontSize: 16,
-        color: theme.primaryDark,
-        marginLeft: 6,
-        fontWeight: 'bold',
+        fontWeight: '600',
+        color: '#FF6B6B',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 20,
+        marginTop: 12,
+        paddingVertical: 14,
+        gap: 6,
+    },
+    deleteText: {
+        fontSize: 14,
+        color: '#FF3B30',
+        fontWeight: '500',
     },
 });
