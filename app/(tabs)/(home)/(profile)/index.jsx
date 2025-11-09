@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { deleteUser } from 'firebase/auth';
 import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 export default function ProfileScreen() {
@@ -103,9 +103,18 @@ export default function ProfileScreen() {
     }, [user]);
 
     // Personal Info
-    const displayName = userDoc?.name || user?.displayName || 'Unknown';
-    const displayEmail = userDoc?.email || user?.email || 'Unknown';
-    const profileImageUrl = 'https://www.gravatar.com/avatar/?d=mp&s=200';
+    const displayName = userDoc?.name || user?.displayName || 'User';
+    const displayEmail = userDoc?.email || user?.email || 'user@example.com';
+    
+    // Create initials from display name for avatar
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        const nameParts = name.trim().split(' ');
+        if (nameParts.length === 1) return nameParts[0][0].toUpperCase();
+        return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    };
+    
+    const userInitials = getInitials(displayName);
 
     if (authLoading || loading) {
         return (
@@ -138,7 +147,9 @@ export default function ProfileScreen() {
             {/* Profile Header */}
             <View style={styles.profileHeader}>
                 <View style={styles.profileImageContainer}>
-                    <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />
+                    <View style={styles.avatarGradient}>
+                        <Text style={styles.avatarInitials}>{userInitials}</Text>
+                    </View>
                     <TouchableOpacity style={styles.editIconButton}>
                         <Ionicons name="pencil" size={18} color="#fff" />
                     </TouchableOpacity>
@@ -275,6 +286,23 @@ const createStyles = (theme) => StyleSheet.create({
     profileImageContainer: {
         position: 'relative',
         marginBottom: 16,
+    },
+    avatarGradient: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 4,
+        borderColor: theme.primary,
+        backgroundColor: theme.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    avatarInitials: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: '#fff',
+        letterSpacing: 2,
     },
     profileImage: {
         width: 100,

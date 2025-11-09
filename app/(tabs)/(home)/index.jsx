@@ -1,8 +1,9 @@
 // app/(tabs)/(home)/index.jsx - Add Features section
 import { ThemeContext } from '@/context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 // 🔥 Firebase imports
@@ -15,7 +16,6 @@ import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
 
 import NutritionalTipCard from '@/components/dashboard/NutritionalTipCard';
 
-import ChatButton from '@/components/chat-button';
 
 export default function HomeScreen() {
   const { theme } = useContext(ThemeContext);
@@ -27,6 +27,7 @@ export default function HomeScreen() {
   const [userWeight, setUserWeight] = useState(null);
   const [userHeight, setUserHeight] = useState(null);
   const [userBMI, setUserBMI] = useState(null);
+  const [userName, setUserName] = useState('User');
   const [calorieChartData, setCalorieChartData] = useState({
     labels: ["7", "6", "5", "4", "3", "2", "1"],
     datasets: [
@@ -34,9 +35,13 @@ export default function HomeScreen() {
     ]
   });
 
-  // simple profile image URL (falls back to a generic avatar)
-  const profileImageUrl =
-    landingPageData?.profile?.photoURL ?? 'https://www.gravatar.com/avatar/?d=mp&s=200';
+  // Create initials from user name for avatar
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length === 1) return nameParts[0][0].toUpperCase();
+    return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+  };
 
 
   // Fetch user's weight and BMI for display on mobile dashboard
@@ -54,6 +59,11 @@ export default function HomeScreen() {
         if (userSnap.exists()) {
           const userData = userSnap.data() || {};
           const profile = userData.profile || {};
+          
+          // Get user name for avatar
+          if (userData.name) {
+            setUserName(userData.name);
+          }
           
           // Get weight and BMI directly from profile
           const weight = profile.weightKg;
@@ -94,13 +104,14 @@ export default function HomeScreen() {
           const data = calorieLogSnap.data() || {};
           const dailyLogs = Array.isArray(data.dailyLogs) ? data.dailyLogs : [];
           
-          // Get the last 7 days (today = day 1, yesterday = day 2, etc.)
+          // Get the last 7 days, oldest to newest (for left to right display)
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
           const last7Days = [];
           const dateLabels = [];
           
+          // Loop from 6 days ago (i=6) to today (i=0) - oldest to newest
           for (let i = 6; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
@@ -148,29 +159,29 @@ export default function HomeScreen() {
   return (
     <View style={styles.mobileContainer}>
       <AuthDebug />
-      <View style={styles.headerAI}>
-        <TouchableOpacity
-          onPress={() => router.push('/chat')}
-          accessibilityLabel="AI Assistant Button"
-          style={styles.buttonAI}
-        >
-          <ChatButton onPress={() => router.push('/chat')} />
-          <Text> AI Assistant</Text>
-        </TouchableOpacity>
-      </View>
+      
+      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Smart Dashboard</Text>
+        <TouchableOpacity 
+          onPress={() => router.push('/chat')}
+          style={styles.aiButton}
+          accessibilityLabel="AI Assistant Button"
+        >
+          <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+          <Text style={styles.headerSubtitle}>Your health overview</Text>
         </View>
-        {/* Profile */}
-        <View>
-          <TouchableOpacity
-            onPress={() => router.push('(profile)')}
-            accessibilityLabel="Profile Button"
-          >
-            <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push('(profile)')}
+          accessibilityLabel="Profile Button"
+          style={styles.avatarButton}
+        >
+          <View style={styles.avatarSmall}>
+            <Text style={styles.avatarSmallText}>{getInitials(userName)}</Text>
+          </View>
+        </TouchableOpacity>
       </View>
       
       <ScrollView 
@@ -178,44 +189,64 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.welcomeText}>Welcome!</Text>
-        <Text style={styles.subtitle}>You are currently viewing smart dashboard</Text>
-
-        {/* Mini islands */}
-        <View style={styles.islandContainer}>
-          <View style={styles.indIsland}>
-            <Text style={styles.altText1}>Weight:</Text>
-            <Text style={styles.altText2}>{userWeight != null ? `${userWeight} kg` : '— kg'}</Text>
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { backgroundColor: theme.primary + '15' }]}>
+            <Text style={styles.statLabel}>Weight</Text>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              {userWeight != null ? userWeight : '—'}
+            </Text>
+            <Text style={styles.statUnit}>kg</Text>
           </View>
-          <View style={styles.indIsland}>
-            <Text style={styles.altText1}>BMI:</Text>
-            <Text style={styles.altText2}>{userBMI != null ? userBMI : '—'}</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.altAccent + '15' }]}>
+            <Text style={styles.statLabel}>BMI</Text>
+            <Text style={[styles.statValue, { color: theme.altAccent }]}>
+              {userBMI != null ? userBMI : '—'}
+            </Text>
+            <Text style={styles.statUnit}>index</Text>
           </View>
         </View>
 
-        {/* Predictive graph */}
+        {/* Calorie Intake Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Calories Consumed (Last 7 Days)</Text>
-          <LineChart
-            data={calorieChartData}
-            width={360}
-            height={220}
-            chartConfig={{
-              backgroundColor: "#fff",
-              backgroundGradientFrom: "#fff",
-              backgroundGradientTo: "#fff",
-              color: (opacity = 1) => theme.primaryDark,
-              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              style: { borderRadius: 18 },
-              propsForDots: {
-                r: "4",
-                strokeWidth: "2",
-                stroke: theme.primary
-              }
-            }}
-            style={styles.chart}
-            fromZero={true}
-          />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Calorie Intake</Text>
+            <Text style={styles.sectionSubtitle}> • Last 7 days</Text>
+          </View>
+          <View style={styles.chartCard}>
+            <LineChart
+              data={calorieChartData}
+              width={320}
+              height={200}
+              yAxisSuffix=" cal"
+              chartConfig={{
+                backgroundColor: theme.background,
+                backgroundGradientFrom: theme.background,
+                backgroundGradientTo: theme.background,
+                decimalPlaces: 0,
+                color: (opacity = 1) => theme.background,
+                labelColor: (opacity = 1) => theme.text,
+                style: {
+                  borderRadius: 16,
+                },
+                propsForDots: {
+                  r: '5',
+                  strokeWidth: '2',
+                  stroke: theme.primary
+                },
+                propsForBackgroundLines: {
+                  strokeDasharray: '',
+                  stroke: theme.border || '#e0e0e0',
+                }
+              }}
+              style={styles.chart}
+              fromZero={true}
+              withInnerLines={true}
+              withVerticalLabels={true}
+              withHorizontalLabels={true}
+              withVerticalLines={false}
+            />
+          </View>
         </View>
 
         {/* Nutritional Tip Card */}
@@ -308,30 +339,22 @@ function createStyle(theme) {
       maxWidth: 1200,
     },
     chartContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 24,
-      marginBottom: 40, // Add bottom margin for better spacing
-      marginHorizontal: 16,
-      paddingHorizontal: 12,
+      marginTop: 8,
+      marginBottom: 24,
     },
-    chartTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.text,
-      marginBottom: 12,
-      textAlign: 'center',
+    chartCard: {
+      backgroundColor: theme.background,
+      borderRadius: 20,
+      padding: 20,
+      shadowColor: theme.shadow || '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
     },
     chart: {
-      backgroundColor: '#fff',
-      borderRadius: 8,
-      paddingVertical: 24,
-      paddingHorizontal: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 2,
+      borderRadius: 16,
+      marginVertical: 0,
     },
     // Mobile styles
     mobileContainer: {
@@ -341,116 +364,126 @@ function createStyle(theme) {
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center', 
-      padding: 20,
+      alignItems: 'center',
+      paddingHorizontal: 20,
       paddingTop: 60,
+      paddingBottom: 20,
+      backgroundColor: theme.background,
     },
-    headerLeft: {
-      flex: 1,
-    },
-    headerRight: {
-      marginLeft: 12,
-      alignItems: 'flex-end',
+    aiButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.primary,
       justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
-    title: {
-      fontSize: 28,
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+      paddingHorizontal: 12,
+    },
+    headerTitle: {
+      fontSize: 22,
       fontWeight: 'bold',
       color: theme.text,
-      marginBottom: 4,
+      marginBottom: 2,
     },
-    subtitle: {
-      fontSize: 16,
+    headerSubtitle: {
+      fontSize: 13,
       color: theme.textSecondary,
     },
-    subtitle2: {
-      fontSize: 16,
-      color: theme.textSecondary,
-      marginTop: 4,
-      marginBottom: 12,
+    avatarButton: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
-    welcomeText: {
-      fontSize: 24,
-      color: theme.text,
-      fontWeight: '600',
+    avatarSmall: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.primary,
+      borderWidth: 2,
+      borderColor: theme.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarSmallText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#fff',
+      letterSpacing: 1,
+    },
+    profileImage: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.primary,
+      backgroundColor: theme.surface,
     },
     content: {
       flex: 1,
     },
     scrollContent: {
-      padding: 20,
-      paddingBottom: 100, // Add extra bottom padding to prevent cropping
+      paddingHorizontal: 20,
+      paddingBottom: 100,
     },
-    quickAction: {
-      backgroundColor: theme.secondary,
+    statsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: theme.cardBackground,
+      borderRadius: 16,
       padding: 16,
-      borderRadius: 12,
       alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
-    quickActionText: {
-      color: theme.altText,
-      fontSize: 16,
+    statLabel: {
+      fontSize: 13,
       fontWeight: '600',
+      color: theme.textSecondary,
+      marginBottom: 8,
     },
-    profileImage: {
-      width: 48,
-      height: 48,
-      borderRadius: 999,
-      borderWidth: 2,
-      borderColor: theme.secondary ?? theme.secondaryGreen ?? '#059669',
-      backgroundColor: theme.inactive,
-    },
-    highlight: { 
-      color: theme.primary,
-      fontWeight: '700',
-      fontStyle: 'italic',
-      textDecorationLine: 'underline',
-      fontSize: 24,
-    },
-    headerTitle: {
+    statValue: {
       fontSize: 28,
       fontWeight: 'bold',
-      color: theme.text,
       marginBottom: 4,
     },
-    islandContainer: {
-      flexWrap: 'wrap',
+    statUnit: {
+      fontSize: 12,
+      color: theme.textSecondary,
+    },
+    sectionHeader: {
       flexDirection: 'row',
-      marginTop: 20,
-      justifyContent: 'space-evenly',
-    },
-    indIsland: {
-      alignItems: 'center',
-      backgroundColor: theme.altBackground,
-      padding: 10,
-      margin: 10,
-      borderRadius: 8,
-      minWidth: 150,
-      minHeight: 90,
       justifyContent: 'center',
-    },
-    altText1: {
-      fontSize: 22,
-      color: theme.altText,
-      fontWeight: '600',
-      paddingBottom: 4,
-    },
-    altText2: {
-      fontSize: 16,
-      color: theme.altText,
-    },
-    headerAI: {
-      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: 15,
-      backgroundColor: theme.background,
+      marginBottom: 16,
+      gap: 8,
     },
-    buttonAI: {
-      backgroundColor: theme.primary,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 50,
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    sectionSubtitle: {
+      fontSize: 13,
+      color: theme.textSecondary,
     },
   });
 }

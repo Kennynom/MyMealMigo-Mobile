@@ -386,9 +386,12 @@ export default function HealthCalculatorScreen() {
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Health Calculator</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Health Calculator</Text>
+          <Text style={styles.headerSubtitle}>Calculate your health metrics</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
@@ -858,25 +861,45 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
     backgroundColor: theme.background,
   },
   backButton: {
-    padding: 5,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   backText: {
     color: theme.text,
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: theme.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
   },
   placeholder: {
-    width: 50,
+    width: 40,
   },
   tabContainer: {
     flexDirection: 'row',

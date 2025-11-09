@@ -186,17 +186,14 @@ export default function CalorieTrackerScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerSide}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Text style={styles.backText}>← Back</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Text style={styles.backText}>←</Text>
+                </TouchableOpacity>
+                <View style={styles.headerCenter}>
+                    <Text style={styles.headerTitle}>Calorie Tracker</Text>
+                    <Text style={styles.headerSubtitle}>Track your daily intake</Text>
                 </View>
-                <View style={styles.headerTitle}>
-                    <Text style={styles.headerText}>Calorie Tracker</Text>
-                </View>
-                <View style={styles.headerSide}>
-                    {/* Empty for spacing */}
-                </View>
+                <View style={styles.placeholder} />
             </View>
 
             {/* Overview Section */}
@@ -407,31 +404,47 @@ const createStyles = (theme) => StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 40,
-    },
-    headerSide: {
-        flex: 1,
-        alignItems: 'flex-start',
-    },
-    headerTitle: {
-        flex: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: theme.text,
-        textAlign: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 20,
+        backgroundColor: theme.background,
     },
     backButton: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     backText: {
-        fontSize: 16,
         color: theme.text,
+        fontSize: 20,
+        fontWeight: '600',
+    },
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: theme.text,
+        marginBottom: 2,
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        color: theme.textSecondary,
+    },
+    placeholder: {
+        width: 40,
     },
     overviewHeader: {
         fontSize: 28,

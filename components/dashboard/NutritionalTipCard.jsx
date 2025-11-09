@@ -10,12 +10,16 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function palette(theme) {
-  const isDark = (theme?.mode ?? 'dark') === 'dark';
   return {
-    cardBg: '#111',
-    cardSub: 'rgba(255,255,255,0.78)',
-    chip: isDark ? '#1E1E1E' : '#EDEDED',
-    border: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    cardBg: theme.surface,
+    cardText: theme.text,
+    cardSub: theme.textSecondary,
+    accent: theme.primary,
+    chip: theme.surface,
+    border: theme.border || 'rgba(0,0,0,0.06)',
+    chipBg: theme.primary + '15',
+    rowBg: theme.background,
+    thumbBg: theme.primary + '20',
   };
 }
 
@@ -108,16 +112,16 @@ export default function NutritionalTipCard() {
         </Pressable>
       </View>
 
-      <Pressable onPress={open} style={styles.rowCard} android_ripple={{ color: 'rgba(255,255,255,0.08)' }}>
+      <Pressable onPress={open} style={styles.rowCard} android_ripple={{ color: theme.primary + '20' }}>
         <View style={styles.thumb}>
-          <Text style={{ color: '#fff', textAlign: 'center' }}>💡</Text>
+          <Text style={{ fontSize: 28 }}>💡</Text>
         </View>
         <View style={{ flex: 1, paddingRight: 8 }}>
           <Text style={styles.title} numberOfLines={3}>{current.title}</Text>
           <Text style={styles.source} numberOfLines={1}>{current.sourceTitle}</Text>
         </View>
         <Pressable onPress={toggleSave} hitSlop={10} style={{ padding: 6 }}>
-          <MaterialIcons name={saved ? 'bookmark' : 'bookmark-border'} size={22} color={C.cardSub} />
+          <MaterialIcons name={saved ? 'bookmark' : 'bookmark-border'} size={22} color={C.accent} />
         </Pressable>
       </Pressable>
 
@@ -136,17 +140,51 @@ export default function NutritionalTipCard() {
 
 function createStyles(C) {
   return StyleSheet.create({
-    card: { backgroundColor: C.cardBg, borderRadius: 16, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
+    card: { 
+      backgroundColor: C.cardBg, 
+      borderRadius: 16, 
+      padding: 16, 
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     header: { color: C.cardSub, fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
-    historyPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)' },
-    historyText: { color: C.cardSub, fontSize: 12, fontWeight: '600' },
-    rowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 10, marginTop: 10 },
-    thumb: { width: 60, height: 60, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', marginRight: 12, alignItems:'center', justifyContent:'center' },
-    title: { color: '#fff', fontSize: 14.5, lineHeight: 20, fontWeight: '700' },
+    historyPill: { 
+      paddingHorizontal: 12, 
+      paddingVertical: 6, 
+      borderRadius: 12, 
+      backgroundColor: C.chipBg 
+    },
+    historyText: { color: C.accent, fontSize: 12, fontWeight: '600' },
+    rowCard: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      backgroundColor: C.rowBg, 
+      borderRadius: 12, 
+      padding: 12, 
+      marginTop: 12 
+    },
+    thumb: { 
+      width: 56, 
+      height: 56, 
+      borderRadius: 12, 
+      backgroundColor: C.thumbBg, 
+      marginRight: 12, 
+      alignItems:'center', 
+      justifyContent:'center' 
+    },
+    title: { color: C.cardText, fontSize: 14.5, lineHeight: 20, fontWeight: '700' },
     source: { color: C.cardSub, fontSize: 12, marginTop: 4 },
-    footerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-    actionPill: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12 },
-    actionText: { color: '#fff', fontSize: 12.5, fontWeight: '600' }
+    footerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+    actionPill: { 
+      paddingHorizontal: 16, 
+      paddingVertical: 8, 
+      backgroundColor: C.accent, 
+      borderRadius: 12 
+    },
+    actionText: { color: '#fff', fontSize: 13, fontWeight: '600' }
   });
 }

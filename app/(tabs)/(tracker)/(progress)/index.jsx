@@ -230,8 +230,11 @@ export default function ProgressTrackerScreen() {
       };
     }
 
+    // Reverse the logs to show latest on the right (newest first in array becomes rightmost on chart)
+    const reversedLogs = [...weightLogs].reverse();
+
     // Get all weight values to calculate min/max
-    const allWeights = weightLogs.flatMap(log => [log.targetWeight || 0, log.currentWeight || 0]);
+    const allWeights = reversedLogs.flatMap(log => [log.targetWeight || 0, log.currentWeight || 0]);
     const minWeight = Math.min(...allWeights);
     const maxWeight = Math.max(...allWeights);
 
@@ -239,11 +242,11 @@ export default function ProgressTrackerScreen() {
     const paddingTop = maxWeight + 10;
     const paddingBottom = Math.max(0, minWeight - 10); // Don't go below 0
 
-    const targetData = weightLogs.map(log => log.targetWeight || 0);
-    const currentData = weightLogs.map(log => log.currentWeight || 0);
+    const targetData = reversedLogs.map(log => log.targetWeight || 0);
+    const currentData = reversedLogs.map(log => log.currentWeight || 0);
 
     return {
-      labels: weightLogs.map(log => {
+      labels: reversedLogs.map(log => {
         const date = new Date(log.date);
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
