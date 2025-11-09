@@ -1,14 +1,18 @@
 // app/(tabs)/(discover)/(recipes)/new.jsx
-import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  Image, ScrollView, StyleSheet, useColorScheme, Alert
-} from 'react-native';
+import { auth, db } from '@/lib/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack } from 'expo-router';
-import { auth, db, storage } from '@/lib/firebase';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import React, { useState } from 'react';
+
+import {
+  Alert,
+  Image, ScrollView, StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  useColorScheme,
+  View
+} from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
@@ -77,6 +81,7 @@ export default function NewRecipe() {
     return null;
   }
 
+
   async function onSubmit() {
     const err = validate();
     if (err) { Alert.alert('Missing info', err); return; }
@@ -87,46 +92,96 @@ export default function NewRecipe() {
 
     try {
       setSubmitting(true);
-      const ownerUid = auth.currentUser.uid;
-      const recipesCol = collection(db, 'recipes');
-      const id = doc(recipesCol).id;           // new id
-      let imageStoragePath = '';
-      let imageURL = '';
+      const user = auth.currentUser;
 
+      // Upload image if one was selected
+      let imageURL = '';
+      let imageStoragePath = '';
+      
       if (image) {
-        const blob = await (await fetch(image)).blob();
-        const fileRef = ref(storage, `recipes/${ownerUid}/${id}/main.jpg`);
-        await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
-        imageURL = await getDownloadURL(fileRef);
-        imageStoragePath = fileRef.fullPath;
+        try {
+          const storage = getStorage();
+          // FIXED: Use correct path format matching storage rules
+          const filename = `recipe-requests/${user.uid}/${Date.now()}.jpg`;
+          const storageRef = ref(storage, filename);
+          
+          // Fetch the image and convert to blob
+          const response = await fetch(image);
+          const blob = await response.blob();
+          
+          // IMPORTANT: Ensure content type is set correctly
+          const metadata = {
+            contentType: blob.type || 'image/jpeg'
+          };
+          // In your onSubmit function, add before the upload:
+          console.log('Current user:', auth.currentUser);
+          console.log('User UID:', user.uid);
+          console.log('Upload path:', `recipe-requests/${user.uid}/${Date.now()}.jpg`);
+          
+          // Upload to Firebase Storage with metadata
+          await uploadBytes(storageRef, blob, metadata);
+          
+          // Get the download URL
+          imageURL = await getDownloadURL(storageRef);
+          imageStoragePath = filename;
+          
+          console.log('Image uploaded successfully:', imageURL);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          // Show the actual error to help debug
+          Alert.alert(
+            'Image Upload Failed', 
+            `Could not upload image: ${uploadError.message || 'Unknown error'}. The request will be submitted without the image.`
+          );
+          // Don't return - continue with submission without image
+        }
       }
 
       const payload = {
-        ownerUid,
         title: title.trim(),
         description: description.trim(),
-        ingredients: ingredients.map(s => s.trim()).filter(Boolean),
+        ingredients: ingredients.map(i => {
+          const trimmed = i.trim();
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2 && /^\d/.test(parts[0])) {
+            return {
+              amount: parts[0],
+              name: parts.slice(1).join(' ')
+            };
+          }
+          return { name: trimmed, amount: '' };
+        }).filter(i => i.name),
         steps: steps.map(s => s.trim()).filter(Boolean),
         tags: tags.split(',').map(s => s.trim()).filter(Boolean),
-        cuisine: cuisine.trim(),
-        difficulty,
-        cook_time: Number(cookTime) || null,
-        servings: Number(servings) || null,
-        calories: Number(calories) || null,
-        diet_type: diet,
-        imageURL,
-        imageStoragePath,
-        status: 'pending',                       // moderation required
+        notes: [
+          cuisine && `Cuisine: ${cuisine}`,
+          difficulty && `Difficulty: ${difficulty}`,
+          diet && `Diet: ${diet}`,
+          cookTime && `Cook time: ${cookTime} min`,
+          servings && `Servings: ${servings}`,
+          calories && `Calories: ${calories}`
+        ].filter(Boolean).join('\n'),
+        imageURL,  // Add image URL (empty string if upload failed)
+        imageStoragePath,  // Add storage path (empty string if upload failed)
+        userUid: user.uid,
+        userEmail: user.email || '',
+        status: 'open',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'recipes', id), payload);
-      Alert.alert('Submitted!', 'Your recipe was sent for approval.');
+      await addDoc(collection(db, 'recipeRequests'), payload);
+      
+      Alert.alert(
+        'Request Submitted!', 
+        imageURL 
+          ? 'Your recipe request with image has been sent to our nutritionists for review.'
+          : 'Your recipe request has been sent to our nutritionists for review. Note: Image upload was skipped.'
+      );
       router.back();
     } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Could not submit recipe. Please try again.');
+      console.error('Submit error:', e);
+      Alert.alert('Error', `Could not submit recipe request: ${e.message || 'Please try again.'}`);
     } finally {
       setSubmitting(false);
     }
@@ -136,7 +191,7 @@ export default function NewRecipe() {
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Stack.Screen
         options={{
-          title: 'Submit Recipe',
+          title: 'Request Recipe',
           headerShown: true,
           headerStyle: { backgroundColor: c.bg },
           headerTintColor: c.text
@@ -144,12 +199,18 @@ export default function NewRecipe() {
       />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Image */}
+        {/* Image - Optional for requests */}
         <View style={styles.heroWrap}>
           <Image source={image ? { uri: image } : PLACEHOLDER} style={styles.hero} />
           <View style={styles.heroBtns}>
-            <Chip text="Pick a photo" onPress={pickImage} color={c.accent} />
+            <Chip text="Pick a photo (optional)" onPress={pickImage} color={c.accent} />
           </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+          <Text style={{ color: c.muted, fontSize: 13, textAlign: 'center' }}>
+            Submit a recipe request. Our nutritionists will review and create the recipe for you.
+          </Text>
         </View>
 
         {/* Form */}
@@ -168,7 +229,7 @@ export default function NewRecipe() {
           {ingredients.map((v, i) => (
             <Row key={`ing-${i}`}>
               <TextInput
-                placeholder={`Ingredient ${i + 1}`}
+                placeholder={`Ingredient ${i + 1} (e.g., 200g chicken breast)`}
                 placeholderTextColor={c.muted}
                 value={v}
                 onChangeText={(t) => setRow('ing', i, t)}
@@ -217,7 +278,7 @@ export default function NewRecipe() {
             <View style={{ width: 10 }} />
             <NumInput label="Servings" value={servings} onChangeText={setServings} c={c} />
           </Row>
-          <NumInput label="Calories" value={calories} onChangeText={setCalories} c={c} />
+          <NumInput label="Calories (optional)" value={calories} onChangeText={setCalories} c={c} />
         </FormSection>
 
         <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
@@ -226,7 +287,7 @@ export default function NewRecipe() {
             disabled={submitting}
             style={[styles.submitBtn, { backgroundColor: submitting ? c.disabled : c.accent }]}
           >
-            <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit for approval'}</Text>
+            <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit Recipe Request'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

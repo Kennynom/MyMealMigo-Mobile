@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, StyleSheet, useColorScheme } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
 export default function RecipeDetail() {
-  const { id } = useLocalSearchParams();          // recipe doc id
+  const { id } = useLocalSearchParams();
   const scheme = useColorScheme();
   const c = colors(scheme);
 
@@ -19,6 +19,17 @@ export default function RecipeDetail() {
       if (snap.exists()) setItem({ id: snap.id, ...snap.data() });
     })();
   }, [id]);
+
+  // Helper to format ingredients - handles both string[] and object[] formats
+  const formatIngredient = (ing) => {
+    if (typeof ing === 'string') return ing;
+    if (typeof ing === 'object' && ing !== null) {
+      const name = ing.name || '';
+      const amount = ing.amount || '';
+      return amount ? `${name} (${amount})` : name;
+    }
+    return String(ing);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -69,7 +80,9 @@ export default function RecipeDetail() {
             <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
               <Text style={[styles.sectionTitle, { color: c.text }]}>Ingredients</Text>
               {item.ingredients.map((ing, i) => (
-                <Text key={i} style={[styles.li, { color: c.text }]}>• {ing}</Text>
+                <Text key={i} style={[styles.li, { color: c.text }]}>
+                  • {formatIngredient(ing)}
+                </Text>
               ))}
             </View>
           )}
@@ -79,7 +92,9 @@ export default function RecipeDetail() {
             <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
               <Text style={[styles.sectionTitle, { color: c.text }]}>Steps</Text>
               {item.steps.map((s, i) => (
-                <Text key={i} style={[styles.step, { color: c.text }]}>{i + 1}. {s}</Text>
+                <Text key={i} style={[styles.step, { color: c.text }]}>
+                  {i + 1}. {typeof s === 'string' ? s : String(s)}
+                </Text>
               ))}
             </View>
           )}
