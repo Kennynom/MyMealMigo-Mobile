@@ -1,22 +1,24 @@
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { db } from '@/lib/firebase';
 import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
 export default function RecipeDetail() {
   const { id } = useLocalSearchParams();          // recipe doc id
-  const scheme = useColorScheme();
-  const c = colors(scheme);
+  const { theme } = useTheme();
   const { user } = useAuth();
 
   const [item, setItem] = useState(null);
   const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
   const [logging, setLogging] = useState(false);
+
+  const styles = createStyles(theme);
 
   const mealCategories = [
     { id: 'breakfast', label: 'Breakfast', icon: '🌅' },
@@ -136,17 +138,32 @@ export default function RecipeDetail() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Stack.Screen
         options={{
-          title: item?.title || 'Recipe',
-          headerShown: true,
-          headerStyle: { backgroundColor: c.bg },
-          headerTintColor: c.text,
+          headerShown: false,
         }}
       />
+
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {item?.title || 'Recipe'}
+          </Text>
+          <Text style={styles.headerSubtitle}>Recipe details</Text>
+        </View>
+        <View style={styles.placeholder} />
+      </View>
+
       {!item ? (
-        <View style={styles.center}><Text style={{ color: c.muted }}>Loading…</Text></View>
+        <View style={styles.center}><Text style={{ color: theme.textSecondary }}>Loading…</Text></View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           {/* Hero image */}
@@ -159,21 +176,21 @@ export default function RecipeDetail() {
           />
 
           {/* Title + description */}
-          <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
-            <Text style={[styles.title, { color: c.text }]}>{item.title}</Text>
+          <View style={styles.block}>
+            <Text style={styles.title}>{item.title}</Text>
             {!!item.description && (
-              <Text style={[styles.desc, { color: c.muted }]}>{item.description}</Text>
+              <Text style={styles.desc}>{item.description}</Text>
             )}
 
             {/* Meta */}
             <View style={styles.metaRow}>
-              {item.cook_time ? <Text style={[styles.meta, { color: c.muted }]}>{item.cook_time} min</Text> : null}
-              {item.servings ? <Text style={[styles.meta, { color: c.muted }]}>• {item.servings} servings</Text> : null}
-              {item.calories ? <Text style={[styles.meta, { color: c.muted }]}>• {item.calories} kcal</Text> : null}
-              {item.diet_type ? <Text style={[styles.meta, { color: c.muted }]}>• {item.diet_type}</Text> : null}
+              {item.cook_time ? <Text style={styles.meta}>{item.cook_time} min</Text> : null}
+              {item.servings ? <Text style={styles.meta}>• {item.servings} servings</Text> : null}
+              {item.calories ? <Text style={styles.meta}>• {item.calories} kcal</Text> : null}
+              {item.diet_type ? <Text style={styles.meta}>• {item.diet_type}</Text> : null}
             </View>
             {!!item.tags?.length && (
-              <Text style={[styles.tags, { color: c.muted }]}>
+              <Text style={styles.tags}>
                 {Array.isArray(item.tags) ? item.tags.join(', ') : String(item.tags)}
               </Text>
             )}
@@ -181,43 +198,43 @@ export default function RecipeDetail() {
 
           {/* Macros */}
           {!!item.Macros && (
-            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Text style={[styles.sectionTitle, { color: c.text }]}>Nutrition Facts (Per 1 Serving)</Text>
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>Nutrition Facts (Per 1 Serving)</Text>
               <View style={styles.macrosGrid}>
                 {item.Macros.calories && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.calories}</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>cal</Text>
+                    <Text style={styles.macroValue}>{item.Macros.calories}</Text>
+                    <Text style={styles.macroLabel}>cal</Text>
                   </View>
                 )}
                 {item.Macros.carbs && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.carbs}g</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>carbs</Text>
+                    <Text style={styles.macroValue}>{item.Macros.carbs}g</Text>
+                    <Text style={styles.macroLabel}>carbs</Text>
                   </View>
                 )}
                 {item.Macros.protein && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.protein}g</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>protein</Text>
+                    <Text style={styles.macroValue}>{item.Macros.protein}g</Text>
+                    <Text style={styles.macroLabel}>protein</Text>
                   </View>
                 )}
                 {item.Macros.fat && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.fat}g</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>fat</Text>
+                    <Text style={styles.macroValue}>{item.Macros.fat}g</Text>
+                    <Text style={styles.macroLabel}>fat</Text>
                   </View>
                 )}
                 {item.Macros.sodium && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.sodium}</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>sodium</Text>
+                    <Text style={styles.macroValue}>{item.Macros.sodium}</Text>
+                    <Text style={styles.macroLabel}>sodium</Text>
                   </View>
                 )}
                 {item.Macros.sugar && (
                   <View style={styles.macroItem}>
-                    <Text style={[styles.macroValue, { color: c.accent }]}>{item.Macros.sugar}g</Text>
-                    <Text style={[styles.macroLabel, { color: c.muted }]}>sugar</Text>
+                    <Text style={styles.macroValue}>{item.Macros.sugar}g</Text>
+                    <Text style={styles.macroLabel}>sugar</Text>
                   </View>
                 )}
               </View>
@@ -226,20 +243,20 @@ export default function RecipeDetail() {
 
           {/* Ingredients */}
           {!!item.ingredients?.length && (
-            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Text style={[styles.sectionTitle, { color: c.text }]}>Ingredients</Text>
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>Ingredients</Text>
               {item.ingredients.map((ing, i) => (
-                <Text key={i} style={[styles.li, { color: c.text }]}>• {ing}</Text>
+                <Text key={i} style={styles.ingredient}>• {ing}</Text>
               ))}
             </View>
           )}
 
           {/* Steps */}
           {!!item.steps?.length && (
-            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Text style={[styles.sectionTitle, { color: c.text }]}>Steps</Text>
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>Steps</Text>
               {item.steps.map((s, i) => (
-                <Text key={i} style={[styles.step, { color: c.text }]}>{i + 1}. {s}</Text>
+                <Text key={i} style={styles.step}>{i + 1}. {s}</Text>
               ))}
             </View>
           )}
@@ -247,7 +264,7 @@ export default function RecipeDetail() {
           {/* Log Meal Button */}
           <View style={styles.logButtonContainer}>
             <TouchableOpacity
-              style={[styles.logMealButton, { backgroundColor: c.accent }]}
+              style={styles.logMealButton}
               onPress={() => setShowMealCategoryModal(true)}
               disabled={logging}
             >
@@ -267,21 +284,21 @@ export default function RecipeDetail() {
         onRequestClose={() => setShowMealCategoryModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: c.bg }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: c.border }]}>
-              <Text style={[styles.modalTitle, { color: c.text }]}>Select Meal Category</Text>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Meal Category</Text>
               <TouchableOpacity 
                 onPress={() => setShowMealCategoryModal(false)}
                 style={styles.modalCloseButton}
               >
-                <Text style={[styles.modalCloseText, { color: c.muted }]}>✕</Text>
+                <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               {mealCategories.map((category) => (
                 <View key={category.id} style={styles.categorySection}>
-                  <Text style={[styles.categoryLabel, { color: c.text }]}>
+                  <Text style={styles.categoryLabel}>
                     {category.icon} {category.label}
                   </Text>
                   
@@ -306,20 +323,94 @@ export default function RecipeDetail() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.background,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  backText: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+  },
+  placeholder: { width: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   hero: { width: '100%', height: 240, backgroundColor: '#222' },
-  block: { margin: 16, padding: 16, borderRadius: 14, borderWidth: 1 },
-  title: { fontSize: 22, fontWeight: '800', marginBottom: 6 },
-  desc: { fontSize: 14, lineHeight: 20 },
+  block: { 
+    margin: 16, 
+    padding: 16, 
+    borderRadius: 16,
+    backgroundColor: theme.background,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  title: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    marginBottom: 6,
+    color: theme.text,
+  },
+  desc: { 
+    fontSize: 14, 
+    lineHeight: 20,
+    color: theme.textSecondary,
+  },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  meta: { fontSize: 12 },
-  tags: { fontSize: 12, marginTop: 6 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  meta: { 
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  tags: { 
+    fontSize: 12, 
+    marginTop: 6,
+    color: theme.textSecondary,
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 10,
+    color: theme.text,
+  },
   macrosGrid: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.03)', 
+    backgroundColor: theme.surface, 
     borderRadius: 10, 
     padding: 12,
     gap: 6,
@@ -333,14 +424,32 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     fontWeight: 'bold', 
     marginBottom: 4,
+    color: theme.primary,
   },
   macroLabel: { 
     fontSize: 10, 
     textTransform: 'uppercase', 
     fontWeight: '600',
+    color: theme.textSecondary,
   },
-  li: { fontSize: 14, lineHeight: 22, marginBottom: 4 },
-  step: { fontSize: 15, lineHeight: 24, marginBottom: 8 },
+  ingredient: { 
+    fontSize: 14, 
+    lineHeight: 22, 
+    marginBottom: 4,
+    color: theme.text,
+  },
+  li: { 
+    fontSize: 14, 
+    lineHeight: 22, 
+    marginBottom: 4,
+    color: theme.text,
+  },
+  step: { 
+    fontSize: 15, 
+    lineHeight: 24, 
+    marginBottom: 8,
+    color: theme.text,
+  },
   logButtonContainer: { 
     paddingHorizontal: 16, 
     paddingVertical: 20,
@@ -349,6 +458,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: theme.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -366,10 +476,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
+    backgroundColor: theme.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
     paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -377,17 +493,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
+    color: theme.text,
   },
   modalCloseButton: {
     padding: 4,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: theme.surface,
   },
   modalCloseText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '300',
+    color: theme.textSecondary,
   },
   modalContent: {
     padding: 20,
@@ -399,6 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
+    color: theme.text,
   },
   typeButtonsRow: {
     flexDirection: 'row',
@@ -406,32 +532,25 @@ const styles = StyleSheet.create({
   },
   typeButton: {
     flex: 1,
-    backgroundColor: '#059669',
+    backgroundColor: theme.primary,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 2,
   },
   typeButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
 });
 
 function colors(scheme) {
-  const dark = scheme === 'dark';
-  return {
-    bg: dark ? '#0B0B0D' : '#F7F7F8',
-    surface: dark ? '#141418' : '#FFFFFF',
-    text: dark ? '#F5F6F8' : '#121319',
-    muted: dark ? 'rgba(234,236,240,0.68)' : 'rgba(21,23,28,0.68)',
-    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-    accent: dark ? '#1DB954' : '#1DB954',
-  };
+  // Deprecated - using theme context now
+  return {};
 }

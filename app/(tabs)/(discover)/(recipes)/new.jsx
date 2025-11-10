@@ -1,20 +1,24 @@
 // app/(tabs)/(discover)/(recipes)/new.jsx
-import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  Image, ScrollView, StyleSheet, useColorScheme, Alert
-} from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
+import { auth, db, storage } from '@/lib/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack } from 'expo-router';
-import { auth, db, storage } from '@/lib/firebase';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Image, ScrollView, StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
+} from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
 export default function NewRecipe() {
-  const scheme = useColorScheme();
-  const c = colors(scheme);
+  const { theme } = useTheme();
+
+  const styles = createStyles(theme);
 
   // core fields
   const [title, setTitle] = useState('');
@@ -133,98 +137,110 @@ export default function NewRecipe() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Stack.Screen
         options={{
-          title: 'Submit Recipe',
-          headerShown: true,
-          headerStyle: { backgroundColor: c.bg },
-          headerTintColor: c.text
+          headerShown: false,
         }}
       />
+
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Submit Recipe</Text>
+          <Text style={styles.headerSubtitle}>Share your creation</Text>
+        </View>
+        <View style={styles.placeholder} />
+      </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Image */}
         <View style={styles.heroWrap}>
           <Image source={image ? { uri: image } : PLACEHOLDER} style={styles.hero} />
           <View style={styles.heroBtns}>
-            <Chip text="Pick a photo" onPress={pickImage} color={c.accent} />
+            <Chip text="Pick a photo" onPress={pickImage} theme={theme} />
           </View>
         </View>
 
         {/* Form */}
-        <FormSection title="Basic info" c={c}>
+        <FormSection title="Basic info" theme={theme}>
           <LabeledInput label="Name" placeholder="e.g., Hainanese Chicken Rice"
-            value={title} onChangeText={setTitle} c={c} />
+            value={title} onChangeText={setTitle} theme={theme} />
           <LabeledInput label="Description" placeholder="Short description"
-            value={description} onChangeText={setDescription} c={c} multiline />
+            value={description} onChangeText={setDescription} theme={theme} multiline />
           <LabeledInput label="Cuisine" placeholder="e.g., Singaporean"
-            value={cuisine} onChangeText={setCuisine} c={c} />
+            value={cuisine} onChangeText={setCuisine} theme={theme} />
           <LabeledInput label="Tags" placeholder="Comma-separated (e.g., spicy, seafood)"
-            value={tags} onChangeText={setTags} c={c} />
+            value={tags} onChangeText={setTags} theme={theme} />
         </FormSection>
 
-        <FormSection title="Ingredients" c={c}>
+        <FormSection title="Ingredients" theme={theme}>
           {ingredients.map((v, i) => (
             <Row key={`ing-${i}`}>
               <TextInput
                 placeholder={`Ingredient ${i + 1}`}
-                placeholderTextColor={c.muted}
+                placeholderTextColor={theme.textSecondary}
                 value={v}
                 onChangeText={(t) => setRow('ing', i, t)}
-                style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
+                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
               />
-              <IconBtn label="−" onPress={() => removeRow('ing', i)} c={c} />
+              <IconBtn label="−" onPress={() => removeRow('ing', i)} theme={theme} />
             </Row>
           ))}
-          <Chip text="Add ingredient" onPress={() => addRow('ing')} color={c.accent} />
+          <Chip text="Add ingredient" onPress={() => addRow('ing')} theme={theme} />
         </FormSection>
 
-        <FormSection title="Steps" c={c}>
+        <FormSection title="Steps" theme={theme}>
           {steps.map((v, i) => (
             <Row key={`step-${i}`}>
               <TextInput
                 placeholder={`Step ${i + 1}`}
-                placeholderTextColor={c.muted}
+                placeholderTextColor={theme.textSecondary}
                 value={v}
                 onChangeText={(t) => setRow('step', i, t)}
-                style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
+                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
                 multiline
               />
-              <IconBtn label="−" onPress={() => removeRow('step', i)} c={c} />
+              <IconBtn label="−" onPress={() => removeRow('step', i)} theme={theme} />
             </Row>
           ))}
-          <Chip text="Add step" onPress={() => addRow('step')} color={c.accent} />
+          <Chip text="Add step" onPress={() => addRow('step')} theme={theme} />
         </FormSection>
 
-        <FormSection title="Details" c={c}>
-          <Label c={c}>Difficulty</Label>
+        <FormSection title="Details" theme={theme}>
+          <Label theme={theme}>Difficulty</Label>
           <ChipRow>
             {['Easy','Medium','Hard'].map(opt => (
-              <SelectChip key={opt} text={opt} active={difficulty===opt} onPress={()=>setDifficulty(opt)} c={c} />
+              <SelectChip key={opt} text={opt} active={difficulty===opt} onPress={()=>setDifficulty(opt)} theme={theme} />
             ))}
           </ChipRow>
 
-          <Label c={c} style={{ marginTop: 12 }}>Diet Type</Label>
+          <Label theme={theme} style={{ marginTop: 12 }}>Diet Type</Label>
           <ChipRow>
             {['Halal','Non-Halal'].map(opt => (
-              <SelectChip key={opt} text={opt} active={diet===opt} onPress={()=>setDiet(opt)} c={c} />
+              <SelectChip key={opt} text={opt} active={diet===opt} onPress={()=>setDiet(opt)} theme={theme} />
             ))}
           </ChipRow>
 
           <Row>
-            <NumInput label="Cook time (min)" value={cookTime} onChangeText={setCookTime} c={c} />
+            <NumInput label="Cook time (min)" value={cookTime} onChangeText={setCookTime} theme={theme} />
             <View style={{ width: 10 }} />
-            <NumInput label="Servings" value={servings} onChangeText={setServings} c={c} />
+            <NumInput label="Servings" value={servings} onChangeText={setServings} theme={theme} />
           </Row>
-          <NumInput label="Calories" value={calories} onChangeText={setCalories} c={c} />
+          <NumInput label="Calories" value={calories} onChangeText={setCalories} theme={theme} />
         </FormSection>
 
         <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
           <TouchableOpacity
             onPress={onSubmit}
             disabled={submitting}
-            style={[styles.submitBtn, { backgroundColor: submitting ? c.disabled : c.accent }]}
+            style={[styles.submitBtn, { backgroundColor: submitting ? theme.border : theme.primary }]}
           >
             <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit for approval'}</Text>
           </TouchableOpacity>
@@ -236,64 +252,73 @@ export default function NewRecipe() {
 
 /* ========== UI Helpers ========== */
 
-function FormSection({ title, c, children }) {
+function FormSection({ title, theme, children }) {
   return (
     <View style={{ marginHorizontal: 16, marginTop: 16 }}>
-      <Text style={{ color: c.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>{title}</Text>
+      <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>{title}</Text>
       <View style={{ gap: 10 }}>{children}</View>
     </View>
   );
 }
-function Label({ c, style, children }) {
-  return <Text style={[{ color: c.muted, fontSize: 13, marginBottom: 6 }, style]}>{children}</Text>;
+function Label({ theme, style, children }) {
+  return <Text style={[{ color: theme.textSecondary, fontSize: 13, marginBottom: 6 }, style]}>{children}</Text>;
 }
-function LabeledInput({ label, c, style, ...props }) {
+function LabeledInput({ label, theme, style, ...props }) {
   return (
     <View>
-      <Label c={c}>{label}</Label>
+      <Label theme={theme}>{label}</Label>
       <TextInput
         {...props}
         style={[
-          styles.input,
-          { backgroundColor: c.surface, color: c.text, borderColor: c.border },
+          { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+          { backgroundColor: theme.background, color: theme.text, borderColor: theme.border },
           style
         ]}
       />
     </View>
   );
 }
-function NumInput({ label, value, onChangeText, c }) {
+function NumInput({ label, value, onChangeText, theme }) {
   return (
     <View style={{ flex: 1 }}>
-      <Label c={c}>{label}</Label>
+      <Label theme={theme}>{label}</Label>
       <TextInput
         keyboardType="numeric"
         value={value}
         onChangeText={onChangeText}
         placeholder="0"
-        placeholderTextColor={c.muted}
-        style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+          { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }
+        ]}
       />
     </View>
   );
 }
-function Chip({ text, onPress, color }) {
+function Chip({ text, onPress, theme }) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.chip, { backgroundColor: color }]}>
+    <TouchableOpacity 
+      onPress={onPress} 
+      style={[
+        { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
+        { backgroundColor: theme.primary }
+      ]}
+    >
       <Text style={{ color: '#fff', fontWeight: '700' }}>{text}</Text>
     </TouchableOpacity>
   );
 }
-function SelectChip({ text, active, onPress, c }) {
+function SelectChip({ text, active, onPress, theme }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[
-        styles.selectChip,
-        { backgroundColor: active ? c.accent : c.surface, borderColor: active ? c.accent : c.border }
+        { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
+        { backgroundColor: active ? theme.primary : theme.surface, borderColor: active ? theme.primary : theme.border }
       ]}
     >
-      <Text style={{ color: active ? '#fff' : c.text, fontWeight: '700' }}>{text}</Text>
+      <Text style={{ color: active ? '#fff' : theme.text, fontWeight: '700' }}>{text}</Text>
     </TouchableOpacity>
   );
 }
@@ -304,14 +329,44 @@ function Row({ children }) {
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
+  // Header styles
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.background,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  backText: {
+    fontSize: 24,
+    color: theme.text,
+    fontWeight: 'bold',
+  },
+  headerCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 12 },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: theme.text },
+  headerSubtitle: { fontSize: 13, marginTop: 2, color: theme.textSecondary },
+  placeholder: { width: 40 },
+
+  // Form styles
   heroWrap: { position: 'relative', marginBottom: 8 },
   hero: { width: '100%', height: 190, backgroundColor: '#222' },
   heroBtns: { position: 'absolute', bottom: 12, right: 12 },
-
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  chip: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
-  selectChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
 
   submitBtn: {
     borderRadius: 14, paddingVertical: 14, alignItems: 'center',
@@ -320,13 +375,13 @@ const styles = StyleSheet.create({
   submitText: { color: '#fff', fontWeight: '800', fontSize: 16 }
 });
 
-function IconBtn({ label = '−', onPress, c }) {
+function IconBtn({ label = '−', onPress, theme }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={{
-        backgroundColor: c.surface,
-        borderColor: c.border,
+        backgroundColor: theme.surface,
+        borderColor: theme.border,
         borderWidth: 1,
         borderRadius: 8,
         width: 36,
@@ -335,22 +390,9 @@ function IconBtn({ label = '−', onPress, c }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: c.text, fontSize: 20, fontWeight: '700', lineHeight: 20 }}>
+      <Text style={{ color: theme.text, fontSize: 20, fontWeight: '700', lineHeight: 20 }}>
         {label}
       </Text>
     </TouchableOpacity>
   );
-}
-
-function colors(scheme) {
-  const dark = scheme === 'dark';
-  return {
-    bg: dark ? '#0B0B0D' : '#F7F7F8',
-    surface: dark ? '#141418' : '#FFFFFF',
-    text: dark ? '#F5F6F8' : '#121319',
-    muted: dark ? 'rgba(234,236,240,0.68)' : 'rgba(21,23,28,0.68)',
-    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-    accent: '#1DB954',
-    disabled: dark ? '#2a2a2d' : '#cfd2d7',
-  };
 }
