@@ -1,4 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   createUserWithEmailAndPassword,
   getAuth,
@@ -6,38 +8,63 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
+  Dimensions,
   Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+
+const GREEN = '#58e221';
+const GREEN_DARK = '#3bc40a';
+const BLACK = '#000';
+const WHITE = '#fff';
+const { width } = Dimensions.get('window');
+const rf = (n: number): number => Math.round((width / 375) * n);
 
 type SignUpModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  initialRole?: 'free' | 'premium'; // kept for compat, ignored
+  initialRole?: 'free' | 'premium';
 };
+
+function ScaleButton({ children, onPress, disabled, bg = BLACK, textColor = WHITE }: any) {
+  const anim = useRef(new Animated.Value(1)).current;
+  return (
+    <Animated.View style={{ transform: [{ scale: anim }] }}>
+      <Pressable
+        onPressIn={() => !disabled && Animated.spring(anim, { toValue: 0.98, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.spring(anim, { toValue: 1, useNativeDriver: true }).start()}
+        onPress={onPress}
+        disabled={disabled}
+        android_ripple={{ color: '#ffffff25' }}
+        style={[styles.btnBase, { backgroundColor: disabled ? '#9ca3af' : bg }]}
+      >
+        <Text style={[styles.btnText, { color: textColor }]}>{children}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
   const auth = getAuth();
   const db = getFirestore();
   const { user } = useAuth();
 
-  // form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already logged in, close modal
   useEffect(() => {
     if (isOpen && user) {
       onClose();
@@ -54,16 +81,13 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
     setLoading(true);
 
     try {
-      // 1) Create auth user (role is always FREE)
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const created = cred.user;
 
-      // 2) Basic profile
       if (name.trim()) {
         await updateProfile(created, { displayName: name.trim() });
       }
 
-      // 3) Firestore user doc
       await setDoc(
         doc(db, 'users', created.uid),
         {
@@ -81,7 +105,6 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
         { merge: true }
       );
 
-      // 4) Send verification email
       await sendEmailVerification(created);
       
       Alert.alert(
@@ -107,78 +130,101 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Create your free account</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Form */}
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Your name"
-                  placeholderTextColor="#9ca3af"
-                  autoCapitalize="words"
-                />
+          <LinearGradient
+            colors={[GREEN, GREEN_DARK]}
+            start={{ x: 0.15, y: 0 }}
+            end={{ x: 0.85, y: 1 }}
+            style={styles.gradient}
+          >
+            {/* Decorative blob */}
+            <View style={[styles.blob, { top: -40, right: -30, opacity: 0.12 }]} />
+            
+            <ScrollView 
+              contentContainerStyle={styles.scrollContent} 
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.brand}>MYMEALMIGO</Text>
+                <Pressable onPress={onClose} style={styles.closeButton} hitSlop={10}>
+                  <Ionicons name="close" size={28} color={BLACK} />
+                </Pressable>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-              </View>
+              {/* Form Card */}
+              <View style={styles.formCard}>
+                <Text style={styles.title}>Create your free account</Text>
+                
+                <View style={styles.form}>
+                  <View style={styles.inputGroup}>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Your name"
+                        placeholderTextColor="#94a3b8"
+                        autoCapitalize="words"
+                      />
+                    </View>
+                  </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  autoComplete="password"
-                />
-              </View>
+                  <View style={styles.inputGroup}>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="you@example.com"
+                        placeholderTextColor="#94a3b8"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                      />
+                    </View>
+                  </View>
 
-              {error && (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
+                  <View style={styles.inputGroup}>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="••••••••"
+                        placeholderTextColor="#94a3b8"
+                        secureTextEntry
+                        autoComplete="password"
+                      />
+                    </View>
+                  </View>
+
+                  {error && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="alert-circle" size={18} color="#dc2626" style={{ marginRight: 8 }} />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  )}
+
+                  <ScaleButton
+                    onPress={handleSubmit}
+                    disabled={loading}
+                    bg={BLACK}
+                    textColor={WHITE}
+                  >
+                    {loading ? 'Creating…' : 'Get Started'}
+                  </ScaleButton>
+
+                  <Text style={styles.footerText}>
+                    Already have an account?{' '}
+                    <Text style={styles.loginLink} onPress={onClose}>Sign In</Text>
+                  </Text>
                 </View>
-              )}
-
-              <TouchableOpacity
-                style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                <Text style={styles.submitButtonText}>
-                  {loading ? 'Creating…' : 'Create free account'}
-                </Text>
-              </TouchableOpacity>
-
-              <Text style={styles.footerText}>
-                Already have an account?{' '}
-                <Text style={styles.loginLink} onPress={onClose}>Log in</Text>
-              </Text>
-            </View>
-          </ScrollView>
+              </View>
+            </ScrollView>
+          </LinearGradient>
         </View>
       </View>
     </Modal>
@@ -188,22 +234,33 @@ export function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 24,
     width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
     shadowRadius: 24,
-    elevation: 8,
+    elevation: 12,
+  },
+  gradient: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  blob: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#fff',
   },
   scrollContent: {
     padding: 24,
@@ -212,24 +269,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFFFFF',
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
+  brand: {
+    fontSize: rf(24),
+    fontWeight: Platform.select({ ios: '900', android: 'bold' }),
+    letterSpacing: 0.5,
+    color: BLACK,
   },
   closeButton: {
-    padding: 8,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  closeButtonText: {
-    fontSize: 20,
-    color: '#C65656',
-    fontWeight: 'bold',
+  formCard: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 22,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  title: {
+    fontSize: rf(22),
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 24,
   },
   form: {
     gap: 16,
@@ -237,56 +312,70 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: 8,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1f2937',
-    backgroundColor: '#ffffff',
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: rf(16),
+    color: '#0f172a',
+    fontWeight: '600',
   },
   errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fee2e2',
-    borderColor: '#fecaca',
+    borderColor: '#fca5a5',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 14,
+    fontSize: rf(14),
+    fontWeight: '600',
+    flex: 1,
   },
-  submitButton: {
-    backgroundColor: '#059669',
-    borderRadius: 8,
+  btnBase: {
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
-  },
-  submitButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  btnText: {
+    fontSize: rf(18),
+    fontWeight: '800',
   },
   footerText: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: rf(14),
+    color: '#475569',
     marginTop: 16,
+    fontWeight: '600',
   },
   loginLink: {
-    color: '#059669',
-    fontWeight: '600',
+    color: BLACK,
+    fontWeight: '800',
   },
 });
