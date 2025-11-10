@@ -1,19 +1,18 @@
-import { useTheme } from '@/context/ThemeContext';
-import { db } from '@/lib/firebase';
-import { router, useFocusEffect } from 'expo-router';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, useColorScheme, RefreshControl, TextInput } from 'react-native';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png'); // put any 1:1 image here
 
 export default function BrowseRecipes() {
-  const { theme } = useTheme();
+  const scheme = useColorScheme();
+  const c = colors(scheme);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-
-  const styles = createStyles(theme);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,30 +40,16 @@ export default function BrowseRecipes() {
   }, [recipes, search]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Browse Recipes</Text>
-          <Text style={styles.headerSubtitle}>Healthy & delicious</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.header, { borderBottomColor: c.border }]}>
+        <Text style={[styles.headerTitle, { color: c.text }]}>Browse Recipes</Text>
         <TextInput
           placeholder="Search recipes or tags…"
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={c.muted}
           value={search}
           onChangeText={setSearch}
-          style={styles.search}
+          style={[styles.search, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
           returnKeyType="search"
         />
       </View>
@@ -73,27 +58,26 @@ export default function BrowseRecipes() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        style={{ backgroundColor: theme.background }}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => setLoading(true)} tintColor={theme.textSecondary} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => setLoading(true)} tintColor={c.muted} />}
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyWrap}>
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>No recipes yet</Text>
-              <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
+              <Text style={[styles.emptyTitle, { color: c.text }]}>No recipes yet</Text>
+              <Text style={[styles.emptySub, { color: c.muted }]}>
                 Tap the + button to submit your first recipe.
               </Text>
             </View>
           ) : null
         }
-        renderItem={({ item }) => <RecipeCard item={item} theme={theme} />}
+        renderItem={({ item }) => <RecipeCard item={item} colors={c} />}
       />
 
       {/* FAB */}
       <TouchableOpacity
         onPress={() => router.push('(recipes)/new')}
         activeOpacity={0.9}
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: c.accent, shadowColor: c.accent }]}
       >
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
@@ -101,8 +85,7 @@ export default function BrowseRecipes() {
   );
 }
 
-function RecipeCard({ item, theme }) {
-  const styles = createStyles(theme);
+function RecipeCard({ item, colors: c }) {
   const imgPath = item.imageURL
     ? { uri: item.imageURL }
     : item.imageStoragePath
@@ -116,107 +99,31 @@ function RecipeCard({ item, theme }) {
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={styles.card}
+      style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}
       onPress={() => router.push({ pathname: '(recipes)/[id]', params: { id: item.id } })}
     >
-      <View style={styles.thumbContainer}>
-        <Image source={imgPath || PLACEHOLDER} style={styles.thumb} />
-      </View>
+      <Image source={imgPath || PLACEHOLDER} style={styles.thumb} />
       <View style={styles.cardBody}>
-        <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>{item.title || 'Untitled'}</Text>
-        <Text numberOfLines={2} style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
+        <Text numberOfLines={1} style={[styles.title, { color: c.text }]}>{item.title || 'Untitled'}</Text>
+        <Text numberOfLines={2} style={[styles.subtitle, { color: c.muted }]}>{subtitle}</Text>
 
         <View style={styles.metaRow}>
-          {item.cook_time ? <Text style={[styles.meta, { color: theme.textSecondary }]}>{item.cook_time} min</Text> : null}
-          {item.calories ? <Text style={[styles.meta, { color: theme.textSecondary }]}>• {item.calories} kcal</Text> : null}
-          {item.diet_type ? <Text style={[styles.meta, { color: theme.textSecondary }]}>• {item.diet_type}</Text> : null}
+          {item.cook_time ? <Text style={[styles.meta, { color: c.muted }]}>{item.cook_time} min</Text> : null}
+          {item.calories ? <Text style={[styles.meta, { color: c.muted }]}>• {item.calories} kcal</Text> : null}
+          {item.diet_type ? <Text style={[styles.meta, { color: c.muted }]}>• {item.diet_type}</Text> : null}
         </View>
       </View>
     </TouchableOpacity>
   );
 }
 
-const createStyles = (theme) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  backText: {
-    color: theme.text,
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: theme.textSecondary,
-  },
-  placeholder: { width: 40 },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: theme.background,
-  },
-  search: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    backgroundColor: theme.background,
-    color: theme.text,
-    borderColor: theme.border,
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  headerTitle: { fontSize: 22, fontWeight: '700', marginBottom: 10 },
+  search: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15 },
 
-  card: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    marginBottom: 14,
-    backgroundColor: theme.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  thumbContainer: {
-    width: 92,
-    height: 92,
-    overflow: 'hidden',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
+  card: { flexDirection: 'row', borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
   thumb: { width: 92, height: 92, backgroundColor: '#333' },
   cardBody: { flex: 1, padding: 12 },
   title: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
@@ -232,10 +139,19 @@ const createStyles = (theme) => StyleSheet.create({
     position: 'absolute', right: 20, bottom: 28,
     width: 64, height: 64, borderRadius: 32,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.primary,
-    shadowColor: theme.primary,
     shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
   },
   fabPlus: { color: '#fff', fontSize: 34, lineHeight: 34, marginTop: -2 },
 });
+
+function colors(scheme) {
+  const dark = scheme === 'dark';
+  return {
+    bg: dark ? '#0B0B0D' : '#F7F7F8',
+    surface: dark ? '#141418' : '#FFFFFF',
+    text: dark ? '#F5F6F8' : '#121319',
+    muted: dark ? 'rgba(234,236,240,0.64)' : 'rgba(21,23,28,0.64)',
+    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    accent: '#1DB954', // change if you want your brand color
+  };
+}

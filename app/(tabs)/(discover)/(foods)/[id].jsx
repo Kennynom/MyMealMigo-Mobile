@@ -1,18 +1,17 @@
-import { useTheme } from '@/context/ThemeContext';
 import { db } from '@/lib/firebase';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
 export default function FoodDetail() {
   const { id } = useLocalSearchParams();      // food doc id
-  const { theme } = useTheme();
+  const scheme = useColorScheme();
+  const c = colors(scheme);
 
   const [item, setItem] = useState(null);
-  const styles = createStyles(theme);
 
   useEffect(() => {
     (async () => {
@@ -22,32 +21,18 @@ export default function FoodDetail() {
   }, [id]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Stack.Screen
         options={{
-          headerShown: false,
+          title: item?.name || 'Food Details',
+          headerShown: true,
+          headerStyle: { backgroundColor: c.bg },
+          headerTintColor: c.text,
         }}
       />
 
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {item?.name || 'Food Details'}
-          </Text>
-          <Text style={styles.headerSubtitle}>Nutrition information</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
-
       {!item ? (
-        <View style={styles.center}><Text style={{ color: theme.textSecondary }}>Loading…</Text></View>
+        <View style={styles.center}><Text style={{ color: c.muted }}>Loading…</Text></View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           {/* Hero image */}
@@ -57,58 +42,58 @@ export default function FoodDetail() {
           />
 
           {/* Title + description */}
-          <View style={styles.block}>
-            <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.desc}>
+          <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+            <Text style={[styles.title, { color: c.text }]}>{item.name}</Text>
+            <Text style={[styles.desc, { color: c.muted }]}>
               {[item.category, item.serving_size].filter(Boolean).join(' • ') || '—'}
             </Text>
 
             {!!item.description && (
-              <Text style={[styles.desc, { marginTop: 8 }]}>{item.description}</Text>
+              <Text style={[styles.desc, { color: c.muted, marginTop: 8 }]}>{item.description}</Text>
             )}
           </View>
 
           {/* Nutrition */}
-          <View style={styles.block}>
-            <Text style={styles.sectionTitle}>Nutrition (per serving)</Text>
-            {row('Calories', item.calories, 'kcal', theme, styles)}
-            {row('Protein', item.protein_g, 'g', theme, styles)}
-            {row('Fat', item.fat_g, 'g', theme, styles)}
-            {row('Carbohydrates', item.carbs_g, 'g', theme, styles)}
-            {row('Fiber', item.fiber_g, 'g', theme, styles)}
-            {row('Sugar', item.sugar_g, 'g', theme, styles)}
-            {row('Sodium', item.sodium_mg, 'mg', theme, styles)}
-            {row('Potassium', item.potassium_mg, 'mg', theme, styles)}
-            {row('Calcium', item.calcium_mg, 'mg', theme, styles)}
-            {row('Iron', item.iron_mg, 'mg', theme, styles)}
+          <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+            <Text style={[styles.sectionTitle, { color: c.text }]}>Nutrition (per serving)</Text>
+            {row('Calories', item.calories, 'kcal', c)}
+            {row('Protein', item.protein_g, 'g', c)}
+            {row('Fat', item.fat_g, 'g', c)}
+            {row('Carbohydrates', item.carbs_g, 'g', c)}
+            {row('Fiber', item.fiber_g, 'g', c)}
+            {row('Sugar', item.sugar_g, 'g', c)}
+            {row('Sodium', item.sodium_mg, 'mg', c)}
+            {row('Potassium', item.potassium_mg, 'mg', c)}
+            {row('Calcium', item.calcium_mg, 'mg', c)}
+            {row('Iron', item.iron_mg, 'mg', c)}
           </View>
 
           {/* Meta sections */}
           {!!item.diet_type?.length && (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>Diet Type</Text>
-              <Text style={styles.desc}>{item.diet_type.join(', ')}</Text>
+            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.sectionTitle, { color: c.text }]}>Diet Type</Text>
+              <Text style={{ color: c.muted }}>{item.diet_type.join(', ')}</Text>
             </View>
           )}
 
           {!!item.allergens?.length && (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>Allergens</Text>
-              <Text style={styles.desc}>{item.allergens.join(', ')}</Text>
+            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.sectionTitle, { color: c.text }]}>Allergens</Text>
+              <Text style={{ color: c.muted }}>{item.allergens.join(', ')}</Text>
             </View>
           )}
 
           {!!item.common_uses?.length && (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>Common Uses</Text>
-              <Text style={styles.desc}>{item.common_uses.join(', ')}</Text>
+            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.sectionTitle, { color: c.text }]}>Common Uses</Text>
+              <Text style={{ color: c.muted }}>{item.common_uses.join(', ')}</Text>
             </View>
           )}
 
           {!!item.substitutes?.length && (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>Substitutes</Text>
-              <Text style={styles.desc}>{item.substitutes.join(', ')}</Text>
+            <View style={[styles.block, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.sectionTitle, { color: c.text }]}>Substitutes</Text>
+              <Text style={{ color: c.muted }}>{item.substitutes.join(', ')}</Text>
             </View>
           )}
         </ScrollView>
@@ -118,91 +103,31 @@ export default function FoodDetail() {
 }
 
 /* helpers */
-function row(label, value, unit, theme, styles) {
+function row(label, value, unit, c) {
   return (
-    <Text style={[styles.li, { color: theme.text }]}>
-      {label}: <Text style={{ color: theme.textSecondary }}>{value != null ? `${value} ${unit}` : '-'}</Text>
+    <Text style={[styles.li, { color: c.text }]}>
+      {label}: <Text style={{ color: c.muted }}>{value != null ? `${value} ${unit}` : '-'}</Text>
     </Text>
   );
 }
 
-const createStyles = (theme) => StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  backText: {
-    color: theme.text,
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: theme.textSecondary,
-  },
-  placeholder: { width: 40 },
+const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hero: { width: '100%', height: 240, backgroundColor: '#333' },
-  block: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: theme.background,
-    shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    color: theme.text,
-  },
-  desc: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: theme.textSecondary,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: theme.text,
-  },
-  li: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 4,
-  },
+  hero: { width: '100%', height: 240, backgroundColor: '#222' },
+  block: { margin: 16, padding: 16, borderRadius: 14, borderWidth: 1 },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 6 },
+  desc: { fontSize: 14, lineHeight: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  li: { fontSize: 14, lineHeight: 22, marginBottom: 4 },
 });
+
+function colors(scheme) {
+  const dark = scheme === 'dark';
+  return {
+    bg: dark ? '#0B0B0D' : '#F7F7F8',
+    surface: dark ? '#141418' : '#FFFFFF',
+    text: dark ? '#F5F6F8' : '#121319',
+    muted: dark ? 'rgba(234,236,240,0.68)' : 'rgba(21,23,28,0.68)',
+    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+  };
+}
