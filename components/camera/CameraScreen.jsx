@@ -7,12 +7,12 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import FoodRecognitionResults from './FoodRecognitionResults';
 
@@ -36,7 +36,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
   if (!permission) {
     // Camera permissions are still loading
     return (
-      <View style={styles.container}>
+      <View style={styles.permissionContainer}>
         <Text style={styles.message}>Loading camera...</Text>
       </View>
     );
@@ -45,7 +45,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
   if (!permission.granted) {
     // Camera permissions are not granted yet
     return (
-      <View style={styles.container}>
+      <View style={styles.permissionContainer}>
         <Text style={styles.message}>We need your permission to show the camera</Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Grant Permission</Text>
@@ -208,14 +208,13 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
   };
 
   return (
-    <View style={styles.container}>
-      {/* Camera Title */}
-    
+    <View style={styles.cameraContainer}>
       <CameraView 
         style={styles.camera} 
         facing={facing}
         ref={cameraRef}
       >
+        {/* Camera controls at bottom of camera */}
         <View style={styles.buttonContainer}>
           {/* Flip camera button */}
           <TouchableOpacity style={styles.flipButton} onPress={toggleCameraType}>
@@ -240,57 +239,48 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
         </View>
       </CameraView>
       
-      
-      {/* Hidden ML Engine for real model.js */}
-      <MlEngine />
+      {/* Hidden ML Engine for real model.js - positioned absolute so it doesn't take space */}
+      <View style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}>
+        <MlEngine />
+      </View>
     </View>
   );
 }
 
 const createStyles = (theme) => StyleSheet.create({
-  container: {
+  cameraContainer: {
     flex: 1,
-    backgroundColor: theme.background,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 20,
-    textAlign: 'center',
+    backgroundColor: '#000',
   },
   camera: {
-    height: 700,
-    width: '100%',
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 5, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    flex: 1,
+    position: 'relative',
   },
   buttonContainer: {
-    flex: 1,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingBottom: 50,
+    alignItems: 'center',
     paddingHorizontal: 30,
+    paddingVertical: 30,
+    paddingBottom: 50,
+    backgroundColor: 'transparent',
   },
   flipButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   flipText: {
-    fontSize: 24,
+    fontSize: 28,
   },
   captureButton: {
     width: 80,
@@ -300,7 +290,7 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: '#059669',
+    borderColor: theme.primary || '#059669',
   },
   captureButtonDisabled: {
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -309,12 +299,12 @@ const createStyles = (theme) => StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#059669',
+    backgroundColor: theme.primary || '#059669',
     alignItems: 'center',
     justifyContent: 'center',
   },
   captureText: {
-    fontSize: 24,
+    fontSize: 28,
     color: 'white',
   },
   instructions: {
@@ -332,6 +322,13 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: theme.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   message: {
     textAlign: 'center',
     paddingBottom: 10,
@@ -339,7 +336,7 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.text,
   },
   button: {
-    backgroundColor: '#059669',
+    backgroundColor: theme.primary || '#059669',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,

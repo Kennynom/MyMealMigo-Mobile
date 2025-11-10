@@ -200,143 +200,149 @@ export default function AddMealMainScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Header - Centered like Tracker */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Add Meal</Text>
-          <Text style={styles.subtitle}>Choose how you'd like to log your meal</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Add Meal</Text>
+          <Text style={styles.headerSubtitle}>Choose how you'd like to log your meal</Text>
         </View>
       </View>
 
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>Quick Add</Text>
-        
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => router.push({
-            pathname: '/(tabs)/(add)/photo-capture',
-            params: {}
-          })}
-        >
-          <View style={styles.actionIcon}>
-            <Text style={styles.actionEmoji}>📷</Text>
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Take Photo</Text>
-            <Text style={styles.actionSubtitle}>Snap a pic and let AI analyze your meal</Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => router.push({
-            pathname: '/(tabs)/(add)/scan-barcode',
-            params: {}
-          })}
-        >
-          <View style={styles.actionIcon}>
-            <Text style={styles.actionEmoji}>📱</Text>
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Scan Barcode</Text>
-            <Text style={styles.actionSubtitle}>Quickly add packaged foods</Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Manual Entry */}
-      <View style={styles.manualSection}>
-        <Text style={styles.sectionTitle}>Manual Entry</Text>
-        
-        <TouchableOpacity 
-          style={styles.actionCard}
-          onPress={() => router.push({
-            pathname: '/(tabs)/(add)/manual-entry',
-            params: {}
-          })}
-        >
-          <View style={styles.actionIcon}>
-            <Text style={styles.actionEmoji}>✏️</Text>
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Manual Entry</Text>
-            <Text style={styles.actionSubtitle}>Enter nutrition info manually</Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Recent Meals */}
-      <View style={styles.recentSection}>
-        <Text style={styles.sectionTitle}>Recent Meals</Text>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={theme.primary} />
-          </View>
-        ) : recentMeals.length > 0 ? (
-          recentMeals.map((meal, index) => (
-            <View key={meal.id || index} style={styles.recentCard}>
-              <Text style={styles.recentEmoji}>🍽️</Text>
-              <View style={styles.recentContent}>
-                <Text style={styles.recentTitle}>{meal.foodName}</Text>
-                <Text style={styles.recentTime}>{getRelativeTime(meal.timestamp)}</Text>
-                <Text style={styles.recentNutrition}>
-                  {Math.round(meal.calories * (meal.servingSize || 1))} cal
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => handleRelogMeal(meal)}
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Add</Text>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push({
+              pathname: '/(tabs)/(add)/photo-capture',
+              params: {}
+            })}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: '#4ECDC4' + '20' }]}>
+              <Text style={styles.actionEmoji}>📷</Text>
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No recent meals</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Recent Beverages */}
-      <View style={styles.recentSection}>
-        <Text style={styles.sectionTitle}>Recent Beverages</Text>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={theme.primary} />
-          </View>
-        ) : recentBeverages.length > 0 ? (
-          recentBeverages.map((beverage, index) => (
-            <View key={beverage.id || index} style={styles.recentCard}>
-              <Text style={styles.recentEmoji}>🥤</Text>
-              <View style={styles.recentContent}>
-                <Text style={styles.recentTitle}>{beverage.foodName}</Text>
-                <Text style={styles.recentTime}>{getRelativeTime(beverage.timestamp)}</Text>
-                <Text style={styles.recentNutrition}>
-                  {Math.round(beverage.calories * (beverage.servingSize || 1))} cal
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => handleRelogMeal(beverage)}
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Take Photo</Text>
+              <Text style={styles.actionSubtitle}>Snap a pic and let AI analyze your meal</Text>
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No recent beverages</Text>
-          </View>
-        )}
-      </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push({
+              pathname: '/(tabs)/(add)/scan-barcode',
+              params: {}
+            })}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: '#FF6B6B' + '20' }]}>
+              <Text style={styles.actionEmoji}>📱</Text>
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Scan Barcode</Text>
+              <Text style={styles.actionSubtitle}>Quickly add packaged foods</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Manual Entry */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Manual Entry</Text>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push({
+              pathname: '/(tabs)/(add)/manual-entry',
+              params: {}
+            })}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: '#95E1D3' + '20' }]}>
+              <Text style={styles.actionEmoji}>✏️</Text>
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Manual Entry</Text>
+              <Text style={styles.actionSubtitle}>Enter nutrition info manually</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Meals */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Meals</Text>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+          ) : recentMeals.length > 0 ? (
+            recentMeals.map((meal, index) => (
+              <View key={meal.id || index} style={styles.recentCard}>
+                <Text style={styles.recentEmoji}>🍽️</Text>
+                <View style={styles.recentContent}>
+                  <Text style={styles.recentTitle}>{meal.foodName}</Text>
+                  <Text style={styles.recentTime}>{getRelativeTime(meal.timestamp)}</Text>
+                  <Text style={styles.recentNutrition}>
+                    {Math.round(meal.calories * (meal.servingSize || 1))} cal
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.addButton}
+                  onPress={() => handleRelogMeal(meal)}
+                >
+                  <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No recent meals</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Recent Beverages */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Beverages</Text>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+          ) : recentBeverages.length > 0 ? (
+            recentBeverages.map((beverage, index) => (
+              <View key={beverage.id || index} style={styles.recentCard}>
+                <Text style={styles.recentEmoji}>🥤</Text>
+                <View style={styles.recentContent}>
+                  <Text style={styles.recentTitle}>{beverage.foodName}</Text>
+                  <Text style={styles.recentTime}>{getRelativeTime(beverage.timestamp)}</Text>
+                  <Text style={styles.recentNutrition}>
+                    {Math.round(beverage.calories * (beverage.servingSize || 1))} cal
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.addButton}
+                  onPress={() => handleRelogMeal(beverage)}
+                >
+                  <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No recent beverages</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
       {/* Category Selection Modal */}
       <Modal
@@ -424,7 +430,7 @@ export default function AddMealMainScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -435,26 +441,36 @@ const createStyles = (theme) => StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: theme.background,
   },
-  headerLeft: {
-    flex: 1,
+  headerCenter: {
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: theme.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  subtitle: {
-    fontSize: 16,
+  headerSubtitle: {
+    fontSize: 13,
     color: theme.textSecondary,
+    textAlign: 'center',
   },
-  quickActions: {
+  scrollView: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  section: {
     marginBottom: 30,
   },
   sectionTitle: {
@@ -464,35 +480,34 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 15,
   },
   actionCard: {
-    backgroundColor: theme.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    backgroundColor: theme.primary,
-    borderRadius: 22,
-    justifyContent: 'center',
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 16,
   },
   actionEmoji: {
-    fontSize: 20,
+    fontSize: 28,
   },
   actionContent: {
     flex: 1,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.text,
     marginBottom: 4,
@@ -501,19 +516,6 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     lineHeight: 18,
-  },
-  arrow: {
-    fontSize: 20,
-    color: theme.textSecondary,
-    marginLeft: 8,
-  },
-  manualSection: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  recentSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
   },
   recentCard: {
     backgroundColor: theme.surface,

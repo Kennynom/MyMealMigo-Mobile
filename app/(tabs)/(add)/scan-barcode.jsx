@@ -269,15 +269,18 @@ export default function ScanBarcodeScreen() {
   if (scannedProduct) {
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header with modern style */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={resetScanner}
           >
-            <Text style={styles.backIcon}>←</Text>
+            <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Barcode Scanner</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Product Found</Text>
+            <Text style={styles.headerSubtitle}>Review and add to meal log</Text>
+          </View>
           <View style={styles.placeholder} />
         </View>
 
@@ -414,15 +417,18 @@ export default function ScanBarcodeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header with modern style */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => router.back()}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Scan Barcode</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Scan Barcode</Text>
+          <Text style={styles.headerSubtitle}>Scan product barcodes</Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
@@ -436,9 +442,15 @@ export default function ScanBarcodeScreen() {
         }}
         onBarcodeScanned={isScanning ? handleBarcodeScanned : undefined}
       >
-        {/* Scanning overlay */}
+        {/* Scanning overlay with modern frame */}
         <View style={styles.scanOverlay}>
-          <View style={styles.scanFrame} />
+          <View style={styles.scanFrameContainer}>
+            <View style={styles.scanFrame} />
+            <View style={styles.cornerTL} />
+            <View style={styles.cornerTR} />
+            <View style={styles.cornerBL} />
+            <View style={styles.cornerBR} />
+          </View>
           <Text style={styles.scanInstructions}>
             {isScanning ? 'Point camera at barcode' : 'Processing...'}
           </Text>
@@ -466,25 +478,45 @@ const createStyles = (theme) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingTop: 60,
+    paddingBottom: 16,
+    backgroundColor: theme.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
   },
   backButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  backIcon: {
+  backText: {
     fontSize: 24,
     color: theme.text,
+    fontWeight: 'bold',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
+  headerCenter: { 
+    flex: 1, 
+    alignItems: 'center', 
+    paddingHorizontal: 12 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: 'bold',
     color: theme.text,
-    flex: 1,
-    textAlign: 'center',
+  },
+  headerSubtitle: { 
+    fontSize: 13, 
+    marginTop: 2,
+    color: theme.textSecondary,
   },
   placeholder: {
     width: 40,
@@ -497,26 +529,76 @@ const createStyles = (theme) => StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  scanFrameContainer: {
+    position: 'relative',
+    width: 280,
+    height: 280,
   },
   scanFrame: {
-    width: 250,
-    height: 250,
+    width: '100%',
+    height: '100%',
     borderWidth: 2,
-    borderColor: '#059669',
-    borderRadius: 12,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
     backgroundColor: 'transparent',
+  },
+  // Corner decorations for scanner frame
+  cornerTL: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: theme.primary || '#4ECDC4',
+    borderTopLeftRadius: 16,
+  },
+  cornerTR: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: theme.primary || '#4ECDC4',
+    borderTopRightRadius: 16,
+  },
+  cornerBL: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: theme.primary || '#4ECDC4',
+    borderBottomLeftRadius: 16,
+  },
+  cornerBR: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: theme.primary || '#4ECDC4',
+    borderBottomRightRadius: 16,
   },
   scanInstructions: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '500',
-    marginTop: 20,
+    fontWeight: '600',
+    marginTop: 30,
     textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   cameraControls: {
     position: 'absolute',
@@ -524,15 +606,17 @@ const createStyles = (theme) => StyleSheet.create({
     right: 30,
   },
   flipButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   flipText: {
-    fontSize: 24,
+    fontSize: 28,
   },
   // Match FoodRecognitionResults styles exactly
   resultsCard: {

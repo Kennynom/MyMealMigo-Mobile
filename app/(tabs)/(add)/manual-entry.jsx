@@ -4,16 +4,16 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, u
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function ManualEntryScreen() {
@@ -262,23 +262,27 @@ export default function ManualEntryScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header with modern style */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={() => router.back()}
           >
-            <Text style={styles.backIcon}>←</Text>
+            <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{editMode ? 'Edit Meal' : 'Manual Entry'}</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>
+              {editMode ? 'Edit Meal' : 'Manual Entry'}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {editMode ? 'Update meal details' : 'Enter nutrition information'}
+            </Text>
+          </View>
           <View style={styles.placeholder} />
         </View>
 
         {/* Form */}
         <View style={styles.form}>
-          <Text style={styles.subtitle}>Enter your meal details</Text>
-          
-      
 
           {/* Food Name */}
           <View style={styles.inputGroup}>
@@ -504,39 +508,51 @@ const createStyles = (theme) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 16,
     paddingTop: 60,
+    paddingBottom: 16,
+    backgroundColor: theme.background,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.cardBackground,
-    justifyContent: 'center',
+    backgroundColor: theme.surface,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  backIcon: {
-    fontSize: 20,
+  backText: {
+    fontSize: 24,
+    color: theme.text,
+    fontWeight: 'bold',
+  },
+  headerCenter: { 
+    flex: 1, 
+    alignItems: 'center', 
+    paddingHorizontal: 12 
+  },
+  headerTitle: { 
+    fontSize: 22, 
+    fontWeight: 'bold',
     color: theme.text,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.text,
+  headerSubtitle: { 
+    fontSize: 13, 
+    marginTop: 2,
+    color: theme.textSecondary,
   },
   placeholder: {
     width: 40,
   },
   form: {
     padding: 20,
-    paddingTop: 0,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.textSecondary,
-    marginBottom: 24,
-    textAlign: 'center',
   },
   inputGroup: {
     marginBottom: 20,
