@@ -69,6 +69,220 @@ export default function CalorieTrackerScreen() {
         }));
     }, [dailyIntake.caloriesSet, dailyIntake.caloriesConsumed]);
 
+    // Calculate weekly data from daily logs
+    const calculateWeeklyData = useCallback(() => {
+        if (!allDailyLogs || allDailyLogs.length === 0 || !defaultCalorieGoal) {
+            const emptyWeeklyGoal = defaultCalorieGoal ? defaultCalorieGoal * 7 : 0;
+            return {
+                weeklyGoal: emptyWeeklyGoal,
+                consumed: 0,
+                remaining: emptyWeeklyGoal,
+                percentageReached: 0,
+                carbs: 0,
+                protein: 0,
+                fats: 0,
+                sodium: 0,
+                sugar: 0,
+                avgCalories: 0,
+                avgCarbs: 0,
+                avgProtein: 0,
+                avgFats: 0,
+                avgSodium: 0,
+                avgSugar: 0,
+            };
+        }
+
+        // Get past 7 days range (including today)
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 6); // Today + 6 days back = 7 days total
+        sevenDaysAgo.setHours(0, 0, 0, 0); // Start of that day
+
+        console.log('=== Weekly Calculation ===');
+        console.log('Date range:', sevenDaysAgo.toLocaleDateString(), 'to', today.toLocaleDateString());
+        console.log('Total daily logs available:', allDailyLogs.length);
+
+        // Filter logs for past 7 days
+        const weeklyLogs = allDailyLogs.filter(log => {
+            if (!log.dateStart) return false;
+            const logDate = new Date(log.dateStart);
+            return logDate >= sevenDaysAgo && logDate <= today;
+        });
+
+        console.log('Logs in past 7 days:', weeklyLogs.length);
+        console.log('Weekly logs:', weeklyLogs.map(log => ({
+            date: log.dateStart,
+            consumed: log.caloriesConsumed,
+            carbs: log.carbs,
+            protein: log.protein,
+            fats: log.fats,
+            sodium: log.sodium,
+            sugar: log.sugar
+        })));
+
+        // Calculate totals
+        let totalConsumed = 0;
+        let totalCarbs = 0;
+        let totalProtein = 0;
+        let totalFats = 0;
+        let totalSodium = 0;
+        let totalSugar = 0;
+
+        weeklyLogs.forEach(log => {
+            totalConsumed += log.caloriesConsumed || 0;
+            totalCarbs += log.carbs || 0;
+            totalProtein += log.protein || 0;
+            totalFats += log.fats || 0;
+            totalSodium += log.sodium || 0;
+            totalSugar += log.sugar || 0;
+        });
+
+        const weeklyGoal = defaultCalorieGoal * 7;
+        const remaining = Math.max(0, weeklyGoal - totalConsumed);
+        const percentageReached = weeklyGoal > 0 ? Math.round((totalConsumed / weeklyGoal) * 100) : 0;
+
+        console.log('Total consumed (past 7 days):', totalConsumed);
+        console.log('Weekly goal (daily goal × 7):', weeklyGoal, '=', defaultCalorieGoal, '× 7');
+        console.log('Percentage reached:', percentageReached + '%');
+
+        // Calculate averages (divide by 7 for full week)
+        const avgCalories = Math.round(totalConsumed / 7);
+        const avgCarbs = Math.round(totalCarbs / 7);
+        const avgProtein = Math.round(totalProtein / 7);
+        const avgFats = Math.round(totalFats / 7);
+        const avgSodium = Math.round(totalSodium / 7);
+        const avgSugar = Math.round(totalSugar / 7);
+
+        return {
+            weeklyGoal,
+            consumed: Math.round(totalConsumed),
+            remaining: Math.round(remaining),
+            percentageReached,
+            carbs: Math.round(totalCarbs),
+            protein: Math.round(totalProtein),
+            fats: Math.round(totalFats),
+            sodium: Math.round(totalSodium),
+            sugar: Math.round(totalSugar),
+            avgCalories,
+            avgCarbs,
+            avgProtein,
+            avgFats,
+            avgSodium,
+            avgSugar,
+        };
+    }, [allDailyLogs, defaultCalorieGoal]);
+
+    const weeklyData = calculateWeeklyData();
+
+    // Calculate monthly data from daily logs
+    const calculateMonthlyData = useCallback(() => {
+        if (!allDailyLogs || allDailyLogs.length === 0 || !defaultCalorieGoal) {
+            const emptyMonthlyGoal = defaultCalorieGoal ? defaultCalorieGoal * 30 : 0;
+            return {
+                monthlyGoal: emptyMonthlyGoal,
+                consumed: 0,
+                remaining: emptyMonthlyGoal,
+                percentageReached: 0,
+                carbs: 0,
+                protein: 0,
+                fats: 0,
+                sodium: 0,
+                sugar: 0,
+                avgCalories: 0,
+                avgCarbs: 0,
+                avgProtein: 0,
+                avgFats: 0,
+                avgSodium: 0,
+                avgSugar: 0,
+            };
+        }
+
+        // Get past 30 days range (including today)
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 29); // Today + 29 days back = 30 days total
+        thirtyDaysAgo.setHours(0, 0, 0, 0); // Start of that day
+
+        console.log('=== Monthly Calculation ===');
+        console.log('Date range:', thirtyDaysAgo.toLocaleDateString(), 'to', today.toLocaleDateString());
+        console.log('Total daily logs available:', allDailyLogs.length);
+
+        // Filter logs for past 30 days
+        const monthlyLogs = allDailyLogs.filter(log => {
+            if (!log.dateStart) return false;
+            const logDate = new Date(log.dateStart);
+            return logDate >= thirtyDaysAgo && logDate <= today;
+        });
+
+        console.log('Logs in past 30 days:', monthlyLogs.length);
+        console.log('Monthly logs:', monthlyLogs.map(log => ({
+            date: log.dateStart,
+            consumed: log.caloriesConsumed,
+            carbs: log.carbs,
+            protein: log.protein,
+            fats: log.fats,
+            sodium: log.sodium,
+            sugar: log.sugar
+        })));
+
+        // Calculate totals
+        let totalConsumed = 0;
+        let totalCarbs = 0;
+        let totalProtein = 0;
+        let totalFats = 0;
+        let totalSodium = 0;
+        let totalSugar = 0;
+
+        monthlyLogs.forEach(log => {
+            totalConsumed += log.caloriesConsumed || 0;
+            totalCarbs += log.carbs || 0;
+            totalProtein += log.protein || 0;
+            totalFats += log.fats || 0;
+            totalSodium += log.sodium || 0;
+            totalSugar += log.sugar || 0;
+        });
+
+        const monthlyGoal = defaultCalorieGoal * 30;
+        const remaining = Math.max(0, monthlyGoal - totalConsumed);
+        const percentageReached = monthlyGoal > 0 ? Math.round((totalConsumed / monthlyGoal) * 100) : 0;
+
+        console.log('Total consumed (past 30 days):', totalConsumed);
+        console.log('Monthly goal (daily goal × 30):', monthlyGoal, '=', defaultCalorieGoal, '× 30');
+        console.log('Percentage reached:', percentageReached + '%');
+
+        // Calculate averages (divide by 30 for full month)
+        const avgCalories = Math.round(totalConsumed / 30);
+        const avgCarbs = Math.round(totalCarbs / 30);
+        const avgProtein = Math.round(totalProtein / 30);
+        const avgFats = Math.round(totalFats / 30);
+        const avgSodium = Math.round(totalSodium / 30);
+        const avgSugar = Math.round(totalSugar / 30);
+
+        return {
+            monthlyGoal,
+            consumed: Math.round(totalConsumed),
+            remaining: Math.round(remaining),
+            percentageReached,
+            carbs: Math.round(totalCarbs),
+            protein: Math.round(totalProtein),
+            fats: Math.round(totalFats),
+            sodium: Math.round(totalSodium),
+            sugar: Math.round(totalSugar),
+            avgCalories,
+            avgCarbs,
+            avgProtein,
+            avgFats,
+            avgSodium,
+            avgSugar,
+        };
+    }, [allDailyLogs, defaultCalorieGoal]);
+
+    const monthlyData = calculateMonthlyData();
+
     const fetchCalorieLogs = useCallback(async () => {
         const auth = getAuth();
         const uid = auth.currentUser?.uid;
@@ -200,86 +414,255 @@ export default function CalorieTrackerScreen() {
             <View style={styles.cardContainer}>
                 <Text style={styles.overviewHeader}>Overview</Text>
                 <View style={styles.overviewContainer}>
-                    <View style={styles.remainingSection}>
-                        {/* Circular progress ring showing percent remaining */}
-                        {(() => {
-                            const percent = dailyLogForDate.caloriesSet > 0
-                                ? Math.max(0, Math.min(100, Math.round(((dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed) / dailyLogForDate.caloriesSet) * 100)))
-                                : 0;
-                            const radius = 70;
-                            const strokeWidth = 12;
-                            const normalizedRadius = radius;
-                            const circumference = 2 * Math.PI * normalizedRadius;
-                            const strokeDashoffset = circumference * (1 - percent / 100);
+                    {period === 'weekly' ? (
+                        // Weekly Overview
+                        <>
+                            <View style={styles.remainingSection}>
+                                {/* Weekly Circular Progress Ring */}
+                                {(() => {
+                                    const percent = weeklyData.percentageReached;
+                                    const radius = 70;
+                                    const strokeWidth = 12;
+                                    const normalizedRadius = radius;
+                                    const circumference = 2 * Math.PI * normalizedRadius;
+                                    const strokeDashoffset = circumference * (1 - Math.min(100, percent) / 100);
 
-                            return (
-                                <View style={styles.ringWrapper}>
-                                    <Svg height={radius * 2 + strokeWidth} width={radius * 2 + strokeWidth}>
-                                        <Circle
-                                            stroke={theme?.accent ?? '#0B5E24'}
-                                            fill="none"
-                                            cx={radius + strokeWidth / 2}
-                                            cy={radius + strokeWidth / 2}
-                                            r={normalizedRadius}
-                                            strokeWidth={strokeWidth}
-                                            origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
-                                        />
-                                        <Circle
-                                            stroke={theme?.primary ?? '#158D25'}
-                                            fill="none"
-                                            cx={radius + strokeWidth / 2}
-                                            cy={radius + strokeWidth / 2}
-                                            r={normalizedRadius}
-                                            strokeWidth={strokeWidth}
-                                            strokeLinecap="round"
-                                            strokeDasharray={`${circumference} ${circumference}`}
-                                            strokeDashoffset={strokeDashoffset}
-                                            rotation={90}
-                                            origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
-                                        />
-                                    </Svg>
-                                    <View style={styles.ringCenter} pointerEvents="none">
-                                        <Text style={styles.ringPercent}>{percent}%</Text>
-                                        <Text style={styles.ringLabel}>Remaining</Text>
+                                    return (
+                                        <View style={styles.ringWrapper}>
+                                            <Svg height={radius * 2 + strokeWidth} width={radius * 2 + strokeWidth}>
+                                                <Circle
+                                                    stroke={theme?.accent ?? '#0B5E24'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                />
+                                                <Circle
+                                                    stroke={theme?.primary ?? '#158D25'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${circumference} ${circumference}`}
+                                                    strokeDashoffset={strokeDashoffset}
+                                                    rotation={-90}
+                                                    origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
+                                                />
+                                            </Svg>
+                                            <View style={styles.ringCenter} pointerEvents="none">
+                                                <Text style={styles.ringPercent}>{percent}%</Text>
+                                                <Text style={styles.ringLabel}>of Weekly Goal</Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })()}
+                            </View>
+
+                            <View style={styles.caloriesSetSection}>
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <AntDesign name="fire" size={24} color="darkorange" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Goal:</Text>
+                                        <Text style={styles.rightNumber}>
+                                            {weeklyData.weeklyGoal.toLocaleString()}
+                                        </Text>
+                                        <Text style={styles.rightSubtext}>({defaultCalorieGoal} × 7)</Text>
                                     </View>
                                 </View>
-                            );
-                        })()}
-                    </View>
 
-                    <View style={styles.caloriesSetSection}>
-                        <View style={styles.displayCol}>
-                            <View>
-                                <AntDesign name="fire" size={24} color="darkorange" />
-                            </View>
-                            <View>
-                                <Text style={styles.rightText}>Goal:</Text>
-                                <Text style={styles.rightNumber}>
-                                    {dailyLogForDate.caloriesSet ? dailyLogForDate.caloriesSet : 'Not Set'}
-                                </Text>
-                            </View>
-                        </View>
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <MaterialCommunityIcons name="food-apple" size={24} color="crimson" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Consumed:</Text>
+                                        <Text style={styles.rightNumber}>{weeklyData.consumed.toLocaleString()}</Text>
+                                    </View>
+                                </View>
 
-                        <View style={styles.displayCol}>
-                            <View>
-                                <MaterialCommunityIcons name="food-apple" size={24} color="crimson" />
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <Entypo name="check" size={24} color="lime" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Remaining:</Text>
+                                        <Text style={styles.rightNumber}>{weeklyData.remaining.toLocaleString()}</Text>
+                                    </View>
+                                </View>
                             </View>
-                            <View>
-                                <Text style={styles.rightText}>Consumed:</Text>
-                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesConsumed}</Text>
-                            </View>
-                        </View>
+                        </>
+                    ) : period === 'monthly' ? (
+                        // Monthly Overview
+                        <>
+                            <View style={styles.remainingSection}>
+                                {/* Monthly Circular Progress Ring */}
+                                {(() => {
+                                    const percent = monthlyData.percentageReached;
+                                    const radius = 70;
+                                    const strokeWidth = 12;
+                                    const normalizedRadius = radius;
+                                    const circumference = 2 * Math.PI * normalizedRadius;
+                                    const strokeDashoffset = circumference * (1 - Math.min(100, percent) / 100);
 
-                        <View style={styles.displayCol}>
-                            <View>
-                                <Entypo name="check" size={24} color="lime" />
+                                    return (
+                                        <View style={styles.ringWrapper}>
+                                            <Svg height={radius * 2 + strokeWidth} width={radius * 2 + strokeWidth}>
+                                                <Circle
+                                                    stroke={theme?.accent ?? '#0B5E24'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                />
+                                                <Circle
+                                                    stroke={theme?.primary ?? '#158D25'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${circumference} ${circumference}`}
+                                                    strokeDashoffset={strokeDashoffset}
+                                                    rotation={-90}
+                                                    origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
+                                                />
+                                            </Svg>
+                                            <View style={styles.ringCenter} pointerEvents="none">
+                                                <Text style={styles.ringPercent}>{percent}%</Text>
+                                                <Text style={styles.ringLabel}>of Monthly Goal</Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })()}
                             </View>
-                            <View>
-                                <Text style={styles.rightText}>Remaining:</Text>
-                                <Text style={styles.rightNumber}>{dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed}</Text>
+
+                            <View style={styles.caloriesSetSection}>
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <AntDesign name="fire" size={24} color="darkorange" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Goal:</Text>
+                                        <Text style={styles.rightNumber}>
+                                            {monthlyData.monthlyGoal.toLocaleString()}
+                                        </Text>
+                                        <Text style={styles.rightSubtext}>({defaultCalorieGoal} × 30)</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <MaterialCommunityIcons name="food-apple" size={24} color="crimson" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Consumed:</Text>
+                                        <Text style={styles.rightNumber}>{monthlyData.consumed.toLocaleString()}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <Entypo name="check" size={24} color="lime" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Remaining:</Text>
+                                        <Text style={styles.rightNumber}>{monthlyData.remaining.toLocaleString()}</Text>
+                                    </View>
+                                </View>
                             </View>
-                        </View>
-                    </View>
+                        </>
+                    ) : (
+                        // Daily Overview (unchanged)
+                        <>
+                            <View style={styles.remainingSection}>
+                                {/* Circular progress ring showing percent remaining */}
+                                {(() => {
+                                    const percent = dailyLogForDate.caloriesSet > 0
+                                        ? Math.max(0, Math.min(100, Math.round(((dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed) / dailyLogForDate.caloriesSet) * 100)))
+                                        : 0;
+                                    const radius = 70;
+                                    const strokeWidth = 12;
+                                    const normalizedRadius = radius;
+                                    const circumference = 2 * Math.PI * normalizedRadius;
+                                    const strokeDashoffset = circumference * (1 - percent / 100);
+
+                                    return (
+                                        <View style={styles.ringWrapper}>
+                                            <Svg height={radius * 2 + strokeWidth} width={radius * 2 + strokeWidth}>
+                                                <Circle
+                                                    stroke={theme?.accent ?? '#0B5E24'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                    origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
+                                                />
+                                                <Circle
+                                                    stroke={theme?.primary ?? '#158D25'}
+                                                    fill="none"
+                                                    cx={radius + strokeWidth / 2}
+                                                    cy={radius + strokeWidth / 2}
+                                                    r={normalizedRadius}
+                                                    strokeWidth={strokeWidth}
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${circumference} ${circumference}`}
+                                                    strokeDashoffset={strokeDashoffset}
+                                                    rotation={90}
+                                                    origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
+                                                />
+                                            </Svg>
+                                            <View style={styles.ringCenter} pointerEvents="none">
+                                                <Text style={styles.ringPercent}>{percent}%</Text>
+                                                <Text style={styles.ringLabel}>Remaining</Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })()}
+                            </View>
+
+                            <View style={styles.caloriesSetSection}>
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <AntDesign name="fire" size={24} color="darkorange" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Goal:</Text>
+                                        <Text style={styles.rightNumber}>
+                                            {dailyLogForDate.caloriesSet ? dailyLogForDate.caloriesSet : 'Not Set'}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <MaterialCommunityIcons name="food-apple" size={24} color="crimson" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Consumed:</Text>
+                                        <Text style={styles.rightNumber}>{dailyLogForDate.caloriesConsumed}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.displayCol}>
+                                    <View>
+                                        <Entypo name="check" size={24} color="lime" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.rightText}>Remaining:</Text>
+                                        <Text style={styles.rightNumber}>{dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
 
@@ -334,60 +717,166 @@ export default function CalorieTrackerScreen() {
                     </View>
                     )}
 
-                    <View style={styles.nutritionList}>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Goal:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' 
-                                    ? (dailyLogForDate.caloriesSet || 'Not Set')
-                                    : (currentIntake.caloriesSet || 'Not Set')}
-                            </Text>
+                    {period === 'daily' ? (
+                        <View style={styles.nutritionList}>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Goal:</Text>
+                                <Text style={styles.rowValue}>
+                                    {dailyLogForDate.caloriesSet || 'Not Set'}
+                                </Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Consumed:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.caloriesConsumed}</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Remaining:</Text>
+                                <Text style={styles.rowValue}>
+                                    {dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed}
+                                </Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Carbs:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.carbs}g</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Protein:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.protein}g</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Fats:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.fats}g</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sodium:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.sodium}mg</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sugar:</Text>
+                                <Text style={styles.rowValue}>{dailyLogForDate.sugar}g</Text>
+                            </View>
                         </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Calories Consumed:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.caloriesConsumed : currentIntake.caloriesConsumed}
-                            </Text>
+                    ) : period === 'weekly' ? (
+                        <View style={styles.nutritionList}>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Goal:</Text>
+                                <Text style={styles.rowValue}>{weeklyData.weeklyGoal.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Consumed:</Text>
+                                <Text style={styles.rowValue}>{weeklyData.consumed.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Remaining:</Text>
+                                <Text style={styles.rowValue}>{weeklyData.remaining.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Carbs:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{weeklyData.carbs}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {weeklyData.avgCarbs}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Protein:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{weeklyData.protein}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {weeklyData.avgProtein}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Fats:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{weeklyData.fats}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {weeklyData.avgFats}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sodium:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{weeklyData.sodium}mg</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {weeklyData.avgSodium}mg/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sugar:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{weeklyData.sugar}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {weeklyData.avgSugar}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
                         </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Calories Remaining:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily'
-                                    ? dailyLogForDate.caloriesSet - dailyLogForDate.caloriesConsumed
-                                    : currentIntake.caloriesSet - currentIntake.caloriesConsumed}
-                            </Text>
+                    ) : (
+                        <View style={styles.nutritionList}>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Goal:</Text>
+                                <Text style={styles.rowValue}>{monthlyData.monthlyGoal.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Consumed:</Text>
+                                <Text style={styles.rowValue}>{monthlyData.consumed.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Calories Remaining:</Text>
+                                <Text style={styles.rowValue}>{monthlyData.remaining.toLocaleString()} cal</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Carbs:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{monthlyData.carbs}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {monthlyData.avgCarbs}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Protein:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{monthlyData.protein}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {monthlyData.avgProtein}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Fats:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{monthlyData.fats}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {monthlyData.avgFats}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sodium:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{monthlyData.sodium}mg</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {monthlyData.avgSodium}mg/day</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>Sugar:</Text>
+                                <View style={styles.rowValueContainer}>
+                                    <Text style={styles.rowValue}>{monthlyData.sugar}g</Text>
+                                    <View style={styles.avgBox}>
+                                        <Text style={styles.avgText}>Avg: {monthlyData.avgSugar}g/day</Text>
+                                    </View>
+                                </View>
+                            </View>
                         </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Carbs:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.carbs : currentIntake.carbs}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Protein:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.protein : currentIntake.protein}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Fats:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.fats : currentIntake.fats}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Sodium:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.sodium : currentIntake.sodium}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.rowLabel}>Sugar:</Text>
-                            <Text style={styles.rowValue}>
-                                {period === 'daily' ? dailyLogForDate.sugar : currentIntake.sugar}
-                            </Text>
-                        </View>
-                    </View>
+                    )}
                 </View>
 
             </ScrollView>
@@ -471,6 +960,11 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: 24,
         color: theme.text,
     },
+    rightSubtext: {
+        fontSize: 10,
+        color: theme.textSecondary,
+        marginTop: 2,
+    },
     cardContainer:{
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 0 },
@@ -532,6 +1026,22 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme?.primary ?? '#b22222',
         fontWeight: '700',
     },
+    rowValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    avgBox: {
+        backgroundColor: '#000',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    avgText: {
+        fontSize: 11,
+        color: '#4cce57ff',
+        fontWeight: '600',
+    },
     datePickerSection: {
         marginBottom: 16,
         alignItems: 'center',
@@ -566,5 +1076,97 @@ const createStyles = (theme) => StyleSheet.create({
     ringLabel: {
         fontSize: 12,
         color: theme.textSecondary,
+    },
+    // Weekly Tracker Styles
+    weeklyContainer: {
+        marginTop: 8,
+    },
+    weeklySummaryCircle: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    weeklyPercent: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: theme.text,
+    },
+    weeklyPercentLabel: {
+        fontSize: 12,
+        color: theme.textSecondary,
+        textAlign: 'center',
+    },
+    weeklyStatsBox: {
+        backgroundColor: theme.surface,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    weeklyStatsTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: theme.text,
+        marginBottom: 12,
+    },
+    weeklyStatRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 6,
+    },
+    weeklyStatLabel: {
+        fontSize: 14,
+        color: theme.textSecondary,
+    },
+    weeklyStatValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.text,
+    },
+    weeklyTable: {
+        backgroundColor: theme.surface,
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    tableHeader: {
+        flexDirection: 'row',
+        backgroundColor: theme.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+    },
+    tableHeaderCell: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#ffffffff',
+    },
+    tableRow: {
+        flexDirection: 'row',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.border || '#e6e6e6ff',
+    },
+    tableCell: {
+        fontSize: 13,
+        color: theme.text,
+    },
+    tableCol1: {
+        flex: 2,
+    },
+    tableCol2: {
+        flex: 1.5,
+        textAlign: 'right',
+    },
+    tableCol3: {
+        flex: 1.2,
+        textAlign: 'right',
     },
 });

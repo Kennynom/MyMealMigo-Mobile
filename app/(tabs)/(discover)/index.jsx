@@ -90,7 +90,7 @@ export default function DiscoverMainScreen() {
         {/* Featured Section */}
         <View style={styles.featuredSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Today</Text>
+            <Text style={styles.sectionTitle}>Today Featured Recipe</Text>
             <MaterialIcons name="local-fire-department" size={20} color={theme.warning} />
           </View>
           
