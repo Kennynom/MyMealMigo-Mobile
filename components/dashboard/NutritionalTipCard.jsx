@@ -1,13 +1,12 @@
 // components/dashboard/NutritionalTipCard.jsx
-import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { listSaved, recordTipShownToday, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { doc, getDoc } from 'firebase/firestore';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -38,24 +37,8 @@ export default function NutritionalTipCard() {
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [saved, setSaved] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const { isPremium } = usePremiumStatus();
 
-// load plan/role once
-useEffect(() => {
-  (async () => {
-    if (!user?.uid) return;
-    try {
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      const data = snap.exists() ? snap.data() : {};
-      const plan = data?.subscription?.plan ?? data?.role; // support both fields
-      const active = data?.subscription?.active ?? true;
-      setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
-    } catch {
-      setIsPremium(false);
-    }
-  })();
-}, [user?.uid]);
-  
   // Check saved state whenever tip changes
   useEffect(() => {
     (async () => {

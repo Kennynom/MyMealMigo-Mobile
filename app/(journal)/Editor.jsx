@@ -1,17 +1,19 @@
 // app/(journal)/Editor.jsx
-import { Colors } from "@/constants/theme";
+import { ThemeContext } from "@/context/ThemeContext";
 import { useJournal } from "@/context/JournalContext";
 import dayjs from "dayjs";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import {
     Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
     ScrollView,
+    StyleSheet,
     Text,
     TextInput,
+    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -26,6 +28,8 @@ const MOOD_OPTIONS = [
 export default function Editor() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { theme } = useContext(ThemeContext);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const idParam = Array.isArray(params.id) ? params.id[0] : params.id;
   const dateParam =
@@ -182,68 +186,25 @@ export default function Editor() {
   // mood picker component
   function MoodPicker() {
     return (
-      <View
-        style={{
-          backgroundColor: Colors.light.card,
-          borderRadius: 14,
-          padding: 12,
-          borderWidth: 1,
-          borderColor: Colors.light.border,
-        }}
-      >
-        <Text
-          style={{
-            fontWeight: "600",
-            marginBottom: 6,
-          }}
-        >
-          Mood
-        </Text>
-        <Text
-          style={{
-            fontSize: 12,
-            color: "#666",
-            marginBottom: 10,
-          }}
-        >
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Mood</Text>
+        <Text style={styles.cardDescription}>
           How do you feel today?
         </Text>
 
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
+        <View style={styles.moodRow}>
           {MOOD_OPTIONS.map((opt) => {
             const active = String(opt.value) === mood;
             return (
               <Pressable
                 key={opt.value}
-                onPress={() =>
-                  setMood(String(opt.value))
-                }
-                style={{
-                  flex: 1,
-                  backgroundColor: active
-                    ? Colors.light.primary
-                    : Colors.light.background,
-                  borderWidth: 1,
-                  borderColor: active
-                    ? Colors.light.primary
-                    : Colors.light.border,
-                  borderRadius: 12,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                }}
+                onPress={() => setMood(String(opt.value))}
+                style={[
+                  styles.moodButton,
+                  active && styles.moodButtonActive
+                ]}
               >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    color: active ? "#fff" : "#000",
-                  }}
-                >
+                <Text style={styles.moodEmoji}>
                   {opt.label}
                 </Text>
               </Pressable>
@@ -263,28 +224,10 @@ export default function Editor() {
     keyboardType = "numeric",
     placeholder,
   }) => (
-    <View
-      style={{
-        backgroundColor: Colors.light.card,
-        borderRadius: 14,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: Colors.light.border,
-      }}
-    >
-      <Text
-        style={{ fontWeight: "600", marginBottom: 6 }}
-      >
-        {label}
-      </Text>
+    <View style={styles.card}>
+      <Text style={styles.cardLabel}>{label}</Text>
       {description ? (
-        <Text
-          style={{
-            fontSize: 12,
-            color: "#666",
-            marginBottom: 10,
-          }}
-        >
+        <Text style={styles.cardDescription}>
           {description}
         </Text>
       ) : null}
@@ -295,242 +238,297 @@ export default function Editor() {
           setValue(t.replace(/[^0-9.]/g, ""))
         }
         placeholder={placeholder}
-        style={{
-          borderWidth: 1,
-          borderColor: Colors.light.border,
-          borderRadius: 10,
-          padding: 10,
-        }}
+        placeholderTextColor={theme.textSecondary}
+        style={styles.input}
       />
     </View>
   );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={100}
-    >
-      <ScrollView
-        style={{
-          flex: 1,
-          backgroundColor: Colors.light.background,
-        }}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>
+            {editing ? "Edit Reflection" : "Add Reflection"}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {dayjs(date).format("MMM D, YYYY")}
+          </Text>
+        </View>
+        <View style={styles.placeholder} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={100}
       >
-        <View style={{ padding: 16 }}>
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: "700",
-            marginBottom: 8,
-          }}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
-          Journal for {dayjs(date).format("MMM D, YYYY")}
-        </Text>
+          <View style={styles.formContainer}>
+            {/* Mood */}
+            <MoodPicker />
 
-        <View
-          style={{
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          {/* Mood */}
-          <MoodPicker />
+            {/* Sleep */}
+            <NumberCard
+              label="Sleep"
+              description="How many hours did you sleep? (1–10)"
+              value={sleepHours}
+              setValue={setSleepHours}
+              placeholder="e.g. 7.5"
+            />
 
-          {/* Sleep */}
-          <NumberCard
-            label="Sleep"
-            description="How many hours did you sleep? (1–10)"
-            value={sleepHours}
-            setValue={setSleepHours}
-            placeholder="e.g. 7.5"
-          />
+            {/* Stress */}
+            <NumberCard
+              label="Stress"
+              description="How stressed did you feel? (1=low, 5=high)"
+              value={stress}
+              setValue={setStress}
+              placeholder="1–5"
+            />
 
-          {/* Stress */}
-          <NumberCard
-            label="Stress"
-            description="How stressed did you feel? (1=low, 5=high)"
-            value={stress}
-            setValue={setStress}
-            placeholder="1–5"
-          />
+            {/* Hydration */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Water Intake</Text>
+              <Text style={styles.cardDescription}>
+                How much did you drink today?{"\n"}
+                (Fill either Liters OR Cups)
+              </Text>
 
-          {/* Hydration */}
-          <View
-            style={{
-              backgroundColor: Colors.light.card,
-              borderRadius: 14,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: Colors.light.border,
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "600",
-                marginBottom: 6,
-              }}
-            >
-              Water Intake
-            </Text>
-            <Text
-              style={{
-                fontSize: 12,
-                color: "#666",
-                marginBottom: 10,
-              }}
-            >
-              How much did you drink today?
-              {"\n"}(Fill either Liters OR Cups)
-            </Text>
+              <View style={styles.hydrationRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>
+                    Liters (L)
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={hydrationLiters}
+                    onChangeText={(t) =>
+                      setHydrationLiters(
+                        t.replace(/[^0-9.]/g, "")
+                      )
+                    }
+                    placeholder="e.g. 2.0"
+                    placeholderTextColor={theme.textSecondary}
+                    style={styles.input}
+                  />
+                </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 12,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#666",
-                    marginBottom: 4,
-                  }}
-                >
-                  Liters (L)
-                </Text>
-                <TextInput
-                  keyboardType="numeric"
-                  value={hydrationLiters}
-                  onChangeText={(t) =>
-                    setHydrationLiters(
-                      t.replace(/[^0-9.]/g, "")
-                    )
-                  }
-                  placeholder="e.g. 2.0"
-                  style={{
-                    borderWidth: 1,
-                    borderColor:
-                      Colors.light.border,
-                    borderRadius: 10,
-                    padding: 10,
-                  }}
-                />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#666",
-                    marginBottom: 4,
-                  }}
-                >
-                  Cups
-                </Text>
-                <TextInput
-                  keyboardType="numeric"
-                  value={hydrationCups}
-                  onChangeText={(t) =>
-                    setHydrationCups(
-                      t.replace(/[^0-9.]/g, "")
-                    )
-                  }
-                  placeholder="e.g. 8"
-                  style={{
-                    borderWidth: 1,
-                    borderColor:
-                      Colors.light.border,
-                    borderRadius: 10,
-                    padding: 10,
-                  }}
-                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>
+                    Cups
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={hydrationCups}
+                    onChangeText={(t) =>
+                      setHydrationCups(
+                        t.replace(/[^0-9.]/g, "")
+                      )
+                    }
+                    placeholder="e.g. 8"
+                    placeholderTextColor={theme.textSecondary}
+                    style={styles.input}
+                  />
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Reflection */}
-          <View
-            style={{
-              backgroundColor: Colors.light.card,
-              borderRadius: 14,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: Colors.light.border,
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "600",
-                marginBottom: 6,
-              }}
+            {/* Reflection */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Reflection</Text>
+              <TextInput
+                multiline
+                value={text}
+                onChangeText={setText}
+                placeholder="How did your day go? Anything affecting mood/eating/sleep?"
+                placeholderTextColor={theme.textSecondary}
+                style={styles.textArea}
+              />
+            </View>
+
+            {/* Tags */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>
+                Tags (comma separated)
+              </Text>
+              <TextInput
+                value={tags}
+                onChangeText={setTags}
+                placeholder="gym, study, slept late"
+                placeholderTextColor={theme.textSecondary}
+                style={styles.input}
+              />
+            </View>
+
+            {/* Save button */}
+            <Pressable
+              onPress={onSave}
+              style={styles.saveButton}
             >
-              Reflection
-            </Text>
-            <TextInput
-              multiline
-              value={text}
-              onChangeText={setText}
-              placeholder="How did your day go? Anything affecting mood/eating/sleep?"
-              style={{
-                minHeight: 140,
-                textAlignVertical: "top",
-              }}
-            />
+              <Text style={styles.saveButtonText}>
+                {editing ? "Save Changes" : "Add Reflection"}
+              </Text>
+            </Pressable>
           </View>
-
-          {/* Tags */}
-          <View
-            style={{
-              backgroundColor: Colors.light.card,
-              borderRadius: 14,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: Colors.light.border,
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "600",
-                marginBottom: 6,
-              }}
-            >
-              Tags (comma separated)
-            </Text>
-            <TextInput
-              value={tags}
-              onChangeText={setTags}
-              placeholder="gym, study, slept late"
-            />
-          </View>
-        </View>
-
-        {/* Save button */}
-        <Pressable
-          onPress={onSave}
-          style={{
-            backgroundColor: Colors.light.primary,
-            paddingVertical: 18,
-            borderRadius: 32,
-            alignItems: "center",
-            marginTop: 24,
-          }}
-        >
-          <Text
-            style={{
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: 18,
-            }}
-          >
-            {editing ? "Save Changes" : "Add Reflection"}
-          </Text>
-        </Pressable>
-      </View>
-    </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const createStyles = (theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: theme.background,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  backText: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: theme.textSecondary,
+  },
+  placeholder: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  formContainer: {
+    padding: 16,
+    gap: 12,
+  },
+  card: {
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 6,
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginBottom: 12,
+  },
+  moodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  moodButton: {
+    flex: 1,
+    backgroundColor: theme.background,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  moodButtonActive: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  moodEmoji: {
+    fontSize: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: theme.text,
+    backgroundColor: theme.background,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    marginBottom: 6,
+  },
+  hydrationRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: theme.text,
+    backgroundColor: theme.background,
+    minHeight: 140,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: theme.primary,
+    paddingVertical: 18,
+    borderRadius: 32,
+    alignItems: 'center',
+    marginTop: 12,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+});
