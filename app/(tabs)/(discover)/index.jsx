@@ -22,7 +22,7 @@ export default function DiscoverMainScreen() {
       title: 'Browse Recipes',
       subtitle: 'Healthy & delicious',
       icon: 'menu-book',
-      color: '#FF6B6B',
+      color: theme.altAccent,
       route: '/(tabs)/(discover)/(recipes)/browse-recipes'
     },
     {
@@ -144,6 +144,7 @@ const createStyles = (theme) => StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingTop: 10,
   },
   scrollContent: {
     paddingHorizontal: 20,

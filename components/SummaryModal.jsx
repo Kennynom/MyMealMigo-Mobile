@@ -1,14 +1,15 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useJournal } from '@/context/JournalContext';
+import { ThemeContext } from '@/context/ThemeContext';
 import { getUserMeals } from '@/utils/mealService';
 import { doc, getDoc } from 'firebase/firestore';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // ---------------- helpers ----------------
 const REQUIRED_MEALS = ['breakfast', 'lunch', 'dinner'];
-const TARGET_TOLERANCE = 50; // kcal wiggle room for “right on”
+const TARGET_TOLERANCE = 50; // kcal wiggle room for "right on"
 
 function fmtNumber(n, digits = 1) {
   return Number.isFinite(n) ? n.toFixed(digits) : '—';
@@ -50,10 +51,19 @@ async function loadDailyTarget(uid) {
     const hpSnap = await getDoc(doc(db, 'users', uid, 'private', 'health_profile'));
     if (hpSnap.exists()) {
       const hp = hpSnap.data() || {};
+      
+      // PRIMARY: Goal.items.targetCalories (matches calorie tracker)
+      if (hp?.Goal?.items?.targetCalories) {
+        const target = Number(hp.Goal.items.targetCalories);
+        if (Number.isFinite(target)) return target;
+      }
+      
+      // Fallback paths
       const fromHP =
         hp?.goals?.dailyCalorieTarget ??
         hp?.goals?.calorieTarget ??
         hp?.nutrition?.calorieTarget ??
+        hp?.dailyCalorieGoal ??
         hp?.dailyCalorieTarget ??
         null;
       if (Number.isFinite(fromHP)) return Number(fromHP);
@@ -98,7 +108,7 @@ async function loadDailyTarget(uid) {
     }
   } catch {}
 
-  return null; // not found; UI will show “Set in Profile”
+  return null; // not found; UI will show "Set in Profile"
 }
 
 // Mood → emoji + label
@@ -114,6 +124,7 @@ const moodMap = [
 export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
   const { user } = useAuth();
   const { entries } = useJournal();
+  const { theme } = useContext(ThemeContext);
 
   const [loading, setLoading] = useState(true);
   const [meals, setMeals] = useState([]);
@@ -251,6 +262,8 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
     return `Under by ${Math.abs(diff)} kcal today.`;
   }, [targetCals, todayCals, allThreeLogged]);
 
+  const S = styles(theme);
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={S.overlay}>
@@ -262,7 +275,7 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
 
           {loading ? (
             <View style={{ padding: 24, alignItems: 'center' }}>
-              <ActivityIndicator />
+              <ActivityIndicator color={theme.primary} />
             </View>
           ) : (
             <ScrollView style={{ maxHeight: '80%' }} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -270,9 +283,9 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
               <View style={S.section}>
                 <Text style={S.sectionTitle}>Wellbeing</Text>
                 <View style={S.grid}>
-                  <Metric label="Avg mood" value={avgMood ? `${avgMood.emoji} ${avgMood.label}` : '—'} />
-                  <Metric label="Avg sleep (hrs)" value={avgSleepHrs != null ? fmtNumber(avgSleepHrs, 1) : '—'} />
-                  <Metric label="Avg hydration (L)" value={avgHydrationL != null ? fmtNumber(avgHydrationL, 1) : '—'} />
+                  <Metric label="Avg mood" value={avgMood ? `${avgMood.emoji} ${avgMood.label}` : '—'} theme={theme} />
+                  <Metric label="Avg sleep (hrs)" value={avgSleepHrs != null ? fmtNumber(avgSleepHrs, 1) : '—'} theme={theme} />
+                  <Metric label="Avg hydration (L)" value={avgHydrationL != null ? fmtNumber(avgHydrationL, 1) : '—'} theme={theme} />
                 </View>
               </View>
 
@@ -283,16 +296,19 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
                 <CardRow
                   label="Your daily target"
                   value={Number.isFinite(targetCals) ? `${Math.round(targetCals)} kcal` : 'Set in Profile/Calculator'}
+                  theme={theme}
                 />
-                <CardRow label="Today’s intake" value={`${Math.round(todayCals)} kcal`} />
+                <CardRow label="Today's intake" value={`${Math.round(todayCals)} kcal`} theme={theme} />
                 <CardRow
                   label="Remaining today"
                   value={Number.isFinite(remainingToday) ? `${remainingToday} kcal` : '—'}
                   hint={remainingNote}
+                  theme={theme}
                 />
                 <CardRow
                   label={`Predicted weekly avg (${lookbackDays}d)`}
                   value={`${Math.round(lastNDaysAvg || 0)} kcal/day`}
+                  theme={theme}
                 />
               </View>
             </ScrollView>
@@ -303,7 +319,8 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
   );
 }
 
-function Metric({ label, value }) {
+function Metric({ label, value, theme }) {
+  const S = styles(theme);
   return (
     <View style={S.metric}>
       <Text style={S.metricLabel}>{label}</Text>
@@ -311,7 +328,8 @@ function Metric({ label, value }) {
     </View>
   );
 }
-function CardRow({ label, value, hint }) {
+function CardRow({ label, value, hint, theme }) {
+  const S = styles(theme);
   return (
     <View style={S.row}>
       <Text style={S.rowLabel}>{label}</Text>
@@ -323,30 +341,109 @@ function CardRow({ label, value, hint }) {
   );
 }
 
-const S = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#111', borderTopLeftRadius: 18, borderTopRightRadius: 18,
-    paddingBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.06)'
+const styles = (theme) => StyleSheet.create({
+  overlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    justifyContent: 'flex-end' 
   },
-  header: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  close: { color: 'rgba(255,255,255,0.8)', fontSize: 20 },
+  sheet: {
+    backgroundColor: theme.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border,
+    ...theme.shadow,
+  },
+  header: { 
+    paddingHorizontal: 16, 
+    paddingTop: 16, 
+    paddingBottom: 12, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.border,
+  },
+  title: { 
+    color: theme.text, 
+    fontSize: 24, 
+    fontWeight: '800' 
+  },
+  close: { 
+    color: theme.textSecondary, 
+    fontSize: 24, 
+    fontWeight: '600' 
+  },
 
-  section: { paddingHorizontal: 16, paddingVertical: 12 },
-  sectionTitle: { color: '#fff', fontWeight: '700', marginBottom: 8 },
+  section: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 16 
+  },
+  sectionTitle: { 
+    color: theme.primary, 
+    fontWeight: '900', 
+    fontSize: 20,
+    marginBottom: 12 
+  },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  metric: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 12, minWidth: '30%', flexGrow: 1 },
-  metricLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginBottom: 4 },
-  metricValue: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  grid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 12 
+  },
+  metric: { 
+    backgroundColor: theme.background,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    minWidth: '30%',
+    flexGrow: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border,
+    ...theme.shadow,
+  },
+  metricLabel: { 
+    color: theme.textSecondary, 
+    fontSize: 12, 
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  metricValue: { 
+    color: theme.text, 
+    fontSize: 18, 
+    fontWeight: '800' 
+  },
 
   row: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.background,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border,
+    ...theme.shadow,
   },
-  rowLabel: { color: 'rgba(255,255,255,0.8)' },
-  rowValue: { color: '#fff', fontWeight: '800' },
-  rowHint: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 },
+  rowLabel: { 
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  rowValue: { 
+    color: theme.primaryDark, 
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  rowHint: { 
+    color: theme.textSecondary, 
+    fontSize: 11, 
+    marginTop: 3,
+    fontStyle: 'italic',
+  },
 });

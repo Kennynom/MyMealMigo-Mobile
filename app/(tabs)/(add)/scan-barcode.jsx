@@ -1,6 +1,7 @@
 import { AuthContext } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, updateMealAndCalories } from '@/utils/mealService';
+import { MaterialIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
@@ -462,7 +463,7 @@ export default function ScanBarcodeScreen() {
             style={styles.flipButton} 
             onPress={() => setFacing(current => (current === 'back' ? 'front' : 'back'))}
           >
-            <Text style={styles.flipText}>🔄</Text>
+            <MaterialIcons name="autorenew" size={32} color={theme.primaryDark} />
           </TouchableOpacity>
         </View>
       </CameraView>

@@ -1,17 +1,29 @@
+import UpgradeModal from '@/components/UpgradeModal';
+import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useContext, useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SubscriptionScreen() {
     const { theme } = useContext(ThemeContext);
-    const { userRole } = useAuth();
+    const { user, userRole } = useAuth();
     const styles = createStyles(theme);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [currentPlan, setCurrentPlan] = useState('free');
 
-    // Determine current plan
-    const currentPlan = userRole?.isPremium ? 'premium' : 'free';
+    // Update current plan based on userRole
+    useEffect(() => {
+        if (userRole === 'premium' || userRole === 'admin' || userRole === 'nutritionist') {
+            setCurrentPlan('premium');
+        } else {
+            setCurrentPlan('free');
+        }
+    }, [userRole]);
 
     const plans = [
         {
@@ -32,7 +44,7 @@ export default function SubscriptionScreen() {
         {
             id: 'premium',
             name: 'Premium',
-            price: '$9.99',
+            price: '$4.99',
             period: 'per month',
             features: [
                 'Advanced calorie tracking',
@@ -49,6 +61,104 @@ export default function SubscriptionScreen() {
             popular: true
         }
     ];
+
+    const handleSubscribe = async () => {
+        if (!user?.uid) {
+            Alert.alert('Error', 'User not authenticated. Please log in again.');
+            return;
+        }
+
+        if (isProcessing) return; // Prevent duplicate submissions
+
+        setIsProcessing(true);
+        console.log('Upgrading to premium subscription');
+
+        try {
+            // Update role to premium in Firebase
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                role: 'premium',
+                updatedAt: new Date().toISOString(),
+            });
+
+            // Manually update local state immediately for instant UI feedback
+            setCurrentPlan('premium');
+            setShowUpgradeModal(false);
+            
+            // Show success alert
+            Alert.alert(
+                '🎉 Account Upgraded!',
+                'Your account has been successfully upgraded to Premium. Enjoy all premium features!',
+                [{ text: 'OK' }]
+            );
+        } catch (error) {
+            console.error('Error upgrading subscription:', error);
+            Alert.alert(
+                'Upgrade Failed',
+                'There was an error processing your subscription. Please try again later.',
+                [{ text: 'OK' }]
+            );
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleDowngrade = async () => {
+        if (!user?.uid) {
+            Alert.alert('Error', 'User not authenticated. Please log in again.');
+            return;
+        }
+
+        // Show confirmation dialog
+        Alert.alert(
+            'Switch to Free Plan?',
+            'You will lose access to all premium features. Are you sure you want to continue?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Switch to Free',
+                    style: 'destructive',
+                    onPress: async () => {
+                        if (isProcessing) return;
+
+                        setIsProcessing(true);
+                        console.log('Downgrading to free plan');
+
+                        try {
+                            // Update role to free in Firebase
+                            const userRef = doc(db, 'users', user.uid);
+                            await updateDoc(userRef, {
+                                role: 'free',
+                                updatedAt: new Date().toISOString(),
+                            });
+
+                            // Manually update local state immediately for instant UI feedback
+                            setCurrentPlan('free');
+                            
+                            // Show success alert
+                            Alert.alert(
+                                'Plan Changed',
+                                'Your account has been switched to the Free plan. You can upgrade again anytime!',
+                                [{ text: 'OK' }]
+                            );
+                        } catch (error) {
+                            console.error('Error downgrading subscription:', error);
+                            Alert.alert(
+                                'Downgrade Failed',
+                                'There was an error changing your plan. Please try again later.',
+                                [{ text: 'OK' }]
+                            );
+                        } finally {
+                            setIsProcessing(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -127,10 +237,8 @@ export default function SubscriptionScreen() {
                         ) : plan.id === 'premium' ? (
                             <TouchableOpacity 
                                 style={[styles.upgradeButton, { backgroundColor: plan.color }]}
-                                onPress={() => {
-                                    // Handle upgrade
-                                    alert('Upgrade to Premium - Coming Soon!');
-                                }}
+                                onPress={() => setShowUpgradeModal(true)}
+                                disabled={isProcessing}
                             >
                                 <Ionicons name="arrow-up-circle" size={20} color="#000" />
                                 <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
@@ -138,10 +246,8 @@ export default function SubscriptionScreen() {
                         ) : (
                             <TouchableOpacity 
                                 style={[styles.downgradeButton]}
-                                onPress={() => {
-                                    // Handle downgrade
-                                    alert('Downgrade to Free - Coming Soon!');
-                                }}
+                                onPress={handleDowngrade}
+                                disabled={isProcessing}
                             >
                                 <Text style={styles.downgradeButtonText}>Switch to Free</Text>
                             </TouchableOpacity>
@@ -184,6 +290,13 @@ export default function SubscriptionScreen() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                visible={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                onSubscribe={handleSubscribe}
+            />
         </View>
     );
 }

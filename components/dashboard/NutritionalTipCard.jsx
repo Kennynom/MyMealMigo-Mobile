@@ -104,6 +104,11 @@ useEffect(() => {
 
   const toggleSave = async () => {
     if (!user) return;
+    // Gate save feature for free users
+    if (!isPremium) {
+      router.push('/(tabs)/(home)/(profile)/(subscription)');
+      return;
+    }
     if (saved) {
       await removeSavedTip(user.uid, current.url);
       setSaved(false);
@@ -131,13 +136,15 @@ useEffect(() => {
             <Text style={styles.historyText}>History</Text>
           </Pressable>
         )}
-        <Pressable
-          onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'saved' } })}
-          style={styles.historyPill}
-          hitSlop={10}
-        >
-          <Text style={styles.historyText}>Saved</Text>
-        </Pressable>
+        {isPremium && (
+          <Pressable
+            onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'saved' } })}
+            style={styles.historyPill}
+            hitSlop={10}
+          >
+            <Text style={styles.historyText}>Saved</Text>
+          </Pressable>
+        )}
         </View>
       </View>
 
@@ -149,8 +156,16 @@ useEffect(() => {
           <Text style={styles.title} numberOfLines={3}>{current.title}</Text>
           <Text style={styles.source} numberOfLines={1}>{current.sourceTitle}</Text>
         </View>
-        <Pressable onPress={toggleSave} hitSlop={10} style={{ padding: 6 }}>
-          <MaterialIcons name={saved ? 'bookmark' : 'bookmark-border'} size={22} color={C.accent} />
+        <Pressable 
+          onPress={toggleSave} 
+          hitSlop={10} 
+          style={{ padding: 6 }}
+        >
+          <MaterialIcons 
+            name={isPremium ? (saved ? 'bookmark' : 'bookmark-border') : 'lock'} 
+            size={22} 
+            color={isPremium ? C.accent : C.cardSub} 
+          />
         </Pressable>
       </Pressable>
 
@@ -159,8 +174,9 @@ useEffect(() => {
           <Text style={styles.actionText}>Open</Text>
         </Pressable>
 
-        <Pressable onPress={toggleSave} style={[styles.actionPill, { marginRight: 8 }]}>
-          <Text style={styles.actionText}>{saved ? 'Unsave' : 'Save'}</Text>
+        <Pressable onPress={toggleSave} style={[styles.actionPill, { marginRight: 8, opacity: isPremium ? 1 : 0.5 }]}>
+          <MaterialIcons name={isPremium ? undefined : 'lock'} size={14} color="#fff" style={{ marginRight: isPremium ? 0 : 4 }} />
+          <Text style={styles.actionText}>{isPremium ? (saved ? 'Unsave' : 'Save') : 'Premium'}</Text>
         </Pressable>
       </View>
     </View>
@@ -210,6 +226,8 @@ function createStyles(C) {
     source: { color: C.cardSub, fontSize: 12, marginTop: 4 },
     footerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
     actionPill: { 
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingHorizontal: 16, 
       paddingVertical: 8, 
       backgroundColor: C.accent, 

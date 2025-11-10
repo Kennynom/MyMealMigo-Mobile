@@ -1,12 +1,14 @@
 import { ThemeContext } from '@/context/ThemeContext';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { router } from 'expo-router';
 import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function TrackerMainScreen() {
   const { theme } = useContext(ThemeContext);
+  const { isPremium } = usePremiumStatus();
   const styles = createStyles(theme);
 
   const trackers = [
@@ -16,33 +18,58 @@ export default function TrackerMainScreen() {
       subtitle: 'Track daily intake',
       icon: 'restaurant',
       color: '#4ECDC4',
-      route: '/(tabs)/(tracker)/(calorie)/calorie-tracker'
+      route: '/(tabs)/(tracker)/(calorie)/calorie-tracker',
+      premium: false,
     },
     {
       id: 'progress',
       title: 'Progress Tracker',
       subtitle: 'Monitor weight goals',
       icon: 'trending-up',
-      color: '#FF6B6B',
-      route: '/(tabs)/(tracker)/(progress)'
+      color: theme.altAccent,
+      route: '/(tabs)/(tracker)/(progress)',
+      premium: true,
     },
     {
       id: 'activity',
       title: 'Activity Tracker',
       subtitle: 'Log your workouts',
       icon: 'directions-run',
-      color: '#95E1D3',
-      route: '/(tabs)/(tracker)/(activity)'
+      color: '#F38181',
+      route: '/(tabs)/(tracker)/(activity)',
+      premium: false,
     },
     {
       id: 'calculator',
       title: 'Health Calculator',
       subtitle: 'BMI, BMR & more',
       icon: 'calculate',
-      color: '#F38181',
-      route: '/(tabs)/(tracker)/(health-calculator)'
+      color: theme.primary,
+      route: '/(tabs)/(tracker)/(health-calculator)',
+      premium: false,
     }
   ];
+
+  const handleTrackerPress = (tracker) => {
+    if (tracker.premium && !isPremium) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        'Progress Tracker is a premium feature. Upgrade to monitor your weight goals and track your progress over time!',
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => router.push('/(tabs)/(home)/(profile)/(subscription)')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
+    router.push(tracker.route);
+  };
 
   return (
     <View style={styles.container}>
@@ -65,16 +92,40 @@ export default function TrackerMainScreen() {
           {trackers.map((tracker) => (
             <TouchableOpacity 
               key={tracker.id}
-              style={styles.trackerCard}
-              onPress={() => router.push(tracker.route)}
+              style={[
+                styles.trackerCard,
+                tracker.premium && !isPremium && styles.trackerCardLocked
+              ]}
+              onPress={() => handleTrackerPress(tracker)}
               activeOpacity={0.7}
             >
               <View style={[styles.iconCircle, { backgroundColor: tracker.color + '20' }]}>
-                <MaterialIcons name={tracker.icon} size={32} color={tracker.color} />
+                <MaterialIcons 
+                  name={tracker.premium && !isPremium ? 'lock' : tracker.icon} 
+                  size={32} 
+                  color={tracker.premium && !isPremium ? theme.textSecondary : tracker.color} 
+                />
               </View>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{tracker.title}</Text>
-                <Text style={styles.cardSubtitle}>{tracker.subtitle}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[
+                    styles.cardTitle,
+                    tracker.premium && !isPremium && styles.cardTitleLocked
+                  ]}>
+                    {tracker.title}
+                  </Text>
+                  {tracker.premium && !isPremium && (
+                    <View style={styles.premiumBadge}>
+                      <Text style={styles.premiumBadgeText}>Premium</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[
+                  styles.cardSubtitle,
+                  tracker.premium && !isPremium && styles.cardSubtitleLocked
+                ]}>
+                  {tracker.subtitle}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -134,6 +185,10 @@ const createStyles = (theme) => StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
+  trackerCardLocked: {
+    opacity: 0.5,
+    backgroundColor: theme.surface,
+  },
   iconCircle: {
     width: 64,
     height: 64,
@@ -151,8 +206,26 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.text,
     marginBottom: 4,
   },
+  cardTitleLocked: {
+    color: theme.textSecondary,
+  },
   cardSubtitle: {
     fontSize: 14,
     color: theme.textSecondary,
+  },
+  cardSubtitleLocked: {
+    opacity: 0.7,
+  },
+  premiumBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: theme.primary + '20',
+    borderRadius: 8,
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.primary,
+    letterSpacing: 0.5,
   },
 });

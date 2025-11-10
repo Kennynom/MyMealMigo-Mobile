@@ -15,6 +15,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
 
 import NutritionalTipCard from '@/components/dashboard/NutritionalTipCard';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 
 
 export default function HomeScreen() {
@@ -24,6 +26,7 @@ export default function HomeScreen() {
   const [landingPageData, setLandingPageData] = useState(null);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  const { isPremium } = usePremiumStatus();
   const [userWeight, setUserWeight] = useState(null);
   const [userHeight, setUserHeight] = useState(null);
   const [userBMI, setUserBMI] = useState(null);
@@ -163,11 +166,17 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => router.push('/chat')}
-          style={styles.aiButton}
+          onPress={() => {
+            if (isPremium) {
+              router.push('/chat');
+            } else {
+              router.push('/(tabs)/(home)/(profile)/(subscription)');
+            }
+          }}
+          style={[styles.aiButton, !isPremium && styles.aiButtonDisabled]}
           accessibilityLabel="AI Assistant Button"
         >
-          <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
+          <Ionicons name={isPremium ? "chatbubble-ellipses" : "lock-closed"} size={20} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Dashboard</Text>
@@ -208,46 +217,48 @@ export default function HomeScreen() {
         </View>
 
         {/* Calorie Intake Chart */}
-        <View style={styles.chartContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Calorie Intake</Text>
-            <Text style={styles.sectionSubtitle}> • Last 7 days</Text>
+        <PremiumGate isPremium={isPremium} featureName="calorie intake analytics">
+          <View style={styles.chartContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Calorie Intake</Text>
+              <Text style={styles.sectionSubtitle}> • Last 7 days</Text>
+            </View>
+            <View style={styles.chartCard}>
+              <LineChart
+                data={calorieChartData}
+                width={320}
+                height={200}
+                yAxisSuffix=" cal"
+                chartConfig={{
+                  backgroundColor: theme.background,
+                  backgroundGradientFrom: theme.background,
+                  backgroundGradientTo: theme.background,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => theme.background,
+                  labelColor: (opacity = 1) => theme.text,
+                  style: {
+                    borderRadius: 16,
+                  },
+                  propsForDots: {
+                    r: '5',
+                    strokeWidth: '2',
+                    stroke: theme.primary
+                  },
+                  propsForBackgroundLines: {
+                    strokeDasharray: '',
+                    stroke: theme.border || '#e0e0e0',
+                  }
+                }}
+                style={styles.chart}
+                fromZero={true}
+                withInnerLines={true}
+                withVerticalLabels={true}
+                withHorizontalLabels={true}
+                withVerticalLines={false}
+              />
+            </View>
           </View>
-          <View style={styles.chartCard}>
-            <LineChart
-              data={calorieChartData}
-              width={320}
-              height={200}
-              yAxisSuffix=" cal"
-              chartConfig={{
-                backgroundColor: theme.background,
-                backgroundGradientFrom: theme.background,
-                backgroundGradientTo: theme.background,
-                decimalPlaces: 0,
-                color: (opacity = 1) => theme.background,
-                labelColor: (opacity = 1) => theme.text,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForDots: {
-                  r: '5',
-                  strokeWidth: '2',
-                  stroke: theme.primary
-                },
-                propsForBackgroundLines: {
-                  strokeDasharray: '',
-                  stroke: theme.border || '#e0e0e0',
-                }
-              }}
-              style={styles.chart}
-              fromZero={true}
-              withInnerLines={true}
-              withVerticalLabels={true}
-              withHorizontalLabels={true}
-              withVerticalLines={false}
-            />
-          </View>
-        </View>
+        </PremiumGate>
 
         {/* Nutritional Tip Card */}
         <View style={{ marginTop: 16 }}>
@@ -382,6 +393,10 @@ function createStyle(theme) {
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
+    },
+    aiButtonDisabled: {
+      backgroundColor: theme.textSecondary,
+      opacity: 0.6,
     },
     headerCenter: {
       flex: 1,

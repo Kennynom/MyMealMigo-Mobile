@@ -1,6 +1,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { checkCalorieGoalExceedance, getUserMeals, logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useContext, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -8,6 +10,7 @@ import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, Touchabl
 export default function AddMealMainScreen() {
   const { theme } = useContext(ThemeContext);
   const { user } = useAuth();
+  const { isPremium } = usePremiumStatus();
   const styles = createStyles(theme);
   const [recentMeals, setRecentMeals] = useState([]);
   const [recentBeverages, setRecentBeverages] = useState([]);
@@ -82,8 +85,76 @@ export default function AddMealMainScreen() {
 
   // Helper function to show category selection modal
   const handleRelogMeal = (meal) => {
+    // Block for free users
+    if (!isPremium) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        'Quick re-logging meals is a premium feature. Upgrade to access your meal history!',
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => router.push('/(tabs)/(home)/(profile)/(subscription)')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
     setSelectedItem(meal);
     setModalVisible(true);
+  };
+
+  // Handler for photo capture
+  const handlePhotoCapture = () => {
+    if (!isPremium) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        'Photo capture with AI recognition is a premium feature. Upgrade to unlock intelligent meal tracking!',
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => router.push('/(tabs)/(home)/(profile)/(subscription)')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
+    router.push({
+      pathname: '/(tabs)/(add)/photo-capture',
+      params: {}
+    });
+  };
+
+  // Handler for barcode scan
+  const handleBarcodeScan = () => {
+    if (!isPremium) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        'Barcode scanning is a premium feature. Upgrade to quickly add packaged foods!',
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => router.push('/(tabs)/(home)/(profile)/(subscription)')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
+    router.push({
+      pathname: '/(tabs)/(add)/scan-barcode',
+      params: {}
+    });
   };
 
   // Helper function to log meal with selected category
@@ -219,36 +290,36 @@ export default function AddMealMainScreen() {
           <Text style={styles.sectionTitle}>Quick Add</Text>
           
           <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push({
-              pathname: '/(tabs)/(add)/photo-capture',
-              params: {}
-            })}
+            style={[styles.actionCard, !isPremium && styles.actionCardLocked]}
+            onPress={handlePhotoCapture}
             activeOpacity={0.7}
           >
             <View style={[styles.iconCircle, { backgroundColor: '#4ECDC4' + '20' }]}>
-              <Text style={styles.actionEmoji}>📷</Text>
+              <MaterialIcons name={isPremium ? "linked-camera" : "lock"} size={32} color={isPremium ? '#4ECDC4' : theme.textSecondary} />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Take Photo</Text>
-              <Text style={styles.actionSubtitle}>Snap a pic and let AI analyze your meal</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Take Photo</Text>
+                {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+              </View>
+              <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Snap a pic and let AI analyze your meal</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push({
-              pathname: '/(tabs)/(add)/scan-barcode',
-              params: {}
-            })}
+            style={[styles.actionCard, !isPremium && styles.actionCardLocked]}
+            onPress={handleBarcodeScan}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconCircle, { backgroundColor: '#FF6B6B' + '20' }]}>
-              <Text style={styles.actionEmoji}>📱</Text>
+            <View style={[styles.iconCircle, { backgroundColor: theme.primary + '20' }]}>
+              <MaterialIcons name={isPremium ? "qr-code-scanner" : "lock"} size={32} color={isPremium ? theme.primary : theme.textSecondary} />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Scan Barcode</Text>
-              <Text style={styles.actionSubtitle}>Quickly add packaged foods</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Scan Barcode</Text>
+                {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+              </View>
+              <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Quickly add packaged foods</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -265,8 +336,8 @@ export default function AddMealMainScreen() {
             })}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconCircle, { backgroundColor: '#95E1D3' + '20' }]}>
-              <Text style={styles.actionEmoji}>✏️</Text>
+            <View style={[styles.iconCircle, { backgroundColor: '#F38181' + '20' }]}>
+              <MaterialIcons name="post-add" size={32} color='#F38181' />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Manual Entry</Text>
@@ -286,7 +357,9 @@ export default function AddMealMainScreen() {
           ) : recentMeals.length > 0 ? (
             recentMeals.map((meal, index) => (
               <View key={meal.id || index} style={styles.recentCard}>
-                <Text style={styles.recentEmoji}>🍽️</Text>
+                <Text style={styles.recentEmoji}>
+                  <MaterialIcons name="dinner-dining" size={28} color="saddlebrown" />
+                </Text>
                 <View style={styles.recentContent}>
                   <Text style={styles.recentTitle}>{meal.foodName}</Text>
                   <Text style={styles.recentTime}>{getRelativeTime(meal.timestamp)}</Text>
@@ -295,10 +368,10 @@ export default function AddMealMainScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity 
-                  style={styles.addButton}
+                  style={[styles.addButton, !isPremium && styles.addButtonLocked]}
                   onPress={() => handleRelogMeal(meal)}
                 >
-                  <Text style={styles.addButtonText}>+</Text>
+                  <MaterialIcons name={isPremium ? "add" : "lock"} size={24} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))
@@ -320,7 +393,9 @@ export default function AddMealMainScreen() {
           ) : recentBeverages.length > 0 ? (
             recentBeverages.map((beverage, index) => (
               <View key={beverage.id || index} style={styles.recentCard}>
-                <Text style={styles.recentEmoji}>🥤</Text>
+                <Text style={styles.recentEmoji}>
+                  <MaterialIcons name="emoji-food-beverage" size={28} color="orange" />
+                </Text>
                 <View style={styles.recentContent}>
                   <Text style={styles.recentTitle}>{beverage.foodName}</Text>
                   <Text style={styles.recentTime}>{getRelativeTime(beverage.timestamp)}</Text>
@@ -329,10 +404,10 @@ export default function AddMealMainScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity 
-                  style={styles.addButton}
+                  style={[styles.addButton, !isPremium && styles.addButtonLocked]}
                   onPress={() => handleRelogMeal(beverage)}
                 >
-                  <Text style={styles.addButtonText}>+</Text>
+                  <MaterialIcons name={isPremium ? "add" : "lock"} size={24} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))
@@ -492,6 +567,10 @@ const createStyles = (theme) => StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
+  actionCardLocked: {
+    opacity: 0.5,
+    backgroundColor: theme.surface,
+  },
   iconCircle: {
     width: 64,
     height: 64,
@@ -512,69 +591,118 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.text,
     marginBottom: 4,
   },
+  actionTitleLocked: {
+    color: theme.textSecondary,
+  },
   actionSubtitle: {
     fontSize: 14,
     color: theme.textSecondary,
     lineHeight: 18,
   },
-  recentCard: {
-    backgroundColor: theme.surface,
+  actionSubtitleLocked: {
+    color: theme.textSecondary,
+    opacity: 0.7,
+  },
+  premiumBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: theme.primary + '20',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  recentCard: {
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   recentEmoji: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: 32,
+    marginRight: 16,
+    width: 48,
+    height: 48,
+    textAlign: 'center',
+    lineHeight: 48,
+    backgroundColor: theme.surface,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   recentContent: {
     flex: 1,
   },
   recentTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     color: theme.text,
+    marginBottom: 4,
   },
   recentTime: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.textSecondary,
-    marginTop: 2,
+    marginBottom: 4,
   },
   recentNutrition: {
-    fontSize: 11,
+    fontSize: 13,
     color: theme.primary,
-    marginTop: 2,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   addButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     backgroundColor: theme.primary,
-    borderRadius: 16,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addButtonLocked: {
+    backgroundColor: theme.textSecondary,
+    opacity: 0.6,
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    lineHeight: 20,
   },
   loadingContainer: {
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: 8,
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyState: {
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: 8,
+    backgroundColor: theme.cardBackground || theme.background,
+    borderRadius: 16,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 15,
     color: theme.textSecondary,
   },
   modalOverlay: {

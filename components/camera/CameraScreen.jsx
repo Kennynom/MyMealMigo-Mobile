@@ -3,6 +3,7 @@ import { ThemeContext } from '@/context/ThemeContext';
 import { classifyUri, MlEngine } from '@/lib/ml/engine';
 import { labelToId } from '@/lib/ml/foodMap';
 import { getFoodNutrition } from '@/utils/nutritionService';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useContext, useRef, useState } from 'react';
@@ -218,7 +219,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
         <View style={styles.buttonContainer}>
           {/* Flip camera button */}
           <TouchableOpacity style={styles.flipButton} onPress={toggleCameraType}>
-            <Text style={styles.flipText}>🔄</Text>
+            <MaterialIcons name="autorenew" size={32} color={theme.primaryDark} />
           </TouchableOpacity>
           
           {/* Capture button */}
@@ -229,7 +230,8 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
           >
             <View style={styles.captureInner}>
               <Text style={styles.captureText}>
-                {isProcessing ? '⏳' : '📷'}
+                {isProcessing ? <MaterialIcons name="hourglass-top" size={32} color={theme.background} /> : 
+                                <MaterialIcons name="photo-camera" size={32} color={theme.background} />}
               </Text>
             </View>
           </TouchableOpacity>
@@ -250,7 +252,6 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
 const createStyles = (theme) => StyleSheet.create({
   cameraContainer: {
     flex: 1,
-    backgroundColor: '#000',
   },
   camera: {
     flex: 1,
@@ -276,8 +277,8 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 4,
+    borderColor: '#fff',
   },
   flipText: {
     fontSize: 28,

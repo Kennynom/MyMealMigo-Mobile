@@ -1,5 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { db } from '@/lib/firebase';
 import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking } from '@/utils/mealService';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -13,6 +14,7 @@ export default function RecipeDetail() {
   const { id } = useLocalSearchParams();          // recipe doc id
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { isPremium } = usePremiumStatus();
 
   const [item, setItem] = useState(null);
   const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
@@ -37,6 +39,27 @@ export default function RecipeDetail() {
       if (snap.exists()) setItem({ id: snap.id, ...snap.data() });
     })();
   }, [id]);
+
+  const handleAddToMealLog = () => {
+    if (!isPremium) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        'Adding recipes to your meal log is a premium feature. Upgrade to easily track your favorite recipes!',
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => router.push('/(tabs)/(home)/(profile)/(subscription)')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
+    setShowMealCategoryModal(true);
+  };
 
   const handleLogMeal = async (mealCategory, mealType) => {
     if (!user?.uid || !item) return;
@@ -264,12 +287,21 @@ export default function RecipeDetail() {
           {/* Log Meal Button */}
           <View style={styles.logButtonContainer}>
             <TouchableOpacity
-              style={styles.logMealButton}
-              onPress={() => setShowMealCategoryModal(true)}
+              style={[
+                styles.logMealButton,
+                !isPremium && styles.logMealButtonLocked
+              ]}
+              onPress={handleAddToMealLog}
               disabled={logging}
             >
-              <Text style={styles.logMealButtonText}>
-                {logging ? 'Logging...' : 'Add to Meal Log'}
+              {!isPremium && (
+                <Text style={styles.lockIcon}>🔒 </Text>
+              )}
+              <Text style={[
+                styles.logMealButtonText,
+                !isPremium && styles.logMealButtonTextLocked
+              ]}>
+                {logging ? 'Logging...' : isPremium ? 'Add to Meal Log' : 'Premium Feature'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -458,6 +490,8 @@ const createStyles = (theme) => StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     backgroundColor: theme.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -465,10 +499,22 @@ const createStyles = (theme) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  logMealButtonLocked: {
+    backgroundColor: theme.textSecondary,
+    opacity: 0.6,
+  },
   logMealButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '700',
+  },
+  logMealButtonTextLocked: {
+    color: 'white',
+    opacity: 0.9,
+  },
+  lockIcon: {
+    fontSize: 16,
+    marginRight: 4,
   },
   modalOverlay: {
     flex: 1,

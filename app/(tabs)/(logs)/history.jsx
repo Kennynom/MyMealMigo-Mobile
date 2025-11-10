@@ -2,6 +2,8 @@
 import { useAuth } from "@/context/AuthContext";
 import { ThemeContext } from "@/context/ThemeContext";
 import { getUserMeals } from "@/utils/mealService";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useFocusEffect } from "expo-router";
 import React, {
@@ -19,7 +21,7 @@ import {
 } from "react-native";
 
 export default function MealHistoryScreen() {
-  const { theme, colorScheme, setColorScheme } = useContext(ThemeContext);
+  const { theme, colorScheme } = useContext(ThemeContext);
   const { user } = useAuth();
   const styles = useMemo(() => createStyles(theme, colorScheme), [theme, colorScheme]);
 
@@ -96,10 +98,6 @@ export default function MealHistoryScreen() {
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
   };
 
-  const toggleTheme = () => {
-    setColorScheme(colorScheme === "dark" ? "light" : "dark");
-  };
-
   // Get meals for the selected date
   const selectedDateMeals = useMemo(() => {
     const selectedDateKey = selectedDate.toLocaleDateString('en-CA');
@@ -172,28 +170,20 @@ export default function MealHistoryScreen() {
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <View style={styles.mainHeader}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Text style={styles.backIcon}>←</Text>
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
 
+        <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Meal History</Text>
-
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={styles.themeButton}
-              onPress={toggleTheme}
-            >
-              <Text style={styles.themeIcon}>
-                {colorScheme === "dark" ? "☀️" : "🌙"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.headerSubtitle}>View your past meals and nutrition data</Text>
         </View>
+
+        <View style={styles.placeholder} />
       </View>
 
       {/* BODY */}
@@ -250,7 +240,7 @@ export default function MealHistoryScreen() {
             {/* MEALS FOR SELECTED DATE */}
             {selectedDateMeals.length === 0 ? (
               <View style={styles.noMealsContainer}>
-                <Text style={styles.noMealsEmoji}>🍽️</Text>
+                <MaterialIcons name="dinner-dining" size={28} color="saddlebrown" />
                 <Text style={styles.noMealsText}>No meals logged</Text>
                 <Text style={styles.noMealsSubtext}>
                   {isFutureDate(selectedDate) 
@@ -268,9 +258,9 @@ export default function MealHistoryScreen() {
                     <View key={category} style={styles.categorySection}>
                       {/* Category Header */}
                       <View style={styles.categoryHeader}>
-                        <Text style={styles.categoryIcon}>
-                          {getMealCategoryIcon(category)}
-                        </Text>
+                        {category === 'breakfast' ? <MaterialCommunityIcons name="weather-sunset" size={24} color="orangered" style={styles.categoryIcon} /> 
+                        : category === 'lunch' ? <MaterialCommunityIcons name="weather-sunny" size={24} color="orange" style={styles.categoryIcon} /> 
+                        : <MaterialCommunityIcons name="weather-moonset" size={24} color="royalblue" style={styles.categoryIcon} />}
                         <Text style={styles.categoryTitle}>
                           {category.charAt(0).toUpperCase() + category.slice(1)}
                         </Text>
@@ -290,7 +280,10 @@ export default function MealHistoryScreen() {
                                 <View style={styles.mealNameRow}>
                                   <Text style={styles.mealName}>{meal.foodName}</Text>
                                   <Text style={styles.mealTypeIcon}>
-                                    {meal.mealType === 'beverage' ? '🥤' : '🍽️'}
+                                    {meal.mealType === 'beverage' ? 
+                                    <MaterialIcons name="emoji-food-beverage" size={28} color="orange" /> :
+                                    <MaterialIcons name="dinner-dining" size={28} color="saddlebrown" />
+                                    }
                                   </Text>
                                 </View>
                               </View>
@@ -338,46 +331,49 @@ const createStyles = (theme, colorScheme) =>
       backgroundColor: theme.background,
     },
 
-    mainHeader: {
-      backgroundColor: theme.surface,
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 60,
-      paddingBottom: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
+      paddingTop: 20,
+      paddingBottom: 20,
+      backgroundColor: theme.background,
     },
-    headerContent: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
     },
-    backButton: { padding: 5 },
-    backIcon: {
-      fontSize: 24,
+    backText: {
       color: theme.text,
+      fontSize: 20,
+      fontWeight: '600',
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
     },
     headerTitle: {
-      fontSize: 20,
-      fontWeight: "bold",
+      fontSize: 22,
+      fontWeight: 'bold',
       color: theme.text,
-      flex: 1,
-      textAlign: "center",
-      marginHorizontal: 20,
+      marginBottom: 2,
     },
-    headerButtons: {
-      flexDirection: "row",
-      gap: 8,
+    headerSubtitle: {
+      fontSize: 13,
+      color: theme.textSecondary,
     },
-    themeButton: {
-      width: 32,
-      height: 32,
-      backgroundColor: theme.inactive,
-      borderRadius: 16,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    themeIcon: {
-      fontSize: 16,
+    placeholder: {
+      width: 40,
     },
 
     scrollArea: {
@@ -397,64 +393,84 @@ const createStyles = (theme, colorScheme) =>
 
     // Date Picker Styles
     datePickerContainer: {
-      backgroundColor: theme.surface,
-      borderRadius: 16,
-      padding: 20,
-      marginBottom: 20,
+      backgroundColor: theme.background,
       shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 24,
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.border,
     },
     datePickerLabel: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text,
-      marginBottom: 12,
+      marginBottom: 16,
+      letterSpacing: 0.3,
     },
 
     // Selected Date Header
     selectedDateHeader: {
-      marginBottom: 16,
-      paddingBottom: 12,
-      borderBottomWidth: 2,
-      borderBottomColor: theme.primary + '30',
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 20,
+      backgroundColor: theme.background,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: theme.border,
     },
     selectedDateTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
+      fontSize: 22,
+      fontWeight: '800',
       color: theme.text,
-      marginBottom: 6,
+      marginBottom: 10,
+      letterSpacing: 0.3,
     },
     selectedDateStats: {
       flexDirection: 'row',
       alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
     },
     selectedDateStatsText: {
-      fontSize: 14,
+      fontSize: 13,
       color: theme.textSecondary,
-      fontWeight: '500',
+      fontWeight: '600',
     },
     selectedDateCalories: {
       fontSize: 14,
       color: theme.primary,
-      fontWeight: '700',
+      fontWeight: '800',
     },
 
     // No Meals State
     noMealsContainer: {
+      borderRadius: 20,
       padding: 60,
       alignItems: 'center',
+      marginVertical: 20,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.background,
+      elevation: 4,
     },
     noMealsEmoji: {
-      fontSize: 48,
-      marginBottom: 16,
+      fontSize: 56,
+      marginBottom: 20,
+      opacity: 0.7,
     },
     noMealsText: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: 20,
+      fontWeight: '700',
       color: theme.text,
       marginBottom: 8,
     },
@@ -462,62 +478,80 @@ const createStyles = (theme, colorScheme) =>
       fontSize: 14,
       color: theme.textSecondary,
       textAlign: 'center',
+      lineHeight: 20,
     },
 
     mealsContainer: {
-      paddingBottom: 8,
+      paddingBottom: 20,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
     },
     
     categorySection: {
-      marginBottom: 16,
+      marginBottom: 24,
+      backgroundColor: theme.background,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.border,
+      paddingBottom: 12,
     },
     categoryHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: theme.surface,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: theme.background,
       borderBottomWidth: 2,
-      borderBottomColor: theme.primary + '30',
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
+      borderBottomColor: theme.primary + '20',
     },
     categoryIcon: {
-      fontSize: 22,
-      marginRight: 10,
+      marginRight: 12,
     },
     categoryTitle: {
-      fontSize: 16,
-      fontWeight: '700',
+      fontSize: 18,
+      fontWeight: '800',
       color: theme.text,
       flex: 1,
       textTransform: 'capitalize',
+      letterSpacing: 0.3,
     },
     categoryBadge: {
       backgroundColor: theme.primary,
-      borderRadius: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      minWidth: 28,
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      minWidth: 32,
       alignItems: 'center',
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
     },
     categoryBadgeText: {
       color: '#fff',
-      fontSize: 13,
-      fontWeight: 'bold',
+      fontSize: 14,
+      fontWeight: '800',
     },
     
     mealItem: {
-      marginHorizontal: 12,
-      marginTop: 10,
-      backgroundColor: theme.surface,
-      borderRadius: 10,
-      padding: 14,
+      marginHorizontal: 16,
+      marginTop: 12,
+      marginBottom: 4,
+      backgroundColor: theme.background,
+      borderRadius: 12,
+      padding: 16,
       shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
       elevation: 2,
+      borderWidth: 1,
+      borderColor: theme.border,
     },
     mealItemHeader: {
       marginBottom: 12,
@@ -533,50 +567,55 @@ const createStyles = (theme, colorScheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 6,
+      marginBottom: 4,
     },
     mealName: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text,
       flex: 1,
+      letterSpacing: 0.2,
     },
     mealTime: {
       fontSize: 12,
       color: theme.textSecondary,
-      fontWeight: '500',
+      fontWeight: '600',
     },
     mealTypeIcon: {
-      fontSize: 18,
-      marginLeft: 8,
+      fontSize: 20,
+      marginLeft: 10,
     },
     mealNutrition: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.background,
-      borderRadius: 8,
-      padding: 10,
-      gap: 4,
+      backgroundColor: theme.surface,
+      borderRadius: 10,
+      padding: 12,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: theme.border,
     },
     nutritionItem: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: 6,
+      paddingVertical: 4,
     },
     nutritionValue: {
-      fontSize: 15,
-      fontWeight: 'bold',
+      fontSize: 16,
+      fontWeight: '800',
       color: theme.primary,
-      marginBottom: 2,
+      marginBottom: 3,
+      letterSpacing: 0.3,
     },
     nutritionLabel: {
       fontSize: 10,
       color: theme.textSecondary,
       textTransform: 'uppercase',
-      fontWeight: '600',
+      fontWeight: '700',
+      letterSpacing: 0.5,
     },
 
     bottomSpacing: {
-      height: 30,
+      height: 40,
     },
   });

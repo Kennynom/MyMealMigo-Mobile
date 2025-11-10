@@ -3,6 +3,8 @@ import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { getUserMeals } from '@/utils/mealService';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { useCallback, useContext, useState } from 'react';
@@ -86,9 +88,9 @@ export default function LogsMainScreen() {
   // Helper function to get emoji based on meal category
   const getMealEmoji = (category) => {
     const emojiMap = {
-      breakfast: '🌅',
-      lunch: '☀️',
-      dinner: '🌙',
+      breakfast: <MaterialCommunityIcons name="weather-sunset" size={28} color="orangered" />,
+      lunch: <MaterialCommunityIcons name="weather-sunny" size={28} color="orange" />,
+      dinner: <MaterialCommunityIcons name="weather-moonset" size={28} color="royalblue" />,
     };
     return emojiMap[category?.toLowerCase()] || '🍴';
   };
@@ -111,15 +113,20 @@ export default function LogsMainScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Header - Centered like Add */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Meal Logs</Text>
-          <Text style={styles.subtitle}>Track and review your daily nutrition</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Meal Logs</Text>
+          <Text style={styles.headerSubtitle}>Track and review your daily nutrition</Text>
         </View>
       </View>
 
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Main Options */}
       <View style={styles.optionsContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -128,9 +135,10 @@ export default function LogsMainScreen() {
         <TouchableOpacity
           style={styles.optionCard}
           onPress={() => router.push('/(tabs)/(logs)/view-log')}
+          activeOpacity={0.7}
         >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>📋</Text>
+          <View style={[styles.optionIcon, { backgroundColor: theme.primary + '20' }]}>
+            <MaterialIcons name="restaurant-menu" size={32} color={theme.primary} />
           </View>
           <View style={styles.optionContent}>
             <Text style={styles.optionTitle}>View Meal Log</Text>
@@ -150,9 +158,10 @@ export default function LogsMainScreen() {
               params: { tab: 'reflections' },
             })
           }
+          activeOpacity={0.7}
         >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>📝</Text>
+          <View style={[styles.optionIcon, { backgroundColor: '#F38181' + '20' }]}>
+            <MaterialIcons name="edit-note" size={32} color='#F38181' />
           </View>
           <View style={styles.optionContent}>
             <Text style={styles.optionTitle}>View Reflections</Text>
@@ -167,9 +176,10 @@ export default function LogsMainScreen() {
         <TouchableOpacity
           style={styles.optionCard}
           onPress={() => router.push('/(tabs)/(logs)/history')}
+          activeOpacity={0.7}
         >
-          <View style={styles.optionIcon}>
-            <Text style={styles.optionEmoji}>📅</Text>
+          <View style={[styles.optionIcon, { backgroundColor: '#4ECDC4' + '20' }]}>
+            <MaterialIcons name="history" size={32} color='#4ECDC4' />
           </View>
           <View style={styles.optionContent}>
             <Text style={styles.optionTitle}>Meal History</Text>
@@ -209,7 +219,8 @@ export default function LogsMainScreen() {
           </View>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -221,50 +232,40 @@ const createStyles = (theme) =>
     },
     header: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      padding: 20,
-      paddingTop: 60,
-    },
-    headerLeft: {
-      flex: 1,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: theme.text,
-      marginBottom: 4,
-    },
-    subtitle: {
-      fontSize: 16,
-      color: theme.textSecondary,
-    },
-    statsContainer: {
-      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
       paddingHorizontal: 20,
-      gap: 12,
-      marginBottom: 30,
+      paddingTop: 60,
+      paddingBottom: 20,
+      backgroundColor: theme.background,
     },
-    statCard: {
-      flex: 1,
-      backgroundColor: theme.surface,
-      borderRadius: 12,
-      padding: 16,
+    headerCenter: {
       alignItems: 'center',
     },
-    statNumber: {
-      fontSize: 20,
+    headerTitle: {
+      fontSize: 22,
       fontWeight: 'bold',
       color: theme.text,
-      marginBottom: 4,
+      marginBottom: 2,
     },
-    statLabel: {
-      fontSize: 12,
+    headerSubtitle: {
+      fontSize: 13,
       color: theme.textSecondary,
       textAlign: 'center',
     },
-    optionsContainer: {
+    scrollView: {
+      flex: 1,
+      paddingTop: 10,
+    },
+    scrollContent: {
       paddingHorizontal: 20,
+      paddingBottom: 100,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 100,
+    },
+    optionsContainer: {
       marginBottom: 30,
     },
     sectionTitle: {
@@ -274,29 +275,25 @@ const createStyles = (theme) =>
       marginBottom: 15,
     },
     optionCard: {
-      backgroundColor: theme.surface,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 12,
+      backgroundColor: theme.background,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 16,
       flexDirection: 'row',
       alignItems: 'center',
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 3.84,
-      elevation: 5,
     },
     optionIcon: {
-      width: 44,
-      height: 44,
-      backgroundColor: theme.primary,
-      borderRadius: 22,
-      justifyContent: 'center',
+      width: 64,
+      height: 64,
+      borderRadius: 32,
       alignItems: 'center',
+      justifyContent: 'center',
       marginRight: 16,
-    },
-    optionEmoji: {
-      fontSize: 20,
     },
     optionContent: {
       flex: 1,
@@ -318,20 +315,25 @@ const createStyles = (theme) =>
       marginLeft: 8,
     },
     recentContainer: {
-      paddingHorizontal: 20,
-      marginBottom: 20,
+      marginBottom: 30,
     },
     activityCard: {
-      backgroundColor: theme.surface,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 8,
+      backgroundColor: theme.cardBackground || theme.background,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
       flexDirection: 'row',
       alignItems: 'center',
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
     },
     activityEmoji: {
       fontSize: 20,
-      marginRight: 12,
+      marginRight: 20,
+      marginLeft: 10,
     },
     activityContent: {
       flex: 1,
@@ -353,12 +355,15 @@ const createStyles = (theme) =>
       fontStyle: 'italic',
     },
     loadingContainer: {
-      flexDirection: 'row',
+      padding: 24,
       alignItems: 'center',
-      justifyContent: 'center',
-      padding: 20,
-      backgroundColor: theme.surface,
-      borderRadius: 8,
+      backgroundColor: theme.cardBackground || theme.background,
+      borderRadius: 16,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
     loadingText: {
       marginLeft: 10,
@@ -366,10 +371,15 @@ const createStyles = (theme) =>
       color: theme.textSecondary,
     },
     emptyState: {
-      backgroundColor: theme.surface,
-      borderRadius: 12,
       padding: 30,
       alignItems: 'center',
+      backgroundColor: theme.cardBackground || theme.background,
+      borderRadius: 16,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
     emptyEmoji: {
       fontSize: 48,

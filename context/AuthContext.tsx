@@ -3,7 +3,7 @@
 import { db } from "@/config/firebase";
 import type { User } from "firebase/auth";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 type UserRole = 'guest' | 'free' | 'premium' | 'admin' | 'nutritionist';
@@ -60,39 +60,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribeFirestore: (() => void) | null = null;
     const auth = getAuth();
 
-    const unsub = onAuthStateChanged(auth, async (u: User | null) => {
+    const unsubAuth = onAuthStateChanged(auth, async (u: User | null) => {
       if (cancelled) return;
 
       setUser(u);
 
+      // Clean up previous Firestore listener
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+        unsubscribeFirestore = null;
+      }
+
       if (u) {
+        // Set up real-time listener for user document
         try {
-          const snap = await getDoc(doc(db, "users", u.uid));
-          if (!cancelled) {
-            const data = (snap.data() ?? {}) as FirestoreUserDoc;
-            const role = typeof data.role === "string" ? data.role.toLowerCase() : "";
-            const subscriptionPlan = data.subscription?.plan || "";
-            const subscriptionActive = data.subscription?.active || false;
-            
-            // Determine user role based on Firebase data
-            let finalRole: UserRole = 'guest';
-            if (role === 'admin') {
-              finalRole = 'admin';
-            } else if (role === 'nutritionist') {
-              finalRole = 'nutritionist';
-            } else if (role === 'premium') {
-              finalRole = 'premium';
-            } else if (role === 'free') {
-              finalRole = 'free';
-            } else {
-              finalRole = 'guest';
+          const userDocRef = doc(db, "users", u.uid);
+          
+          unsubscribeFirestore = onSnapshot(
+            userDocRef,
+            (snap) => {
+              if (cancelled) return;
+              
+              const data = (snap.data() ?? {}) as FirestoreUserDoc;
+              const role = typeof data.role === "string" ? data.role.toLowerCase() : "";
+              
+              // Determine user role based on Firebase data
+              let finalRole: UserRole = 'guest';
+              if (role === 'admin') {
+                finalRole = 'admin';
+              } else if (role === 'nutritionist') {
+                finalRole = 'nutritionist';
+              } else if (role === 'premium') {
+                finalRole = 'premium';
+              } else if (role === 'free') {
+                finalRole = 'free';
+              } else {
+                finalRole = 'guest';
+              }
+              
+              console.log('🔄 [AUTH] Role updated in real-time:', finalRole);
+              setUserRole(finalRole);
+            },
+            (error) => {
+              console.error('❌ [AUTH] Error listening to user doc:', error);
+              if (!cancelled) setUserRole('guest');
             }
-            
-            setUserRole(finalRole);
-          }
-        } catch {
+          );
+        } catch (error) {
+          console.error('❌ [AUTH] Error setting up listener:', error);
           if (!cancelled) setUserRole('guest');
         }
       } else {
@@ -104,8 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+      }
       try {
-        unsub(); // ensure we detach the listener
+        unsubAuth();
       } catch {
         // ignore
       }

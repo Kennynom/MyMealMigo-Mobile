@@ -4,7 +4,10 @@ import SummaryModal from "@/components/SummaryModal";
 import { useAuth } from "@/context/AuthContext";
 import { useJournal } from "@/context/JournalContext";
 import { ThemeContext } from "@/context/ThemeContext";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { deleteMealAndCalories, getUserMeals } from "@/utils/mealService";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
@@ -27,6 +30,7 @@ import {
 export default function ViewMealLogScreen() {
   const { theme, colorScheme, setColorScheme } = useContext(ThemeContext);
   const { user } = useAuth();
+  const { isPremium } = usePremiumStatus();
   const styles = useMemo(() => createStyles(theme, colorScheme), [theme, colorScheme]);
 
   const { tab: initialTabParam } = useLocalSearchParams();
@@ -156,6 +160,28 @@ export default function ViewMealLogScreen() {
 
   // Handler for selecting an edit method (photo, barcode, manual)
   function handleSelectEditMethod(method) {
+    // Block photo and barcode for free users
+    if (!isPremium && (method === 'photo' || method === 'barcode')) {
+      Alert.alert(
+        '🔒 Premium Feature',
+        `${method === 'photo' ? 'Photo capture' : 'Barcode scanning'} is a premium feature. Upgrade to unlock AI-powered food recognition!`,
+        [
+          {
+            text: 'Upgrade Now',
+            onPress: () => {
+              setShowEditMethodModal(false);
+              router.push('/(tabs)/(home)/(profile)/(subscription)');
+            }
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      return;
+    }
+
     setShowEditMethodModal(false);
 
     if (!selectedMeal) return;
@@ -236,34 +262,28 @@ export default function ViewMealLogScreen() {
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <View style={styles.mainHeader}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Text style={styles.backIcon}>←</Text>
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
 
+        <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>
-            {isMealTab
-              ? "View Meal Log"
-              : "Your Reflections"}
+            {isMealTab ? "View Meal Log" : "Your Reflections"}
           </Text>
-
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={styles.themeButton}
-              onPress={toggleTheme}
-            >
-              <Text style={styles.themeIcon}>
-                {colorScheme === "dark" ? "☀️" : "🌙"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.headerSubtitle}>
+            {isMealTab ? "Track your daily meals and nutrition" : "Review your daily reflections"}
+          </Text>
         </View>
+        
+        <View style={styles.placeholder} />
+      </View>
 
-        {/* TAB SWITCH */}
+      {/* TAB SWITCH */}
+      <View style={styles.tabContainerWrapper}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[
@@ -328,14 +348,17 @@ export default function ViewMealLogScreen() {
                 return (
                   <View key={idx} style={styles.mealCard}>
                     <View style={styles.mealHeader}>
-                      <Text style={styles.mealTitle}>
-                        {categoryLabel} {mealCategory === 'breakfast' ? '🌅' : mealCategory === 'lunch' ? '🌞' : '🌙'}
-                      </Text>
+                      <View style={styles.mealTitleContainer}>
+                        {mealCategory === 'breakfast' ? <MaterialCommunityIcons name="weather-sunset" size={28} color="orangered" /> 
+                        : mealCategory === 'lunch' ? <MaterialCommunityIcons name="weather-sunny" size={28} color="orange" /> 
+                        : <MaterialCommunityIcons name="weather-moonset" size={28} color="royalblue" />}
+                        <Text style={styles.mealTitle}>{categoryLabel}</Text>
+                      </View>
                       <TouchableOpacity
                         style={styles.editButton}
                         onPress={() => handleEditMealCategory(mealCategory)}
                       >
-                        <Text style={styles.editIcon}>✏️</Text>
+                        <MaterialIcons name="edit" size={20} color={theme.primary} />
                       </TouchableOpacity>
                     </View>
 
@@ -459,13 +482,12 @@ export default function ViewMealLogScreen() {
           styles.summaryFab,
           {
             backgroundColor: theme.primary,
-            shadowColor: theme.shadow,
+            shadowColor: theme.primary,
           },
         ]}
       >
-        <Text style={styles.summaryFabText}>
-          Summary
-        </Text>
+        <MaterialIcons name="analytics" size={18} color="#fff" />
+        <Text style={styles.summaryFabText}>Summary</Text>
       </Pressable>
 
       <SummaryModal
@@ -549,26 +571,38 @@ export default function ViewMealLogScreen() {
               <Text style={styles.editMethodSubtitle}>Choose how to edit this meal:</Text>
               
               <TouchableOpacity
-                style={styles.editMethodButton}
+                style={[styles.editMethodButton, !isPremium && styles.editMethodButtonLocked]}
                 onPress={() => handleSelectEditMethod('photo')}
               >
-                <Text style={styles.editMethodIcon}>📸</Text>
-                <Text style={styles.editMethodText}>Take Photo</Text>
+                <View style={[styles.editMethodIconCircle, { backgroundColor: '#4ECDC4' + '20' }]}>
+                  <MaterialIcons name={isPremium ? "linked-camera" : "lock"} size={24} color={isPremium ? '#4ECDC4' : theme.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.editMethodText, !isPremium && styles.editMethodTextLocked]}>Take Photo</Text>
+                  {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.editMethodButton}
+                style={[styles.editMethodButton, !isPremium && styles.editMethodButtonLocked]}
                 onPress={() => handleSelectEditMethod('barcode')}
               >
-                <Text style={styles.editMethodIcon}>📱</Text>
-                <Text style={styles.editMethodText}>Scan Barcode</Text>
+                <View style={[styles.editMethodIconCircle, { backgroundColor: theme.primary + '20' }]}>
+                  <MaterialIcons name={isPremium ? "qr-code-scanner" : "lock"} size={24} color={isPremium ? theme.primary : theme.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.editMethodText, !isPremium && styles.editMethodTextLocked]}>Scan Barcode</Text>
+                  {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.editMethodButton}
                 onPress={() => handleSelectEditMethod('manual')}
               >
-                <Text style={styles.editMethodIcon}>✏️</Text>
+                <View style={[styles.editMethodIconCircle, { backgroundColor: '#F38181' + '20' }]}>
+                  <MaterialIcons name="post-add" size={24} color='#F38181' />
+                </View>
                 <Text style={styles.editMethodText}>Manual Entry</Text>
               </TouchableOpacity>
             </View>
@@ -586,61 +620,74 @@ const createStyles = (theme, colorScheme) =>
       backgroundColor: theme.background,
     },
 
-    mainHeader: {
-      backgroundColor: theme.surface,
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 60,
-      paddingBottom: 15,
+      paddingTop: 20,
+      paddingBottom: 20,
+      backgroundColor: theme.background,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backText: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: '600',
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: theme.text,
+      marginBottom: 2,
+    },
+    headerSubtitle: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    placeholder: {
+      width: 40,
+    },
+    themeButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    themeIcon: {
+      fontSize: 18,
+    },
+
+    tabContainerWrapper: {
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      backgroundColor: theme.background,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    headerContent: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-    },
-    backButton: { padding: 5 },
-    backIcon: {
-      fontSize: 24,
-      color: theme.text,
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: theme.text,
-      flex: 1,
-      textAlign: "center",
-      marginHorizontal: 20,
-    },
-    headerButtons: {
-      flexDirection: "row",
-      gap: 8,
-    },
-    themeButton: {
-      width: 32,
-      height: 32,
-      backgroundColor: theme.inactive,
-      borderRadius: 16,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    themeIcon: {
-      fontSize: 16,
-    },
-    profileButton: {
-      width: 32,
-      height: 32,
-      backgroundColor: theme.primary,
-      borderRadius: 16,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    profileIcon: {
-      color: "#fff",
-      fontSize: 14,
-    },
-
     tabContainer: {
       flexDirection: "row",
       backgroundColor: theme.inactive,
@@ -685,15 +732,15 @@ const createStyles = (theme, colorScheme) =>
     },
 
     mealCard: {
-      backgroundColor: theme.surface,
-      borderRadius: 12,
+      backgroundColor: theme.cardBackground || theme.background,
+      borderRadius: 16,
       padding: 20,
-      marginBottom: 15,
+      marginBottom: 16,
       shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3.84,
-      elevation: 5,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
     },
     mealHeader: {
       flexDirection: "row",
@@ -701,17 +748,28 @@ const createStyles = (theme, colorScheme) =>
       alignItems: "center",
       marginBottom: 15,
     },
+    mealTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
     mealTitle: {
       fontSize: 18,
       fontWeight: "bold",
       color: theme.text,
     },
     editButton: {
-      padding: 5,
-    },
-    editIcon: {
-      fontSize: 16,
-      color: theme.textSecondary,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     chartPlaceholder: {
       backgroundColor: theme.inactive,
@@ -728,17 +786,22 @@ const createStyles = (theme, colorScheme) =>
     },
 
     emptyReflectionCard: {
-      backgroundColor: theme.surface,
-      borderRadius: 12,
+      backgroundColor: theme.cardBackground || theme.background,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: theme.border,
-      padding: 16,
+      padding: 30,
       marginBottom: 16,
       alignItems: "center",
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
     emptyReflectionText: {
       color: theme.textSecondary,
-      fontSize: 14,
+      fontSize: 15,
       textAlign: "center",
     },
 
@@ -782,9 +845,14 @@ const createStyles = (theme, colorScheme) =>
     },
     addButton: {
       backgroundColor: theme.primary,
-      borderRadius: 12,
-      paddingVertical: 15,
+      borderRadius: 16,
+      paddingVertical: 18,
       alignItems: "center",
+      shadowColor: theme.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
     },
     addButtonText: {
       color: "#fff",
@@ -796,30 +864,39 @@ const createStyles = (theme, colorScheme) =>
       position: "absolute",
       right: 20,
       bottom: 110,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
       borderRadius: 999,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      elevation: 5,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      elevation: 8,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
     summaryFabText: {
       color: "#fff",
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: 15,
+      letterSpacing: 0.3,
     },
     
     // Meal item styles
     mealsListContainer: {
-      gap: 10,
+      gap: 12,
     },
     mealItemCard: {
-      backgroundColor: theme.background,
-      borderRadius: 8,
-      padding: 12,
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      padding: 16,
       borderWidth: 1,
       borderColor: theme.border,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     mealItemHeader: {
       flexDirection: 'row',
@@ -847,7 +924,7 @@ const createStyles = (theme, colorScheme) =>
     },
     nutritionText: {
       fontSize: 13,
-      color: theme.primary,
+      color: theme.primaryDark,
       fontWeight: 'bold',
     },
     nutritionDivider: {
@@ -863,28 +940,37 @@ const createStyles = (theme, colorScheme) =>
     },
     modalContainer: {
       backgroundColor: theme.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
       maxHeight: '80%',
-      paddingBottom: 20,
+      paddingBottom: 30,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 8,
     },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: 20,
+      padding: 24,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
     modalTitle: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: 'bold',
       color: theme.text,
     },
     modalCloseButton: {
-      fontSize: 24,
+      fontSize: 28,
       color: theme.textSecondary,
       fontWeight: '300',
+      width: 32,
+      height: 32,
+      textAlign: 'center',
+      lineHeight: 32,
     },
     modalContent: {
       padding: 20,
@@ -896,11 +982,16 @@ const createStyles = (theme, colorScheme) =>
       justifyContent: 'space-between',
       alignItems: 'center',
       backgroundColor: theme.background,
-      borderRadius: 12,
+      borderRadius: 16,
       padding: 16,
       marginBottom: 12,
       borderWidth: 1,
       borderColor: theme.border,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
     mealItemInfo: {
       flex: 1,
@@ -916,11 +1007,16 @@ const createStyles = (theme, colorScheme) =>
       gap: 8,
     },
     actionButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 10,
       minWidth: 70,
       alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
     },
     editActionButton: {
       backgroundColor: theme.primary,
@@ -931,7 +1027,7 @@ const createStyles = (theme, colorScheme) =>
     actionButtonText: {
       color: '#fff',
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: 'bold',
     },
     emptyMealList: {
       padding: 40,
@@ -952,19 +1048,42 @@ const createStyles = (theme, colorScheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.background,
-      borderRadius: 12,
-      padding: 16,
+      borderRadius: 16,
+      padding: 18,
       marginBottom: 12,
       borderWidth: 1,
       borderColor: theme.border,
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
     },
-    editMethodIcon: {
-      fontSize: 24,
+    editMethodButtonLocked: {
+      opacity: 0.5,
+      backgroundColor: theme.surface,
+    },
+    editMethodIconCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
       marginRight: 16,
     },
     editMethodText: {
       fontSize: 16,
       fontWeight: '600',
       color: theme.text,
+    },
+    editMethodTextLocked: {
+      color: theme.textSecondary,
+    },
+    premiumBadge: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.primary,
+      marginTop: 2,
+      letterSpacing: 0.5,
     },
   });
