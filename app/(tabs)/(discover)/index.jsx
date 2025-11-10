@@ -91,7 +91,7 @@ export default function DiscoverMainScreen() {
         <View style={styles.featuredSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured Today</Text>
-            <MaterialIcons name="local-fire-department" size={20} color={theme.primary} />
+            <MaterialIcons name="local-fire-department" size={20} color={theme.warning} />
           </View>
           
           {featuredMeals.map((meal) => (
@@ -103,7 +103,7 @@ export default function DiscoverMainScreen() {
                 <Text style={styles.featuredTitle}>{meal.title}</Text>
                 <Text style={styles.featuredSubtitle}>{meal.subtitle}</Text>
                 <View style={styles.calorieTag}>
-                  <MaterialIcons name="local-fire-department" size={14} color={theme.primary} />
+                  <MaterialIcons name="local-fire-department" size={14} color={theme.warning} />
                   <Text style={styles.featuredCalories}>{meal.calories} kcal</Text>
                 </View>
               </View>
@@ -246,7 +246,7 @@ const createStyles = (theme) => StyleSheet.create({
   },
   featuredCalories: {
     fontSize: 13,
-    color: theme.primary,
+    color: theme.primaryDark,
     fontWeight: '600',
   },
 });
