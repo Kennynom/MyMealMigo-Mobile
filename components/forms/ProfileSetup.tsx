@@ -1,5 +1,6 @@
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { arrayUnion, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
@@ -7,6 +8,7 @@ import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Text, 
 
 export default function ProfileSetup({ onComplete }: { onComplete?: () => void }) {
   const { user } = useAuth();
+  const { theme } = useTheme() as any;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -272,8 +274,10 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
   const handleBack = () => { if (page > 0) onScrollToPage(page - 1); };
 
+  const styles = createStyles(theme);
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       {/* Progress Tracker */}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>Step {page + 1} of {PAGES}</Text>
@@ -308,11 +312,11 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             <View style={{ width: PAGE_WIDTH - 32 }}>
               <Text style={styles.sectionTitle}>Basic info</Text>
               <Text style={styles.label}>Account Name <Text style={styles.required}>*</Text></Text>
-              <TextInput value={displayName} onChangeText={setDisplayName} style={styles.input} placeholderTextColor="#9ca3af" />
+              <TextInput value={displayName} onChangeText={setDisplayName} style={styles.input} placeholderTextColor={theme.textSecondary} />
 
             <Text style={styles.label}>Birthday <Text style={styles.required}>*</Text></Text>
             <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input,{justifyContent:'center'}]}>
-              <Text style={{color: '#ffffff'}}>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
+              <Text style={{color: theme.text}}>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -332,12 +336,12 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             <View style={styles.row}>
               <View style={{flex:1}}>
                 <Text style={styles.label}>Height (cm) <Text style={styles.required}>*</Text></Text>
-                <TextInput value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" style={styles.input} placeholderTextColor="#9ca3af" />
+                <TextInput value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" style={styles.input} placeholderTextColor={theme.textSecondary} />
               </View>
               <View style={{width:12}} />
               <View style={{flex:1}}>
                 <Text style={styles.label}>Weight (kg) <Text style={styles.required}>*</Text></Text>
-                <TextInput value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" style={styles.input} placeholderTextColor="#9ca3af" />
+                <TextInput value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" style={styles.input} placeholderTextColor={theme.textSecondary} />
               </View>
             </View>
 
@@ -435,7 +439,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {allergiesItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other allergies here:</Text>
-                <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" placeholderTextColor="#9ca3af" />
+                <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" placeholderTextColor={theme.textSecondary} />
               </>
             ) : null}
 
@@ -481,7 +485,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {conditionsItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other conditions here:</Text>
-                <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" placeholderTextColor="#9ca3af" />
+                <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" placeholderTextColor={theme.textSecondary} />
               </>
             ) : null}
             
@@ -526,12 +530,12 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {injuriesItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other injuries here:</Text>
-                <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" placeholderTextColor="#9ca3af" />
+                <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" placeholderTextColor={theme.textSecondary} />
               </>
             ) : null}
 
               <Text style={[styles.label,{marginTop:12}]}>Medications</Text>
-              <TextInput value={medicationsList} onChangeText={setMedicationsList} style={styles.input} placeholder="List medications (comma separated)" placeholderTextColor="#9ca3af" />
+              <TextInput value={medicationsList} onChangeText={setMedicationsList} style={styles.input} placeholder="List medications (comma separated)" placeholderTextColor={theme.textSecondary} />
             </View>
           </ScrollView>
         </View>
@@ -558,36 +562,174 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16 },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 12, color: '#ffffff' },
-  titleCenter: { fontSize: 18, fontWeight: '700', textAlign: 'center', paddingTop: 12, paddingBottom: 8, color: '#ffffff' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8, color: '#ffffff' },
-  progressContainer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
-  progressText: { fontSize: 13, fontWeight: '600', color: '#9ca3af', marginBottom: 8, textAlign: 'center' },
-  progressBarContainer: { height: 4, backgroundColor: '#e5e7eb', borderRadius: 2, overflow: 'hidden' },
-  progressBar: { height: '100%', backgroundColor: '#059669', borderRadius: 2 },
-  // page itself should not add horizontal padding; inner ScrollView provides padding
-  page: { paddingTop: 16, paddingBottom: 16, flexShrink: 0, height: '100%', justifyContent: 'flex-start' },
-  label: { fontSize: 13, color: '#ffffff', marginTop: 8 },
-  required: { color: '#ef4444', fontWeight: '700' },
-  input: { borderWidth: 1, borderColor: '#4b5563', padding: 10, borderRadius: 8, marginTop: 6, color: '#ffffff', backgroundColor: '#1f2937' },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, marginTop: 8 },
-  pillActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  pillText: { color: '#ffffff' },
-  pillTextActive: { color: '#fff' },
-  button: { backgroundColor: '#059669', padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 18 },
-  buttonDisabled: { backgroundColor: '#9ca3af' },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  pagerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 12 },
-  dot: { width: 8, height: 8, borderRadius: 8, backgroundColor: '#d1d5db', marginHorizontal: 6 },
-  dotActive: { backgroundColor: '#111827' },
-  navRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12 },
-  navButton: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', minWidth: 100, alignItems: 'center' },
-  navButtonDisabled: { opacity: 0.5 },
-  navButtonPrimary: { padding: 12, borderRadius: 8, backgroundColor: '#059669', minWidth: 140, alignItems: 'center' },
-  navText: { color: '#111827', fontWeight: '600' },
-  navTextPrimary: { color: '#fff', fontWeight: '700' },
-  err: { color: '#ef4444', marginBottom: 8 }
+const createStyles = (theme: any) => StyleSheet.create({
+  container: { 
+    padding: 16,
+    backgroundColor: theme.background,
+  },
+  title: { 
+    fontSize: 20, 
+    fontWeight: '700', 
+    marginBottom: 12,
+    color: theme.text,
+  },
+  titleCenter: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    textAlign: 'center', 
+    paddingTop: 12, 
+    paddingBottom: 8,
+    color: theme.text,
+  },
+  sectionTitle: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    marginBottom: 8,
+    color: theme.text,
+  },
+  progressContainer: { 
+    paddingHorizontal: 16, 
+    paddingTop: 12, 
+    paddingBottom: 8,
+  },
+  progressText: { 
+    fontSize: 13, 
+    fontWeight: '600', 
+    color: theme.textSecondary, 
+    marginBottom: 8, 
+    textAlign: 'center',
+  },
+  progressBarContainer: { 
+    height: 4, 
+    backgroundColor: theme.border, 
+    borderRadius: 2, 
+    overflow: 'hidden',
+  },
+  progressBar: { 
+    height: '100%', 
+    backgroundColor: theme.secondary, 
+    borderRadius: 2,
+  },
+  page: { 
+    paddingTop: 16, 
+    paddingBottom: 16, 
+    flexShrink: 0, 
+    height: '100%', 
+    justifyContent: 'flex-start',
+  },
+  label: { 
+    fontSize: 13, 
+    color: theme.text, 
+    marginTop: 8,
+  },
+  required: { 
+    color: theme.error, 
+    fontWeight: '700',
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: theme.border, 
+    backgroundColor: theme.surface,
+    color: theme.text,
+    padding: 10, 
+    borderRadius: 8, 
+    marginTop: 6,
+  },
+  row: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+  },
+  pill: { 
+    paddingHorizontal: 10, 
+    paddingVertical: 6, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: theme.border, 
+    backgroundColor: theme.surface,
+    marginRight: 8, 
+    marginTop: 8,
+  },
+  pillActive: { 
+    backgroundColor: theme.primary, 
+    borderColor: theme.primary,
+  },
+  pillText: { 
+    color: theme.text,
+  },
+  pillTextActive: { 
+    color: theme.altText,
+  },
+  button: { 
+    backgroundColor: theme.secondary, 
+    padding: 14, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 18,
+  },
+  buttonDisabled: { 
+    backgroundColor: theme.inactive, 
+    opacity: 0.5,
+  },
+  buttonText: { 
+    color: theme.altText, 
+    fontWeight: '700',
+  },
+  pagerRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    marginTop: 12,
+  },
+  dot: { 
+    width: 8, 
+    height: 8, 
+    borderRadius: 8, 
+    backgroundColor: theme.border, 
+    marginHorizontal: 6,
+  },
+  dotActive: { 
+    backgroundColor: theme.primary,
+  },
+  navRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    padding: 12,
+    backgroundColor: theme.background,
+  },
+  navButton: { 
+    padding: 12, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: theme.border, 
+    backgroundColor: theme.surface,
+    minWidth: 100, 
+    alignItems: 'center',
+  },
+  navButtonDisabled: { 
+    opacity: 0.5,
+  },
+  navButtonPrimary: { 
+    padding: 12, 
+    borderRadius: 8, 
+    backgroundColor: theme.secondary, 
+    minWidth: 140, 
+    alignItems: 'center',
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  navText: { 
+    color: theme.text, 
+    fontWeight: '600',
+  },
+  navTextPrimary: { 
+    color: theme.altText, 
+    fontWeight: '700',
+  },
+  err: { 
+    color: theme.error, 
+    marginBottom: 8,
+    textAlign: 'center',
+  },
 });
