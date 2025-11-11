@@ -1,9 +1,12 @@
+import { ThemeContext } from '@/context/ThemeContext';
 import { useRouter } from 'expo-router';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
+    const { theme } = useContext(ThemeContext) as any;
+    const styles = createStyles(theme);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -36,7 +39,6 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
         <View style={styles.container}>
             <View style={styles.loginCard}>
                 <View style={styles.header}>
-                    <Text style={styles.logo}>MyMealMigo</Text>
                     <Text style={styles.subtitle}>Your Personal Meal Assistant</Text>
                 </View>
 
@@ -48,7 +50,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                             value={email}
                             onChangeText={setEmail}
                             placeholder="Enter your email"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor={theme.textSecondary}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
@@ -62,7 +64,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                             value={password}
                             onChangeText={setPassword}
                             placeholder="Enter your password"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor={theme.textSecondary}
                             secureTextEntry
                             autoComplete="password"
                         />
@@ -84,8 +86,8 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 
                     {Platform.OS !== 'web' ? (
                         <>
-                            <TouchableOpacity style={styles.loginButton} onPress={() => router.push({ pathname: '/(auth)/signup' } as any)}>
-                                <Text style={styles.loginButtonText}>Sign Up</Text>
+                            <TouchableOpacity style={styles.signupButton} onPress={() => router.push({ pathname: '/(auth)/signup' } as any)}>
+                                <Text style={styles.signupButtonText}>Sign Up</Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity style={styles.guestButton} onPress={() => onSuccess?.()}>
@@ -98,29 +100,12 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
                     )}
 
                 </View>
-                
-                {Platform.OS === 'web' ? (
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>
-                            For admin and nutritionist access only
-                        </Text>
-                    </View>
-                ) : (
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>
-                            Terms of Service | Privacy Policy
-                        </Text>
-                        <Text style={styles.footerText}>
-                            © 2025 MyMealMigo
-                        </Text>
-                    </View>
-                )}
             </View>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
@@ -131,89 +116,89 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
-    },
-    logo: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#059669',
-        marginBottom: 8,
+        marginBottom: 28,
     },
     subtitle: {
-        fontSize: 16,
-        color: '#6b7280',
+        fontSize: 15,
+        color: theme.textSecondary,
         textAlign: 'center',
+        fontWeight: '500',
     },
     form: {
-        gap: 20,
+        gap: 16,
     },
     inputGroup: {
-        gap: 8,
+        gap: 6,
     },
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: theme.text,
         marginBottom: 4,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ffffff',
-        borderRadius: 8,
+        borderColor: theme.border,
+        backgroundColor: theme.surface,
+        borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 14,
         fontSize: 16,
-        color: '#1f2937',
-        backgroundColor: '#ffffff',
-        ...Platform.select({
-            web: {
-                outlineStyle: 'none',
-                borderColor: '#ffffff',
-                ':focus': {
-                    borderColor: '#059669',
-                    outlineStyle: 'none',
-                },
-            },
-        }),
+        color: theme.text,
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 3,
+        elevation: 1,
     },
     inputError: {
-        borderColor: '#ef4444',
+        borderColor: theme.error,
     },
     errorText: {
-        color: '#ef4444',
-        fontSize: 14,
+        color: theme.error,
+        fontSize: 13,
         textAlign: 'center',
-        marginTop: -8,
+        marginTop: -6,
     },
     loginButton: {
-        backgroundColor: '#059669',
-        borderRadius: 8,
+        backgroundColor: theme.primary,
+        borderRadius: 16,
         paddingVertical: 16,
         alignItems: 'center',
         marginTop: 8,
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
     },
     loginButtonDisabled: {
-        backgroundColor: '#9ca3af',
+        backgroundColor: theme.textSecondary,
+        opacity: 0.6,
     },
     loginButtonText: {
-        color: '#ffffff',
+        color: theme.altText,
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: 'bold',
+        letterSpacing: 0.3,
     },
-    footer: {
-        marginTop: 24,
-        paddingTop: 24,
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
+    signupButton: {
+        backgroundColor: theme.secondary,
+        borderRadius: 16,
+        paddingVertical: 16,
         alignItems: 'center',
+        marginTop: 4,
+        shadowColor: theme.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    footerText: {
-        fontSize: 12,
-        color: '#9ca3af',
-        textAlign: 'center',
-    },
-    guestLoginText: {
-        marginTop: 16,
+    signupButtonText: {
+        color: theme.altText,
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.3,
     },
     guestButton: {
         marginTop: 12,
@@ -222,7 +207,8 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     guestButtonText: {
-        color: '#374151',
-        fontSize: 16,
+        color: theme.textSecondary,
+        fontSize: 15,
+        fontWeight: '600',
     },
 });

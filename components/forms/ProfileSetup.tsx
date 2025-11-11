@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { arrayUnion, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileSetup({ onComplete }: { onComplete?: () => void }) {
   const { user } = useAuth();
@@ -17,12 +17,11 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [heightCm, setHeightCm] = useState<string>('');
   const [weightKg, setWeightKg] = useState<string>('');
-  const [sex, setSex] = useState<'male'|'female'|'other'>('other');
+  const [sex, setSex] = useState<'male'|'female'|''>('');
   const [goal, setGoal] = useState('');
   const [preferredIntensity, setPreferredIntensity] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
-  const [shareWithCoach, setShareWithCoach] = useState(false);
   // use arrays for multi-select choices
   const [allergiesItems, setAllergiesItems] = useState<string[]>([]);
   const [allergiesOther, setAllergiesOther] = useState('');
@@ -36,24 +35,11 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
   const [medicationsList, setMedicationsList] = useState<string>('');
 
-  const [parqNotes, setParqNotes] = useState('');
-  const [parq, setParq] = useState({ q1_chestPain: false, q2_dizziness: false, q3_boneJointProblem: false, q4_prescriptionMeds: false, q5_heartCondition: false, q6_bloodPressureIssue: false, q7_otherReason: false });
-  const [parqRiskLevel, setParqRiskLevel] = useState<'low'|'medium'|'high'>('low');
-
-  const [constraintHeat, setConstraintHeat] = useState(true);
-  const [constraintHiImpact, setConstraintHiImpact] = useState(true);
-  const [constraintOverhead, setConstraintOverhead] = useState(true);
-  // constraints extras
-  const [dietPlan, setDietPlan] = useState('');
-  const [dietNotes, setDietNotes] = useState('');
-  const [mealPrepTime, setMealPrepTime] = useState('');
-  const [budget, setBudget] = useState('');
-
   // Horizontal paged wizard hooks must be declared unconditionally before any return
   const scrollRef = useRef<ScrollView | null>(null);
   const PAGE_WIDTH = Dimensions.get('window').width;
   const [page, setPage] = useState(0);
-  const PAGES = 4;
+  const PAGES = 3;
 
   useEffect(() => {
     let cancelled = false;
@@ -71,20 +57,16 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
         if (cancelled) return;
 
         setDisplayName(ud.name ?? user.displayName ?? '');
-  const birthdayFromUser = (ud.profile && ud.profile.birthday) ?? '';
-  setBirthday(birthdayFromUser as string);
-  setBirthdayDate(birthdayFromUser ? new Date(birthdayFromUser) : null);
+        const birthdayFromUser = (ud.profile && ud.profile.birthday) ?? '';
+        setBirthday(birthdayFromUser as string);
+        setBirthdayDate(birthdayFromUser ? new Date(birthdayFromUser) : null);
         setHeightCm(String(hp?.demographics?.heightCm ?? ud.profile?.heightCm ?? ''));
         setWeightKg(String(hp?.demographics?.weightKg ?? ud.profile?.weightKg ?? ''));
-        setSex(hp?.demographics?.sexAtBirth === 'male' || hp?.demographics?.sexAtBirth === 'female' ? hp.demographics.sexAtBirth : (ud.profile?.sex ?? 'other'));
+        setSex(hp?.demographics?.sexAtBirth === 'male' || hp?.demographics?.sexAtBirth === 'female' ? hp.demographics.sexAtBirth : (ud.profile?.sex === 'male' || ud.profile?.sex === 'female' ? ud.profile.sex : ''));
         setGoal(hp?.fitness?.goal ?? '');
         setPreferredIntensity(hp?.fitness?.preferredIntensity ?? '');
         setEquipment(hp?.fitness?.equipment ?? []);
         setNotes(hp?.constraints?.notes ?? '');
-        setDietPlan(hp?.constraints?.dietPlan ?? '');
-        setDietNotes(hp?.constraints?.dietPlanNotes ?? '');
-        setMealPrepTime(hp?.constraints?.mealPrepTime ?? '');
-        setBudget(hp?.constraints?.budget ?? '');
 
         // allergies/conditions/injuries
         setAllergiesItems(hp?.allergies?.items ?? []);
@@ -97,24 +79,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
         setInjuriesItems(hp?.injuries?.items ?? []);
         setInjuriesNotes(hp?.injuries?.notes ?? '');
         setMedicationsList((hp?.medications ?? []).join(', '));
-
-        setParqNotes(hp?.parqPlus?.notes ?? '');
-        setParqRiskLevel(hp?.parqPlus?.riskLevel ?? 'low');
-        setParq((p) => ({
-          ...p,
-          q1_chestPain: hp?.parqPlus?.q1_chestPain ?? false,
-          q2_dizziness: hp?.parqPlus?.q2_dizziness ?? false,
-          q3_boneJointProblem: hp?.parqPlus?.q3_boneJointProblem ?? false,
-          q4_prescriptionMeds: hp?.parqPlus?.q4_prescriptionMeds ?? false,
-          q5_heartCondition: hp?.parqPlus?.q5_heartCondition ?? false,
-          q6_bloodPressureIssue: hp?.parqPlus?.q6_bloodPressureIssue ?? false,
-          q7_otherReason: hp?.parqPlus?.q7_otherReason ?? false,
-        }));
-
-        setConstraintHeat(hp?.constraints?.heat ?? true);
-        setConstraintHiImpact(hp?.constraints?.hiImpact ?? true);
-        setConstraintOverhead(hp?.constraints?.overheadLifts ?? true);
-        setShareWithCoach(hp?.consent?.shareWithCoach ?? false);
       } catch (e: any) {
         setErr(e.message || 'Failed to load profile');
       } finally {
@@ -134,6 +98,29 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
   const save = async () => {
     if (!user) return;
+    
+    // Validation: Check required fields
+    if (!displayName || !displayName.trim()) {
+      setErr('Name is required');
+      return;
+    }
+    if (!birthday) {
+      setErr('Birthday is required');
+      return;
+    }
+    if (!heightCm || !heightCm.trim()) {
+      setErr('Height is required');
+      return;
+    }
+    if (!weightKg || !weightKg.trim()) {
+      setErr('Weight is required');
+      return;
+    }
+    if (!sex || (sex !== 'male' && sex !== 'female')) {
+      setErr('Sex is required');
+      return;
+    }
+    
     setSaving(true);
     setErr(null);
     try {
@@ -157,7 +144,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           age: age,
           heightCm: heightCm ? Number(heightCm) : null,
           weightKg: weightKg ? Number(weightKg) : null,
-          sex: sex || 'other',
+          sex: sex,
           updatedAt: serverTimestamp(),
         },
         updatedAt: serverTimestamp(),
@@ -165,7 +152,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
       const hpRef = doc(db, 'users', user.uid, 'private', 'health_profile');
       const birthYear = birthday ? new Date(birthday).getFullYear() : undefined;
-      const sexAtBirth = sex === 'male' || sex === 'female' ? sex : 'prefer_not_to_say';
+      const sexAtBirth = sex;
 
       await setDoc(hpRef, {
         fitness: {
@@ -173,16 +160,9 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           ...(preferredIntensity ? { preferredIntensity } : {}),
           ...(equipment && equipment.length ? { equipment } : {}),
         },
-        // constraints: notes, diet, meal prep and budget
+        // constraints: only keep notes if any
         constraints: {
           ...(notes ? { notes } : {}),
-          heat: constraintHeat,
-          hiImpact: constraintHiImpact,
-          overheadLifts: constraintOverhead,
-          ...(dietPlan ? { dietPlan } : {}),
-          ...(dietNotes ? { dietPlanNotes: dietNotes } : {}),
-          ...(mealPrepTime ? { mealPrepTime } : {}),
-          ...(budget ? { budget } : {}),
         },
         // allergies/conditions/injuries/meds
         allergies: {
@@ -199,20 +179,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           notes: injuriesNotes ?? '',
         },
         medications: (medicationsList || '') ? medicationsList.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        parqPlus: {
-          notes: parqNotes ?? '',
-          q1_chestPain: !!parq.q1_chestPain,
-          q2_dizziness: !!parq.q2_dizziness,
-          q3_boneJointProblem: !!parq.q3_boneJointProblem,
-          q4_prescriptionMeds: !!parq.q4_prescriptionMeds,
-          q5_heartCondition: !!parq.q5_heartCondition,
-          q6_bloodPressureIssue: !!parq.q6_bloodPressureIssue,
-          q7_otherReason: !!parq.q7_otherReason,
-          riskLevel: parqRiskLevel,
-        },
-        consent: {
-          shareWithCoach,
-        },
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
@@ -257,9 +223,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   const COMMON_ALLERGIES = ['peanuts','shellfish','milk','eggs','soy','wheat','tree_nuts','fish','sesame'];
   const COMMON_CONDITIONS = ['asthma','diabetes','hypertension','thyroid','anxiety','depression','eczema'];
   const COMMON_INJURIES = ['knee','shoulder','back','ankle','hip'];
-  const DIET_PLANS = ['low-carb','vegetarian','vegan','paleo','keto','mediterranean','alkaline','flexitarian','no_preference'];
-  const MEAL_PREP = ['0-10min','10-20min','>20min'];
-  const BUDGETS = ['low','medium','high'];
 
   const toggleArray = (arr: string[], setArr: (v: any) => void, key: string) => {
     setArr((cur: string[]) => {
@@ -277,6 +240,32 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   };
 
   const handleNext = () => {
+    // Validate Page 1 fields before allowing navigation to Page 2
+    if (page === 0) {
+      if (!displayName || !displayName.trim()) {
+        setErr('Name is required');
+        return;
+      }
+      if (!birthday) {
+        setErr('Birthday is required');
+        return;
+      }
+      if (!heightCm || !heightCm.trim()) {
+        setErr('Height is required');
+        return;
+      }
+      if (!weightKg || !weightKg.trim()) {
+        setErr('Weight is required');
+        return;
+      }
+      if (!sex || (sex !== 'male' && sex !== 'female')) {
+        setErr('Sex is required');
+        return;
+      }
+      // Clear error if all validations pass
+      setErr(null);
+    }
+    
     if (page < PAGES - 1) onScrollToPage(page + 1);
     else save();
   };
@@ -285,6 +274,14 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Progress Tracker */}
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>Step {page + 1} of {PAGES}</Text>
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${((page + 1) / PAGES) * 100}%` }]} />
+        </View>
+      </View>
+      
       <Text style={styles.titleCenter}>Set up your health profile</Text>
       {err ? <Text style={styles.err}>{err}</Text> : null}
       <ScrollView
@@ -310,10 +307,10 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           <ScrollView style={{flex:1}} contentContainerStyle={{paddingBottom:60, paddingLeft:0, paddingRight:16}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
             <View style={{ width: PAGE_WIDTH - 32 }}>
               <Text style={styles.sectionTitle}>Basic info</Text>
-              <Text style={styles.label}>Account Name</Text>
+              <Text style={styles.label}>Account Name <Text style={styles.required}>*</Text></Text>
               <TextInput value={displayName} onChangeText={setDisplayName} style={styles.input} />
 
-            <Text style={styles.label}>Birthday</Text>
+            <Text style={styles.label}>Birthday <Text style={styles.required}>*</Text></Text>
             <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input,{justifyContent:'center'}]}>
               <Text>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
             </TouchableOpacity>
@@ -334,18 +331,18 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
             <View style={styles.row}>
               <View style={{flex:1}}>
-                <Text style={styles.label}>Height (cm)</Text>
+                <Text style={styles.label}>Height (cm) <Text style={styles.required}>*</Text></Text>
                 <TextInput value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" style={styles.input} />
               </View>
               <View style={{width:12}} />
               <View style={{flex:1}}>
-                <Text style={styles.label}>Weight (kg)</Text>
+                <Text style={styles.label}>Weight (kg) <Text style={styles.required}>*</Text></Text>
                 <TextInput value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" style={styles.input} />
               </View>
             </View>
 
-              <Text style={styles.label}>Sex</Text>
-              <View style={styles.row}>{['male','female','other'].map((s) => (
+              <Text style={styles.label}>Sex <Text style={styles.required}>*</Text></Text>
+              <View style={styles.row}>{['male','female'].map((s) => (
                 <TouchableOpacity key={s} onPress={() => setSex(s as any)} style={[styles.pill, sex===s && styles.pillActive]}>
                   <Text style={sex===s?styles.pillTextActive:styles.pillText}>{s}</Text>
                 </TouchableOpacity>
@@ -539,108 +536,6 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           </ScrollView>
         </View>
 
-        {/* Page 4 - PAR-Q and Constraints */}
-        <View style={[styles.page, { width: PAGE_WIDTH }]}> 
-          <ScrollView style={{flex:1}} contentContainerStyle={{paddingBottom:80, paddingLeft:0, paddingRight:16}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-            <View style={{ width: PAGE_WIDTH - 32 }}>
-              <Text style={styles.sectionTitle}>Health screen & constraints</Text>
-            <Text style={[styles.label,{marginTop:8}]}>PAR-Q+</Text>
-            <View style={{marginTop:8}}>
-              {[
-                {k:'q1_chestPain', t:'Chest pain during activity'},
-                {k:'q2_dizziness', t:'Dizziness / fainting'},
-                {k:'q3_boneJointProblem', t:'Bone/joint problems'},
-                {k:'q4_prescriptionMeds', t:'Taking prescription meds'},
-                {k:'q5_heartCondition', t:'Known heart condition'},
-                {k:'q6_bloodPressureIssue', t:'Blood pressure issues'},
-                {k:'q7_otherReason', t:'Other reason to be cautious'},
-              ].map((it) => (
-                <View key={it.k} style={{flexDirection:'row',alignItems:'center',marginTop:6}}>
-                  <Switch value={(parq as any)[it.k]} onValueChange={(v) => setParq((p) => ({ ...p, [it.k]: v }))} />
-                  <Text style={{marginLeft:8}}>{it.t}</Text>
-                </View>
-              ))}
-            </View>
-            
-            {(parq as any).q7_otherReason ? (
-              <>
-                <Text style={[styles.label,{marginTop:8}]}>State other reason here:</Text>
-                <TextInput value={parqNotes} onChangeText={setParqNotes} style={styles.input} placeholder="Notes" />
-              </>
-            ) : null}
-
-            <Text style={[styles.label,{marginTop:12}]}>Constraints</Text>
-            <View style={{flexDirection:'row',alignItems:'center',marginTop:6}}>
-              <Switch value={constraintHeat} onValueChange={setConstraintHeat} />
-              <Text style={{marginLeft:8}}>Avoid high heat</Text>
-            </View>
-            <View style={{flexDirection:'row',alignItems:'center',marginTop:6}}>
-              <Switch value={constraintHiImpact} onValueChange={setConstraintHiImpact} />
-              <Text style={{marginLeft:8}}>Avoid high-impact</Text>
-            </View>
-            <View style={{flexDirection:'row',alignItems:'center',marginTop:6}}>
-              <Switch value={constraintOverhead} onValueChange={setConstraintOverhead} />
-              <Text style={{marginLeft:8}}>Avoid overhead lifts</Text>
-            </View>
-
-            <Text style={[styles.label,{marginTop:12}]}>Diet plan</Text>
-            <View style={{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8}}>
-              {DIET_PLANS.map((d) => (
-                <TouchableOpacity key={d} onPress={() => setDietPlan(d)} style={[styles.pill, dietPlan===d && styles.pillActive]}>
-                  <Text style={dietPlan===d?styles.pillTextActive:styles.pillText}>{d.replace(/_/g,' ')}</Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Other pill for diet */}
-              <TouchableOpacity
-                key="Other"
-                onPress={() => {
-                  if (dietPlan === 'Other') {
-                    setDietPlan(''); // clear selection
-                    setDietNotes('');
-                  } else {
-                    setDietPlan('Other');
-                  }
-                }}
-                style={[styles.pill, dietPlan === 'Other' && styles.pillActive]}
-              >
-                <Text style={dietPlan === 'Other' ? styles.pillTextActive : styles.pillText}>Other</Text>
-              </TouchableOpacity>
-            </View>
-
-            {dietPlan === 'Other' ? (
-              <>
-                <Text style={[styles.label,{marginTop:8}]}>State other diet plan here:</Text>
-                <TextInput value={dietNotes} onChangeText={setDietNotes} style={styles.input} placeholder="Notes about diet" />
-              </>
-            ) : null}
-
-            <Text style={[styles.label,{marginTop:12}]}>Meal prep preferred time</Text>
-            <View style={{flexDirection:'row',gap:8,marginTop:8}}>
-              {MEAL_PREP.map((m) => (
-                <TouchableOpacity key={m} onPress={() => setMealPrepTime(m)} style={[styles.pill, mealPrepTime===m && styles.pillActive]}>
-                  <Text style={mealPrepTime===m?styles.pillTextActive:styles.pillText}>{m}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.label,{marginTop:12}]}>Budget</Text>
-            <View style={{flexDirection:'row',gap:8,marginTop:8}}>
-              {BUDGETS.map((b) => (
-                <TouchableOpacity key={b} onPress={() => setBudget(b)} style={[styles.pill, budget===b && styles.pillActive]}>
-                  <Text style={budget===b?styles.pillTextActive:styles.pillText}>{b}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-              <View style={{flexDirection:'row',alignItems:'center',marginTop:12}}>
-                <Switch value={shareWithCoach} onValueChange={setShareWithCoach} />
-                <Text style={{marginLeft:8}}>Share with coach</Text>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-
       </ScrollView>
 
       {/* pagination dots */}
@@ -668,9 +563,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
   titleCenter: { fontSize: 18, fontWeight: '700', textAlign: 'center', paddingTop: 12, paddingBottom: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  progressContainer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  progressText: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginBottom: 8, textAlign: 'center' },
+  progressBarContainer: { height: 4, backgroundColor: '#e5e7eb', borderRadius: 2, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: '#059669', borderRadius: 2 },
   // page itself should not add horizontal padding; inner ScrollView provides padding
   page: { paddingTop: 16, paddingBottom: 16, flexShrink: 0, height: '100%', justifyContent: 'flex-start' },
   label: { fontSize: 13, color: '#374151', marginTop: 8 },
+  required: { color: '#ef4444', fontWeight: '700' },
   input: { borderWidth: 1, borderColor: '#e5e7eb', padding: 10, borderRadius: 8, marginTop: 6 },
   row: { flexDirection: 'row', alignItems: 'center' },
   pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, marginTop: 8 },
