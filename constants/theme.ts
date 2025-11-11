@@ -22,7 +22,7 @@ export const Colors = {
     inactive: '#f8f8f8',
     card: '#fff',
     transparent: 'transparent',
-    translucent: '#FFFFFF86',
+    translucent: '#FFFFFFED',
     altText: '#fff',
     tab: '#fff',
     
@@ -60,7 +60,7 @@ export const Colors = {
     inactive: '#404040',
     card: '#2d2d2d',
     transparent: 'transparent',
-    translucent: '#38383883',
+    translucent: '#383838EF',
     altText: '#000000',
     tab: '#212324',
     

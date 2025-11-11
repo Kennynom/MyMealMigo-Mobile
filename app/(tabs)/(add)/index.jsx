@@ -5,7 +5,7 @@ import { checkCalorieGoalExceedance, getUserMeals, logMealToFirebase, updateCalo
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useContext, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AddMealMainScreen() {
   const { theme } = useContext(ThemeContext);
@@ -294,16 +294,24 @@ export default function AddMealMainScreen() {
             onPress={handlePhotoCapture}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconCircle, { backgroundColor: '#4ECDC4' + '20' }]}>
-              <MaterialIcons name={isPremium ? "linked-camera" : "lock"} size={32} color={isPremium ? '#4ECDC4' : theme.textSecondary} />
-            </View>
-            <View style={styles.actionContent}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Take Photo</Text>
-                {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+            <ImageBackground
+              source={require('@/assets/images/takephoto.png')}
+              style={styles.actionCardBackground}
+              imageStyle={styles.actionCardImage}
+            >
+              <View style={styles.actionCardOverlay}>
+                <View style={[styles.iconCircle, { backgroundColor: '#4ECDC4' + '20' }]}>
+                  <MaterialIcons name={isPremium ? "linked-camera" : "lock"} size={32} color={isPremium ? '#4ECDC4' : theme.textSecondary} />
+                </View>
+                <View style={styles.actionContent}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Take Photo</Text>
+                    {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+                  </View>
+                  <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Snap a pic and let AI analyze your meal</Text>
+                </View>
               </View>
-              <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Snap a pic and let AI analyze your meal</Text>
-            </View>
+            </ImageBackground>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -311,16 +319,24 @@ export default function AddMealMainScreen() {
             onPress={handleBarcodeScan}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconCircle, { backgroundColor: theme.primary + '20' }]}>
-              <MaterialIcons name={isPremium ? "qr-code-scanner" : "lock"} size={32} color={isPremium ? theme.primary : theme.textSecondary} />
-            </View>
-            <View style={styles.actionContent}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Scan Barcode</Text>
-                {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+            <ImageBackground
+              source={require('@/assets/images/scanbarcode.png')}
+              style={styles.actionCardBackground}
+              imageStyle={styles.actionCardImage}
+            >
+              <View style={styles.actionCardOverlay}>
+                <View style={[styles.iconCircle, { backgroundColor: theme.primary + '20' }]}>
+                  <MaterialIcons name={isPremium ? "qr-code-scanner" : "lock"} size={32} color={isPremium ? theme.primary : theme.textSecondary} />
+                </View>
+                <View style={styles.actionContent}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.actionTitle, !isPremium && styles.actionTitleLocked]}>Scan Barcode</Text>
+                    {!isPremium && <Text style={styles.premiumBadge}>Premium</Text>}
+                  </View>
+                  <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Quickly add packaged foods</Text>
+                </View>
               </View>
-              <Text style={[styles.actionSubtitle, !isPremium && styles.actionSubtitleLocked]}>Quickly add packaged foods</Text>
-            </View>
+            </ImageBackground>
           </TouchableOpacity>
         </View>
 
@@ -336,13 +352,21 @@ export default function AddMealMainScreen() {
             })}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconCircle, { backgroundColor: '#F38181' + '20' }]}>
-              <MaterialIcons name="post-add" size={32} color='#F38181' />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Manual Entry</Text>
-              <Text style={styles.actionSubtitle}>Enter nutrition info manually</Text>
-            </View>
+            <ImageBackground
+              source={require('@/assets/images/manualentry.png')}
+              style={styles.actionCardBackground}
+              imageStyle={styles.actionCardImage}
+            >
+              <View style={styles.actionCardOverlay}>
+                <View style={[styles.iconCircle, { backgroundColor: '#F38181' + '20' }]}>
+                  <MaterialIcons name="post-add" size={32} color='#F38181' />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>Manual Entry</Text>
+                  <Text style={styles.actionSubtitle}>Enter nutrition info manually</Text>
+                </View>
+              </View>
+            </ImageBackground>
           </TouchableOpacity>
         </View>
 
@@ -555,21 +579,36 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 15,
   },
   actionCard: {
-    backgroundColor: theme.cardBackground || theme.background,
+    backgroundColor: theme.surface,
     borderRadius: 16,
-    padding: 20,
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
+    overflow: 'hidden',
   },
   actionCardLocked: {
     opacity: 0.5,
     backgroundColor: theme.surface,
+  },
+  actionCardBackground: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  actionCardImage: {
+    borderRadius: 16,
+    opacity: 0.7,
+  },
+  actionCardOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: theme.translucent,
+    borderRadius: 12,
+    padding: 16,
   },
   iconCircle: {
     width: 64,

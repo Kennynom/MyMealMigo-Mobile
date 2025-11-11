@@ -2,7 +2,7 @@ import { ThemeContext } from '@/context/ThemeContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DiscoverMainScreen() {
   const { theme } = useContext(ThemeContext);
@@ -15,7 +15,8 @@ export default function DiscoverMainScreen() {
       subtitle: 'Search nutrition info',
       icon: 'restaurant-menu',
       color: '#4ECDC4',
-      route: '/(tabs)/(discover)/(foods)/browse-foods'
+      route: '/(tabs)/(discover)/(foods)/browse-foods',
+      image: require('@/assets/images/fooddictionary.png'),
     },
     {
       id: 'recipes',
@@ -23,7 +24,8 @@ export default function DiscoverMainScreen() {
       subtitle: 'Healthy & delicious',
       icon: 'menu-book',
       color: theme.altAccent,
-      route: '/(tabs)/(discover)/(recipes)/browse-recipes'
+      route: '/(tabs)/(discover)/(recipes)/browse-recipes',
+      image: require('@/assets/images/browserecipe.png'),
     },
     {
       id: 'recommendations',
@@ -31,7 +33,8 @@ export default function DiscoverMainScreen() {
       subtitle: 'Personalized for you',
       icon: 'recommend',
       color: '#F38181',
-      route: '/(tabs)/(discover)/meal-recommendations'
+      route: '/(tabs)/(discover)/meal-recommendations',
+      image: require('@/assets/images/mealrecommendation.png'),
     }
   ];
 
@@ -76,13 +79,21 @@ export default function DiscoverMainScreen() {
               onPress={() => router.push(item.route)}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
-                <MaterialIcons name={item.icon} size={32} color={item.color} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-              </View>
+              <ImageBackground
+                source={item.image}
+                style={styles.discoverCardBackground}
+                imageStyle={styles.discoverCardImage}
+              >
+                <View style={styles.discoverCardOverlay}>
+                  <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
+                    <MaterialIcons name={item.icon} size={32} color={item.color} />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                  </View>
+                </View>
+              </ImageBackground>
             </TouchableOpacity>
           ))}
         </View>
@@ -155,16 +166,31 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 24,
   },
   discoverCard: {
-    backgroundColor: theme.cardBackground || theme.background,
+    backgroundColor: theme.surface,
     borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  discoverCardBackground: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  discoverCardImage: {
+    borderRadius: 16,
+    opacity: 0.7,
+  },
+  discoverCardOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: theme.translucent,
+    borderRadius: 12,
+    padding: 16,
   },
   iconCircle: {
     width: 64,

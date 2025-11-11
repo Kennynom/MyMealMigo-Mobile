@@ -8,7 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { useCallback, useContext, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LogsMainScreen() {
   const { theme } = useContext(ThemeContext);
@@ -137,16 +137,24 @@ export default function LogsMainScreen() {
           onPress={() => router.push('/(tabs)/(logs)/view-log')}
           activeOpacity={0.7}
         >
-          <View style={[styles.optionIcon, { backgroundColor: theme.primary + '20' }]}>
-            <MaterialIcons name="restaurant-menu" size={32} color={theme.primary} />
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>View Meal Log</Text>
-            <Text style={styles.optionSubtitle}>
-              Review your daily meals and nutrition breakdown
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
+          <ImageBackground
+            source={require('@/assets/images/vml.png')}
+            style={styles.optionCardBackground}
+            imageStyle={styles.optionCardImage}
+          >
+            <View style={styles.optionCardOverlay}>
+              <View style={[styles.optionIcon, { backgroundColor: theme.primary + '20' }]}>
+                <MaterialIcons name="restaurant-menu" size={32} color={theme.primary} />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>View Meal Log</Text>
+                <Text style={styles.optionSubtitle}>
+                  Review your daily meals and nutrition breakdown
+                </Text>
+              </View>
+              <Text style={styles.arrow}>›</Text>
+            </View>
+          </ImageBackground>
         </TouchableOpacity>
 
         {/* View Reflections → opens Reflection tab */}
@@ -160,16 +168,24 @@ export default function LogsMainScreen() {
           }
           activeOpacity={0.7}
         >
-          <View style={[styles.optionIcon, { backgroundColor: '#F38181' + '20' }]}>
-            <MaterialIcons name="edit-note" size={32} color='#F38181' />
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>View Reflections</Text>
-            <Text style={styles.optionSubtitle}>
-              Mental state, energy, mood across days
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
+          <ImageBackground
+            source={require('@/assets/images/vr.png')}
+            style={styles.optionCardBackground}
+            imageStyle={styles.optionCardImage}
+          >
+            <View style={styles.optionCardOverlay}>
+              <View style={[styles.optionIcon, { backgroundColor: '#F38181' + '20' }]}>
+                <MaterialIcons name="edit-note" size={32} color='#F38181' />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>View Reflections</Text>
+                <Text style={styles.optionSubtitle}>
+                  Mental state, energy, mood across days
+                </Text>
+              </View>
+              <Text style={styles.arrow}>›</Text>
+            </View>
+          </ImageBackground>
         </TouchableOpacity>
 
         {/* History */}
@@ -178,16 +194,24 @@ export default function LogsMainScreen() {
           onPress={() => router.push('/(tabs)/(logs)/history')}
           activeOpacity={0.7}
         >
-          <View style={[styles.optionIcon, { backgroundColor: '#4ECDC4' + '20' }]}>
-            <MaterialIcons name="history" size={32} color='#4ECDC4' />
-          </View>
-          <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>Meal History</Text>
-            <Text style={styles.optionSubtitle}>
-              Browse and analyze previous days
-            </Text>
-          </View>
-          <Text style={styles.arrow}>›</Text>
+          <ImageBackground
+            source={require('@/assets/images/mh.png')}
+            style={styles.optionCardBackground}
+            imageStyle={styles.optionCardImage}
+          >
+            <View style={styles.optionCardOverlay}>
+              <View style={[styles.optionIcon, { backgroundColor: '#4ECDC4' + '20' }]}>
+                <MaterialIcons name="history" size={32} color='#4ECDC4' />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>Meal History</Text>
+                <Text style={styles.optionSubtitle}>
+                  Browse and analyze previous days
+                </Text>
+              </View>
+              <Text style={styles.arrow}>›</Text>
+            </View>
+          </ImageBackground>
         </TouchableOpacity>
       </View>
 
@@ -275,17 +299,32 @@ const createStyles = (theme) =>
       marginBottom: 15,
     },
     optionCard: {
-      backgroundColor: theme.background,
+      backgroundColor: theme.surface,
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.08,
       shadowRadius: 12,
       elevation: 4,
       borderRadius: 16,
-      padding: 20,
       marginBottom: 16,
+      overflow: 'hidden', // Important for ImageBackground
+    },
+    optionCardBackground: {
       flexDirection: 'row',
       alignItems: 'center',
+      padding: 20,
+    },
+    optionCardImage: {
+      borderRadius: 16,
+      opacity: 0.7, // Reduced opacity for better text visibility
+    },
+    optionCardOverlay: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      backgroundColor: theme.translucent, // Semi-transparent white overlay for better contrast
+      borderRadius: 12,
+      padding: 16,
     },
     optionIcon: {
       width: 64,

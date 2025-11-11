@@ -2,7 +2,7 @@ import { ThemeContext } from '@/context/ThemeContext';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
 import { router } from 'expo-router';
 import { useContext } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -20,6 +20,7 @@ export default function TrackerMainScreen() {
       color: '#4ECDC4',
       route: '/(tabs)/(tracker)/(calorie)/calorie-tracker',
       premium: false,
+      image: require('@/assets/images/calorietracker.png'),
     },
     {
       id: 'progress',
@@ -29,6 +30,7 @@ export default function TrackerMainScreen() {
       color: theme.altAccent,
       route: '/(tabs)/(tracker)/(progress)',
       premium: true,
+      image: require('@/assets/images/progresstracker.png'),
     },
     {
       id: 'activity',
@@ -38,6 +40,7 @@ export default function TrackerMainScreen() {
       color: '#F38181',
       route: '/(tabs)/(tracker)/(activity)',
       premium: false,
+      image: require('@/assets/images/activitytracker.png'),
     },
     {
       id: 'calculator',
@@ -47,6 +50,7 @@ export default function TrackerMainScreen() {
       color: theme.primary,
       route: '/(tabs)/(tracker)/(health-calculator)',
       premium: false,
+      image: require('@/assets/images/healthcalculator.png'),
     }
   ];
 
@@ -86,7 +90,6 @@ export default function TrackerMainScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={false}
       >
         <View style={styles.cardsContainer}>
           {trackers.map((tracker) => (
@@ -99,34 +102,42 @@ export default function TrackerMainScreen() {
               onPress={() => handleTrackerPress(tracker)}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconCircle, { backgroundColor: tracker.color + '20' }]}>
-                <MaterialIcons 
-                  name={tracker.premium && !isPremium ? 'lock' : tracker.icon} 
-                  size={32} 
-                  color={tracker.premium && !isPremium ? theme.textSecondary : tracker.color} 
-                />
-              </View>
-              <View style={styles.cardContent}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[
-                    styles.cardTitle,
-                    tracker.premium && !isPremium && styles.cardTitleLocked
-                  ]}>
-                    {tracker.title}
-                  </Text>
-                  {tracker.premium && !isPremium && (
-                    <View style={styles.premiumBadge}>
-                      <Text style={styles.premiumBadgeText}>Premium</Text>
+              <ImageBackground
+                source={tracker.image}
+                style={styles.trackerCardBackground}
+                imageStyle={styles.trackerCardImage}
+              >
+                <View style={styles.trackerCardOverlay}>
+                  <View style={[styles.iconCircle, { backgroundColor: tracker.color + '20' }]}>
+                    <MaterialIcons 
+                      name={tracker.premium && !isPremium ? 'lock' : tracker.icon} 
+                      size={32} 
+                      color={tracker.premium && !isPremium ? theme.textSecondary : tracker.color} 
+                    />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[
+                        styles.cardTitle,
+                        tracker.premium && !isPremium && styles.cardTitleLocked
+                      ]}>
+                        {tracker.title}
+                      </Text>
+                      {tracker.premium && !isPremium && (
+                        <View style={styles.premiumBadge}>
+                          <Text style={styles.premiumBadgeText}>Premium</Text>
+                        </View>
+                      )}
                     </View>
-                  )}
+                    <Text style={[
+                      styles.cardSubtitle,
+                      tracker.premium && !isPremium && styles.cardSubtitleLocked
+                    ]}>
+                      {tracker.subtitle}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[
-                  styles.cardSubtitle,
-                  tracker.premium && !isPremium && styles.cardSubtitleLocked
-                ]}>
-                  {tracker.subtitle}
-                </Text>
-              </View>
+              </ImageBackground>
             </TouchableOpacity>
           ))}
         </View>
@@ -174,20 +185,35 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 16,
   },
   trackerCard: {
-    backgroundColor: theme.cardBackground || theme.background,
+    backgroundColor: theme.surface,
     borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
+    overflow: 'hidden',
   },
   trackerCardLocked: {
     opacity: 0.5,
     backgroundColor: theme.surface,
+  },
+  trackerCardBackground: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  trackerCardImage: {
+    borderRadius: 16,
+    opacity: 0.7,
+  },
+  trackerCardOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: theme.translucent,
+    borderRadius: 12,
+    padding: 16,
   },
   iconCircle: {
     width: 64,
