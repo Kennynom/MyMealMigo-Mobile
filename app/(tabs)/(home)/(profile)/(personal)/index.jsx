@@ -249,7 +249,7 @@ const createStyles = (theme) => StyleSheet.create({
         elevation: 2,
     },
     backText: {
-        color: theme.text,
+        color: '#ffffff',
         fontSize: 20,
         fontWeight: '600',
     },

@@ -149,8 +149,8 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '700', marginBottom: 12, color: '#ffffff' },
+  input: { borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, marginBottom: 8, color: '#ffffff' },
   button: { backgroundColor: '#059669', padding: 14, borderRadius: 8, alignItems: 'center' },
   buttonDisabled: { backgroundColor: '#9ca3af' },
   buttonText: { color: '#fff', fontWeight: '700' },

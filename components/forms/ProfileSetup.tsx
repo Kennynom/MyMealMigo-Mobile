@@ -308,11 +308,11 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             <View style={{ width: PAGE_WIDTH - 32 }}>
               <Text style={styles.sectionTitle}>Basic info</Text>
               <Text style={styles.label}>Account Name <Text style={styles.required}>*</Text></Text>
-              <TextInput value={displayName} onChangeText={setDisplayName} style={styles.input} />
+              <TextInput value={displayName} onChangeText={setDisplayName} style={styles.input} placeholderTextColor="#9ca3af" />
 
             <Text style={styles.label}>Birthday <Text style={styles.required}>*</Text></Text>
             <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input,{justifyContent:'center'}]}>
-              <Text>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
+              <Text style={{color: '#ffffff'}}>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -332,12 +332,12 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             <View style={styles.row}>
               <View style={{flex:1}}>
                 <Text style={styles.label}>Height (cm) <Text style={styles.required}>*</Text></Text>
-                <TextInput value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" style={styles.input} />
+                <TextInput value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" style={styles.input} placeholderTextColor="#9ca3af" />
               </View>
               <View style={{width:12}} />
               <View style={{flex:1}}>
                 <Text style={styles.label}>Weight (kg) <Text style={styles.required}>*</Text></Text>
-                <TextInput value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" style={styles.input} />
+                <TextInput value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" style={styles.input} placeholderTextColor="#9ca3af" />
               </View>
             </View>
 
@@ -435,7 +435,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {allergiesItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other allergies here:</Text>
-                <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" />
+                <TextInput value={allergiesOther} onChangeText={setAllergiesOther} style={styles.input} placeholder="Other" placeholderTextColor="#9ca3af" />
               </>
             ) : null}
 
@@ -481,7 +481,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {conditionsItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other conditions here:</Text>
-                <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" />
+                <TextInput value={conditionsOther} onChangeText={setConditionsOther} style={styles.input} placeholder="Other" placeholderTextColor="#9ca3af" />
               </>
             ) : null}
             
@@ -526,12 +526,12 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
             {injuriesItems.includes('Other') ? (
               <>
                 <Text style={[styles.label,{marginTop:8}]}>State other injuries here:</Text>
-                <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" />
+                <TextInput value={injuriesNotes} onChangeText={setInjuriesNotes} style={styles.input} placeholder="Notes" placeholderTextColor="#9ca3af" />
               </>
             ) : null}
 
               <Text style={[styles.label,{marginTop:12}]}>Medications</Text>
-              <TextInput value={medicationsList} onChangeText={setMedicationsList} style={styles.input} placeholder="List medications (comma separated)" />
+              <TextInput value={medicationsList} onChangeText={setMedicationsList} style={styles.input} placeholder="List medications (comma separated)" placeholderTextColor="#9ca3af" />
             </View>
           </ScrollView>
         </View>
@@ -560,22 +560,22 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  titleCenter: { fontSize: 18, fontWeight: '700', textAlign: 'center', paddingTop: 12, paddingBottom: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '700', marginBottom: 12, color: '#ffffff' },
+  titleCenter: { fontSize: 18, fontWeight: '700', textAlign: 'center', paddingTop: 12, paddingBottom: 8, color: '#ffffff' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8, color: '#ffffff' },
   progressContainer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
-  progressText: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginBottom: 8, textAlign: 'center' },
+  progressText: { fontSize: 13, fontWeight: '600', color: '#9ca3af', marginBottom: 8, textAlign: 'center' },
   progressBarContainer: { height: 4, backgroundColor: '#e5e7eb', borderRadius: 2, overflow: 'hidden' },
   progressBar: { height: '100%', backgroundColor: '#059669', borderRadius: 2 },
   // page itself should not add horizontal padding; inner ScrollView provides padding
   page: { paddingTop: 16, paddingBottom: 16, flexShrink: 0, height: '100%', justifyContent: 'flex-start' },
-  label: { fontSize: 13, color: '#374151', marginTop: 8 },
+  label: { fontSize: 13, color: '#ffffff', marginTop: 8 },
   required: { color: '#ef4444', fontWeight: '700' },
-  input: { borderWidth: 1, borderColor: '#e5e7eb', padding: 10, borderRadius: 8, marginTop: 6 },
+  input: { borderWidth: 1, borderColor: '#4b5563', padding: 10, borderRadius: 8, marginTop: 6, color: '#ffffff', backgroundColor: '#1f2937' },
   row: { flexDirection: 'row', alignItems: 'center' },
   pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, marginTop: 8 },
   pillActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  pillText: { color: '#111827' },
+  pillText: { color: '#ffffff' },
   pillTextActive: { color: '#fff' },
   button: { backgroundColor: '#059669', padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 18 },
   buttonDisabled: { backgroundColor: '#9ca3af' },
