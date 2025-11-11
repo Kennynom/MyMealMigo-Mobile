@@ -1,24 +1,24 @@
 // app/(tabs)/(discover)/(recipes)/new.jsx
-import { useTheme } from '@/context/ThemeContext';
-import { auth, db, storage } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack } from 'expo-router';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import React, { useState } from 'react';
+
 import {
   Alert,
   Image, ScrollView, StyleSheet,
   Text, TextInput, TouchableOpacity,
+  useColorScheme,
   View
 } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
 export default function NewRecipe() {
-  const { theme } = useTheme();
-
-  const styles = createStyles(theme);
+  const scheme = useColorScheme();
+  const c = colors(scheme);
 
   // core fields
   const [title, setTitle] = useState('');
@@ -81,6 +81,7 @@ export default function NewRecipe() {
     return null;
   }
 
+
   async function onSubmit() {
     const err = validate();
     if (err) { Alert.alert('Missing info', err); return; }
@@ -91,158 +92,202 @@ export default function NewRecipe() {
 
     try {
       setSubmitting(true);
-      const ownerUid = auth.currentUser.uid;
-      const recipesCol = collection(db, 'recipes');
-      const id = doc(recipesCol).id;           // new id
-      let imageStoragePath = '';
-      let imageURL = '';
+      const user = auth.currentUser;
 
+      // Upload image if one was selected
+      let imageURL = '';
+      let imageStoragePath = '';
+      
       if (image) {
-        const blob = await (await fetch(image)).blob();
-        const fileRef = ref(storage, `recipes/${ownerUid}/${id}/main.jpg`);
-        await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
-        imageURL = await getDownloadURL(fileRef);
-        imageStoragePath = fileRef.fullPath;
+        try {
+          const storage = getStorage();
+          // FIXED: Use correct path format matching storage rules
+          const filename = `recipe-requests/${user.uid}/${Date.now()}.jpg`;
+          const storageRef = ref(storage, filename);
+          
+          // Fetch the image and convert to blob
+          const response = await fetch(image);
+          const blob = await response.blob();
+          
+          // IMPORTANT: Ensure content type is set correctly
+          const metadata = {
+            contentType: blob.type || 'image/jpeg'
+          };
+          // In your onSubmit function, add before the upload:
+          console.log('Current user:', auth.currentUser);
+          console.log('User UID:', user.uid);
+          console.log('Upload path:', `recipe-requests/${user.uid}/${Date.now()}.jpg`);
+          
+          // Upload to Firebase Storage with metadata
+          await uploadBytes(storageRef, blob, metadata);
+          
+          // Get the download URL
+          imageURL = await getDownloadURL(storageRef);
+          imageStoragePath = filename;
+          
+          console.log('Image uploaded successfully:', imageURL);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          // Show the actual error to help debug
+          Alert.alert(
+            'Image Upload Failed', 
+            `Could not upload image: ${uploadError.message || 'Unknown error'}. The request will be submitted without the image.`
+          );
+          // Don't return - continue with submission without image
+        }
       }
 
       const payload = {
-        ownerUid,
         title: title.trim(),
         description: description.trim(),
-        ingredients: ingredients.map(s => s.trim()).filter(Boolean),
+        ingredients: ingredients.map(i => {
+          const trimmed = i.trim();
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2 && /^\d/.test(parts[0])) {
+            return {
+              amount: parts[0],
+              name: parts.slice(1).join(' ')
+            };
+          }
+          return { name: trimmed, amount: '' };
+        }).filter(i => i.name),
         steps: steps.map(s => s.trim()).filter(Boolean),
         tags: tags.split(',').map(s => s.trim()).filter(Boolean),
-        cuisine: cuisine.trim(),
-        difficulty,
-        cook_time: Number(cookTime) || null,
-        servings: Number(servings) || null,
-        calories: Number(calories) || null,
-        diet_type: diet,
-        imageURL,
-        imageStoragePath,
-        status: 'pending',                       // moderation required
+        notes: [
+          cuisine && `Cuisine: ${cuisine}`,
+          difficulty && `Difficulty: ${difficulty}`,
+          diet && `Diet: ${diet}`,
+          cookTime && `Cook time: ${cookTime} min`,
+          servings && `Servings: ${servings}`,
+          calories && `Calories: ${calories}`
+        ].filter(Boolean).join('\n'),
+        imageURL,  // Add image URL (empty string if upload failed)
+        imageStoragePath,  // Add storage path (empty string if upload failed)
+        userUid: user.uid,
+        userEmail: user.email || '',
+        status: 'open',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'recipes', id), payload);
-      Alert.alert('Submitted!', 'Your recipe was sent for approval.');
+      await addDoc(collection(db, 'recipeRequests'), payload);
+      
+      Alert.alert(
+        'Request Submitted!', 
+        imageURL 
+          ? 'Your recipe request with image has been sent to our nutritionists for review.'
+          : 'Your recipe request has been sent to our nutritionists for review. Note: Image upload was skipped.'
+      );
       router.back();
     } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Could not submit recipe. Please try again.');
+      console.error('Submit error:', e);
+      Alert.alert('Error', `Could not submit recipe request: ${e.message || 'Please try again.'}`);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Stack.Screen
         options={{
-          headerShown: false,
+          title: 'Request Recipe',
+          headerShown: true,
+          headerStyle: { backgroundColor: c.bg },
+          headerTintColor: c.text
         }}
       />
 
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Submit Recipe</Text>
-          <Text style={styles.headerSubtitle}>Share your creation</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
-
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Image */}
+        {/* Image - Optional for requests */}
         <View style={styles.heroWrap}>
           <Image source={image ? { uri: image } : PLACEHOLDER} style={styles.hero} />
           <View style={styles.heroBtns}>
-            <Chip text="Pick a photo" onPress={pickImage} theme={theme} />
+            <Chip text="Pick a photo (optional)" onPress={pickImage} color={c.accent} />
           </View>
         </View>
 
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+          <Text style={{ color: c.muted, fontSize: 13, textAlign: 'center' }}>
+            Submit a recipe request. Our nutritionists will review and create the recipe for you.
+          </Text>
+        </View>
+
         {/* Form */}
-        <FormSection title="Basic info" theme={theme}>
+        <FormSection title="Basic info" c={c}>
           <LabeledInput label="Name" placeholder="e.g., Hainanese Chicken Rice"
-            value={title} onChangeText={setTitle} theme={theme} />
+            value={title} onChangeText={setTitle} c={c} />
           <LabeledInput label="Description" placeholder="Short description"
-            value={description} onChangeText={setDescription} theme={theme} multiline />
+            value={description} onChangeText={setDescription} c={c} multiline />
           <LabeledInput label="Cuisine" placeholder="e.g., Singaporean"
-            value={cuisine} onChangeText={setCuisine} theme={theme} />
+            value={cuisine} onChangeText={setCuisine} c={c} />
           <LabeledInput label="Tags" placeholder="Comma-separated (e.g., spicy, seafood)"
-            value={tags} onChangeText={setTags} theme={theme} />
+            value={tags} onChangeText={setTags} c={c} />
         </FormSection>
 
-        <FormSection title="Ingredients" theme={theme}>
+        <FormSection title="Ingredients" c={c}>
           {ingredients.map((v, i) => (
             <Row key={`ing-${i}`}>
               <TextInput
-                placeholder={`Ingredient ${i + 1}`}
-                placeholderTextColor={theme.textSecondary}
+                placeholder={`Ingredient ${i + 1} (e.g., 200g chicken breast)`}
+                placeholderTextColor={c.muted}
                 value={v}
                 onChangeText={(t) => setRow('ing', i, t)}
-                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+                style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
               />
-              <IconBtn label="−" onPress={() => removeRow('ing', i)} theme={theme} />
+              <IconBtn label="−" onPress={() => removeRow('ing', i)} c={c} />
             </Row>
           ))}
-          <Chip text="Add ingredient" onPress={() => addRow('ing')} theme={theme} />
+          <Chip text="Add ingredient" onPress={() => addRow('ing')} color={c.accent} />
         </FormSection>
 
-        <FormSection title="Steps" theme={theme}>
+        <FormSection title="Steps" c={c}>
           {steps.map((v, i) => (
             <Row key={`step-${i}`}>
               <TextInput
                 placeholder={`Step ${i + 1}`}
-                placeholderTextColor={theme.textSecondary}
+                placeholderTextColor={c.muted}
                 value={v}
                 onChangeText={(t) => setRow('step', i, t)}
-                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+                style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
                 multiline
               />
-              <IconBtn label="−" onPress={() => removeRow('step', i)} theme={theme} />
+              <IconBtn label="−" onPress={() => removeRow('step', i)} c={c} />
             </Row>
           ))}
-          <Chip text="Add step" onPress={() => addRow('step')} theme={theme} />
+          <Chip text="Add step" onPress={() => addRow('step')} color={c.accent} />
         </FormSection>
 
-        <FormSection title="Details" theme={theme}>
-          <Label theme={theme}>Difficulty</Label>
+        <FormSection title="Details" c={c}>
+          <Label c={c}>Difficulty</Label>
           <ChipRow>
             {['Easy','Medium','Hard'].map(opt => (
-              <SelectChip key={opt} text={opt} active={difficulty===opt} onPress={()=>setDifficulty(opt)} theme={theme} />
+              <SelectChip key={opt} text={opt} active={difficulty===opt} onPress={()=>setDifficulty(opt)} c={c} />
             ))}
           </ChipRow>
 
-          <Label theme={theme} style={{ marginTop: 12 }}>Diet Type</Label>
+          <Label c={c} style={{ marginTop: 12 }}>Diet Type</Label>
           <ChipRow>
             {['Halal','Non-Halal'].map(opt => (
-              <SelectChip key={opt} text={opt} active={diet===opt} onPress={()=>setDiet(opt)} theme={theme} />
+              <SelectChip key={opt} text={opt} active={diet===opt} onPress={()=>setDiet(opt)} c={c} />
             ))}
           </ChipRow>
 
           <Row>
-            <NumInput label="Cook time (min)" value={cookTime} onChangeText={setCookTime} theme={theme} />
+            <NumInput label="Cook time (min)" value={cookTime} onChangeText={setCookTime} c={c} />
             <View style={{ width: 10 }} />
-            <NumInput label="Servings" value={servings} onChangeText={setServings} theme={theme} />
+            <NumInput label="Servings" value={servings} onChangeText={setServings} c={c} />
           </Row>
-          <NumInput label="Calories" value={calories} onChangeText={setCalories} theme={theme} />
+          <NumInput label="Calories (optional)" value={calories} onChangeText={setCalories} c={c} />
         </FormSection>
 
         <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
           <TouchableOpacity
             onPress={onSubmit}
             disabled={submitting}
-            style={[styles.submitBtn, { backgroundColor: submitting ? theme.border : theme.primary }]}
+            style={[styles.submitBtn, { backgroundColor: submitting ? c.disabled : c.accent }]}
           >
-            <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit for approval'}</Text>
+            <Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit Recipe Request'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -252,73 +297,64 @@ export default function NewRecipe() {
 
 /* ========== UI Helpers ========== */
 
-function FormSection({ title, theme, children }) {
+function FormSection({ title, c, children }) {
   return (
     <View style={{ marginHorizontal: 16, marginTop: 16 }}>
-      <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>{title}</Text>
+      <Text style={{ color: c.text, fontSize: 18, fontWeight: '700', marginBottom: 10 }}>{title}</Text>
       <View style={{ gap: 10 }}>{children}</View>
     </View>
   );
 }
-function Label({ theme, style, children }) {
-  return <Text style={[{ color: theme.textSecondary, fontSize: 13, marginBottom: 6 }, style]}>{children}</Text>;
+function Label({ c, style, children }) {
+  return <Text style={[{ color: c.muted, fontSize: 13, marginBottom: 6 }, style]}>{children}</Text>;
 }
-function LabeledInput({ label, theme, style, ...props }) {
+function LabeledInput({ label, c, style, ...props }) {
   return (
     <View>
-      <Label theme={theme}>{label}</Label>
+      <Label c={c}>{label}</Label>
       <TextInput
         {...props}
         style={[
-          { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-          { backgroundColor: theme.background, color: theme.text, borderColor: theme.border },
+          styles.input,
+          { backgroundColor: c.surface, color: c.text, borderColor: c.border },
           style
         ]}
       />
     </View>
   );
 }
-function NumInput({ label, value, onChangeText, theme }) {
+function NumInput({ label, value, onChangeText, c }) {
   return (
     <View style={{ flex: 1 }}>
-      <Label theme={theme}>{label}</Label>
+      <Label c={c}>{label}</Label>
       <TextInput
         keyboardType="numeric"
         value={value}
         onChangeText={onChangeText}
         placeholder="0"
-        placeholderTextColor={theme.textSecondary}
-        style={[
-          { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-          { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }
-        ]}
+        placeholderTextColor={c.muted}
+        style={[styles.input, { backgroundColor: c.surface, color: c.text, borderColor: c.border }]}
       />
     </View>
   );
 }
-function Chip({ text, onPress, theme }) {
+function Chip({ text, onPress, color }) {
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
-      style={[
-        { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
-        { backgroundColor: theme.primary }
-      ]}
-    >
+    <TouchableOpacity onPress={onPress} style={[styles.chip, { backgroundColor: color }]}>
       <Text style={{ color: '#fff', fontWeight: '700' }}>{text}</Text>
     </TouchableOpacity>
   );
 }
-function SelectChip({ text, active, onPress, theme }) {
+function SelectChip({ text, active, onPress, c }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[
-        { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
-        { backgroundColor: active ? theme.primary : theme.surface, borderColor: active ? theme.primary : theme.border }
+        styles.selectChip,
+        { backgroundColor: active ? c.accent : c.surface, borderColor: active ? c.accent : c.border }
       ]}
     >
-      <Text style={{ color: active ? '#fff' : theme.text, fontWeight: '700' }}>{text}</Text>
+      <Text style={{ color: active ? '#fff' : c.text, fontWeight: '700' }}>{text}</Text>
     </TouchableOpacity>
   );
 }
@@ -329,44 +365,14 @@ function Row({ children }) {
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{children}</View>;
 }
 
-const createStyles = (theme) => StyleSheet.create({
-  // Header styles
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  backText: {
-    fontSize: 24,
-    color: theme.text,
-    fontWeight: 'bold',
-  },
-  headerCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 12 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: theme.text },
-  headerSubtitle: { fontSize: 13, marginTop: 2, color: theme.textSecondary },
-  placeholder: { width: 40 },
-
-  // Form styles
+const styles = StyleSheet.create({
   heroWrap: { position: 'relative', marginBottom: 8 },
   hero: { width: '100%', height: 190, backgroundColor: '#222' },
   heroBtns: { position: 'absolute', bottom: 12, right: 12 },
+
+  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  chip: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
+  selectChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
 
   submitBtn: {
     borderRadius: 14, paddingVertical: 14, alignItems: 'center',
@@ -375,13 +381,13 @@ const createStyles = (theme) => StyleSheet.create({
   submitText: { color: '#fff', fontWeight: '800', fontSize: 16 }
 });
 
-function IconBtn({ label = '−', onPress, theme }) {
+function IconBtn({ label = '−', onPress, c }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={{
-        backgroundColor: theme.surface,
-        borderColor: theme.border,
+        backgroundColor: c.surface,
+        borderColor: c.border,
         borderWidth: 1,
         borderRadius: 8,
         width: 36,
@@ -390,9 +396,22 @@ function IconBtn({ label = '−', onPress, theme }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: theme.text, fontSize: 20, fontWeight: '700', lineHeight: 20 }}>
+      <Text style={{ color: c.text, fontSize: 20, fontWeight: '700', lineHeight: 20 }}>
         {label}
       </Text>
     </TouchableOpacity>
   );
+}
+
+function colors(scheme) {
+  const dark = scheme === 'dark';
+  return {
+    bg: dark ? '#0B0B0D' : '#F7F7F8',
+    surface: dark ? '#141418' : '#FFFFFF',
+    text: dark ? '#F5F6F8' : '#121319',
+    muted: dark ? 'rgba(234,236,240,0.68)' : 'rgba(21,23,28,0.68)',
+    border: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    accent: '#1DB954',
+    disabled: dark ? '#2a2a2d' : '#cfd2d7',
+  };
 }
