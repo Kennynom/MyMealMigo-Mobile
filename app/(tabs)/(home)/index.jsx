@@ -173,10 +173,13 @@ export default function HomeScreen() {
               router.push('/(tabs)/(home)/(profile)/(subscription)');
             }
           }}
-          style={[styles.aiButton, !isPremium && styles.aiButtonDisabled]}
+          style={styles.aiButtonContainer}
           accessibilityLabel="AI Assistant Button"
         >
-          <Ionicons name={isPremium ? "chatbubble-ellipses" : "lock-closed"} size={20} color="#fff" />
+          <View style={[styles.aiButton, !isPremium && styles.aiButtonDisabled]}>
+            <Ionicons name={isPremium ? "sparkles" : "lock-closed"} size={20} color="#fff" />
+          </View>
+          <Text style={styles.aiButtonText}>AI</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Dashboard</Text>
@@ -185,11 +188,12 @@ export default function HomeScreen() {
         <TouchableOpacity
           onPress={() => router.push('(profile)')}
           accessibilityLabel="Profile Button"
-          style={styles.avatarButton}
+          style={styles.profileButtonContainer}
         >
           <View style={styles.avatarSmall}>
             <Text style={styles.avatarSmallText}>{getInitials(userName)}</Text>
           </View>
+          <Text style={styles.profileButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>
       
@@ -381,6 +385,10 @@ function createStyle(theme) {
       paddingBottom: 20,
       backgroundColor: theme.background,
     },
+    aiButtonContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     aiButton: {
       width: 40,
       height: 40,
@@ -398,6 +406,12 @@ function createStyle(theme) {
       backgroundColor: theme.textSecondary,
       opacity: 0.6,
     },
+    aiButtonText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: theme.primary,
+      marginTop: 4,
+    },
     headerCenter: {
       flex: 1,
       alignItems: 'center',
@@ -412,6 +426,10 @@ function createStyle(theme) {
     headerSubtitle: {
       fontSize: 13,
       color: theme.textSecondary,
+    },
+    profileButtonContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     avatarButton: {
       shadowColor: '#000',
@@ -430,12 +448,23 @@ function createStyle(theme) {
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
     avatarSmallText: {
       fontSize: 14,
       fontWeight: 'bold',
       color: '#fff',
       letterSpacing: 1,
+    },
+    profileButtonText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: theme.primary,
+      marginTop: 4,
     },
     profileImage: {
       width: 40,

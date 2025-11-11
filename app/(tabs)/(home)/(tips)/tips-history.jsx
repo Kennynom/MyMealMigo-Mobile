@@ -146,38 +146,44 @@ export default function TipsHistoryScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
         {list.map((item) => (
           <View key={item.id || item.url} style={styles.card}>
-            <View style={styles.thumbWrap}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.thumb} />
-              ) : (
-                <View style={styles.thumbPlaceholder}><Text style={styles.thumbEmoji}>💡</Text></View>
-              )}
-            </View>
-            <View style={styles.cardText}>
-              <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSource}>{item.sourceTitle}</Text>
-
-              {/* Show date & running day number if it came from the canonical history */}
-              {item.dateISO && (
-                <Text style={styles.metaText}>
-                  {item.dateISO} • Day {item.dayNumberSinceAnchor}
-                </Text>
-              )}
-
-              <View style={styles.actions}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
-                  <Text style={styles.actionText}>Open</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionBtnOutline}
-                  onPress={() => handleToggleSave(item)}
-                  disabled={busyId === (item.id || item.url)}
-                >
-                  <Text style={styles.actionTextOutline}>
-                    {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
-                  </Text>
-                </TouchableOpacity>
+            {/* Tip Content Row */}
+            <TouchableOpacity onPress={() => Linking.openURL(item.url)} style={styles.rowCard}>
+              <View style={styles.thumbWrap}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.thumb} />
+                ) : (
+                  <View style={styles.thumbPlaceholder}>
+                    <Text style={styles.thumbEmoji}>💡</Text>
+                  </View>
+                )}
               </View>
+              <View style={styles.cardText}>
+                <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+
+                {/* Show date & running day number if it came from the canonical history */}
+                {item.dateISO && (
+                  <Text style={styles.metaText}>
+                    {item.dateISO} • Day {item.dayNumberSinceAnchor}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* Action Buttons Row */}
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
+                <Text style={styles.actionText}>Open</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtnOutline}
+                onPress={() => handleToggleSave(item)}
+                disabled={busyId === (item.id || item.url)}
+              >
+                <Text style={styles.actionTextOutline}>
+                  {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         ))}
@@ -198,16 +204,32 @@ function createStyles(theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: {
-      backgroundColor: theme.surface, paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16,
+      backgroundColor: theme.background, paddingTop: 56, paddingBottom: 12, paddingHorizontal: 16,
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       borderBottomWidth: 1, borderBottomColor: theme.border,
     },
-    backBtn: { padding: 6 },
-    backIcon: { color: theme.text, fontSize: 22 },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backIcon: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: '600',
+    },
     title: { color: theme.text, fontWeight: '800', fontSize: 22 },
 
     tabs: {
-      flexDirection: 'row', gap: 8, backgroundColor: theme.surface,
+      flexDirection: 'row', gap: 8, backgroundColor: theme.background,
       padding: 12, paddingTop: 8, justifyContent: 'center',
     },
     tabBtn: {
@@ -225,43 +247,82 @@ function createStyles(theme) {
     upsellText: { color: theme.textSecondary, fontWeight: '600', textAlign: 'center' },
 
     card: {
-      flexDirection: 'row', backgroundColor: theme.surface, borderRadius: 12,
-      padding: 12, marginBottom: 12, borderWidth: 1, borderColor: theme.border,
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
-    thumbWrap: { width: 72, height: 72, marginRight: 12 },
-    thumb: { width: 72, height: 72, borderRadius: 8 },
+    rowCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.background,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 12,
+    },
+    thumbWrap: {
+      width: 56,
+      height: 56,
+      marginRight: 12,
+    },
+    thumb: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+    },
     thumbPlaceholder: {
-      width: 72, height: 72, borderRadius: 8, backgroundColor: theme.altBackground,
-      alignItems: 'center', justifyContent: 'center',
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      backgroundColor: theme.primary + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     thumbEmoji: { fontSize: 28 },
     cardText: { flex: 1 },
-    cardTitle: { color: theme.text, fontSize: 15, fontWeight: '700' },
-    cardSource: { color: theme.textSecondary, marginTop: 4, marginBottom: 6 },
-    metaText: { color: theme.textSecondary, fontSize: 12, marginBottom: 8 },
+    cardTitle: {
+      color: theme.text,
+      fontSize: 14.5,
+      fontWeight: '700',
+      lineHeight: 20,
+    },
+    cardSource: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    metaText: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      marginTop: 4,
+    },
 
     actions: { flexDirection: 'row', gap: 8 },
-    actionBtn: { backgroundColor: theme.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
-    secondaryBtn: { backgroundColor: theme.altBackground },
-    actionText: { color: theme.buttonText, fontWeight: '700' },
-
     actionBtn: {
-    backgroundColor: theme.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-    actionText: { color: theme.buttonText || '#fff', fontWeight: '800' },
-    // Outline (for "Save"/"Unsave") – works in light & dark
-    actionBtnOutline: {
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: theme.primary,
-      paddingVertical: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.primary,
+      paddingVertical: 8,
       paddingHorizontal: 16,
       borderRadius: 12,
     },
-    actionTextOutline: { color: theme.primary, fontWeight: '800' },
+    actionText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    actionBtnOutline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: theme.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+    },
+    actionTextOutline: { color: theme.primary, fontSize: 13, fontWeight: '600' },
 
     empty: { padding: 32, alignItems: 'center' },
     emptyText: { color: theme.textSecondary },
