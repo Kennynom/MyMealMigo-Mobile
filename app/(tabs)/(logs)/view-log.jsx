@@ -384,7 +384,9 @@ export default function ViewMealLogScreen() {
                             <View style={styles.mealItemHeader}>
                               <Text style={styles.mealItemName}>{meal.foodName}</Text>
                               <Text style={styles.mealItemType}>
-                                {meal.mealType === 'beverage' ? '🥤' : '🍽️'} {meal.mealType}
+                                {meal.mealType === 'beverage' ? 
+                                  <MaterialIcons name="emoji-food-beverage" size={18} color="orange" /> : 
+                                  <MaterialIcons name="dinner-dining" size={18} color="saddlebrown" />} {meal.mealType}
                               </Text>
                             </View>
                             <View style={styles.mealItemNutrition}>
@@ -519,7 +521,9 @@ export default function ViewMealLogScreen() {
                   <View style={styles.mealItemInfo}>
                     <Text style={styles.mealItemName}>{meal.foodName}</Text>
                     <Text style={styles.mealItemDetails}>
-                      {meal.calories} cal • {meal.mealType === 'beverage' ? '🥤' : '🍽️'} {meal.mealType}
+                      {meal.calories} cal • {meal.mealType === 'beverage' ? 
+                        <MaterialIcons name="emoji-food-beverage" size={14} color="orange" /> : 
+                        <MaterialIcons name="dinner-dining" size={14} color="saddlebrown" />} {meal.mealType}
                     </Text>
                   </View>
                   <View style={styles.mealItemActions}>
