@@ -484,16 +484,6 @@ export default function CalorieTrackerScreen() {
                                         <Text style={styles.rightNumber}>{weeklyData.consumed.toLocaleString()}</Text>
                                     </View>
                                 </View>
-
-                                <View style={styles.displayCol}>
-                                    <View>
-                                        <Entypo name="check" size={24} color="lime" />
-                                    </View>
-                                    <View>
-                                        <Text style={styles.rightText}>Remaining:</Text>
-                                        <Text style={styles.rightNumber}>{weeklyData.remaining.toLocaleString()}</Text>
-                                    </View>
-                                </View>
                             </View>
                         </>
                     ) : period === 'monthly' ? (
@@ -564,16 +554,6 @@ export default function CalorieTrackerScreen() {
                                     <View>
                                         <Text style={styles.rightText}>Consumed:</Text>
                                         <Text style={styles.rightNumber}>{monthlyData.consumed.toLocaleString()}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.displayCol}>
-                                    <View>
-                                        <Entypo name="check" size={24} color="lime" />
-                                    </View>
-                                    <View>
-                                        <Text style={styles.rightText}>Remaining:</Text>
-                                        <Text style={styles.rightNumber}>{monthlyData.remaining.toLocaleString()}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -767,10 +747,6 @@ export default function CalorieTrackerScreen() {
                                 <Text style={styles.rowValue}>{weeklyData.consumed.toLocaleString()} cal</Text>
                             </View>
                             <View style={styles.row}>
-                                <Text style={styles.rowLabel}>Calories Remaining:</Text>
-                                <Text style={styles.rowValue}>{weeklyData.remaining.toLocaleString()} cal</Text>
-                            </View>
-                            <View style={styles.row}>
                                 <Text style={styles.rowLabel}>Carbs:</Text>
                                 <View style={styles.rowValueContainer}>
                                     <Text style={styles.rowValue}>{weeklyData.carbs}g</Text>
@@ -825,10 +801,6 @@ export default function CalorieTrackerScreen() {
                             <View style={styles.row}>
                                 <Text style={styles.rowLabel}>Calories Consumed:</Text>
                                 <Text style={styles.rowValue}>{monthlyData.consumed.toLocaleString()} cal</Text>
-                            </View>
-                            <View style={styles.row}>
-                                <Text style={styles.rowLabel}>Calories Remaining:</Text>
-                                <Text style={styles.rowValue}>{monthlyData.remaining.toLocaleString()} cal</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.rowLabel}>Carbs:</Text>
