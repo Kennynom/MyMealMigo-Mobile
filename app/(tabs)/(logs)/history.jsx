@@ -91,10 +91,10 @@ export default function MealHistoryScreen() {
   // Calculate totals for a specific date
   const calculateDateTotals = (meals) => {
     return meals.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0),
-      protein: totals.protein + (meal.protein || 0),
-      carbs: totals.carbs + (meal.carbs || 0),
-      fat: totals.fat + (meal.fat || 0),
+      calories: totals.calories + ((meal.calories || 0) * (meal.servingSize || 1)),
+      protein: totals.protein + ((meal.protein || 0) * (meal.servingSize || 1)),
+      carbs: totals.carbs + ((meal.carbs || 0) * (meal.servingSize || 1)),
+      fat: totals.fat + ((meal.fat || 0) * (meal.servingSize || 1)),
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
   };
 
@@ -231,7 +231,7 @@ export default function MealHistoryScreen() {
                   )}
                   <Text style={styles.selectedDateStatsText}> • </Text>
                   <Text style={styles.selectedDateCalories}>
-                    Total Calories: {Math.round(selectedDateMeals.reduce((sum, m) => sum + (m.calories || 0), 0))} cal
+                    Total Calories: {Math.round(selectedDateMeals.reduce((sum, m) => sum + ((m.calories || 0) * (m.servingSize || 1)), 0))} cal
                   </Text>
                 </View>
               )}
@@ -292,19 +292,27 @@ export default function MealHistoryScreen() {
                           
                           <View style={styles.mealNutrition}>
                             <View style={styles.nutritionItem}>
-                              <Text style={styles.nutritionValue}>{meal.calories}</Text>
+                              <Text style={styles.nutritionValue}>
+                                {Math.round((meal.calories || 0) * (meal.servingSize || 1))}
+                              </Text>
                               <Text style={styles.nutritionLabel}>cal</Text>
                             </View>
                             <View style={styles.nutritionItem}>
-                              <Text style={styles.nutritionValue}>{meal.carbs}g</Text>
+                              <Text style={styles.nutritionValue}>
+                                {((meal.carbs || 0) * (meal.servingSize || 1)).toFixed(1)}g
+                              </Text>
                               <Text style={styles.nutritionLabel}>carbs</Text>
                             </View>
                             <View style={styles.nutritionItem}>
-                              <Text style={styles.nutritionValue}>{meal.protein}g</Text>
+                              <Text style={styles.nutritionValue}>
+                                {((meal.protein || 0) * (meal.servingSize || 1)).toFixed(1)}g
+                              </Text>
                               <Text style={styles.nutritionLabel}>protein</Text>
                             </View>
                             <View style={styles.nutritionItem}>
-                              <Text style={styles.nutritionValue}>{meal.fat}g</Text>
+                              <Text style={styles.nutritionValue}>
+                                {((meal.fat || 0) * (meal.servingSize || 1)).toFixed(1)}g
+                              </Text>
                               <Text style={styles.nutritionLabel}>fat</Text>
                             </View>
                           </View>
