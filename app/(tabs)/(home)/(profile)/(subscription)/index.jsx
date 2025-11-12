@@ -35,7 +35,7 @@ export default function SubscriptionScreen() {
                 'Basic calorie tracking',
                 'Manual food logging',
                 'Basic meal suggestions',
-                'Limited daily tips',
+                'Save & view nutrition tips',
                 'Standard support'
             ],
             color: '#95a5a6',
@@ -50,7 +50,8 @@ export default function SubscriptionScreen() {
                 'Advanced calorie tracking',
                 'AI-powered food recognition',
                 'Personalized meal plans',
-                'Unlimited daily tips',
+                'Full tips history access',
+                'Save & view nutrition tips',
                 'Progress analytics',
                 'Priority support',
                 'Ad-free experience',

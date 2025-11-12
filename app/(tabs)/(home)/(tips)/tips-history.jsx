@@ -1,13 +1,14 @@
 // app/(tabs)/(home)/(tips)/tips-history.jsx
 import manifest from '@/assets/data/content_manifest.json';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { listHistory, listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
 import { dateForDayIndex, inclusiveCountUpToToday, tipIndexForDate } from '@/lib/dnt/schedule';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TipsHistoryScreen() {
@@ -20,26 +21,38 @@ export default function TipsHistoryScreen() {
   const [isPremium, setIsPremium] = useState(false);
 
   // lists
+  // Free users: default to History tab to show lock screen, not auto-redirect to Saved
   const [tab, setTab] = useState(init === 'saved' ? 'Saved' : 'History');
   const [saved, setSaved] = useState([]);
   const [history, setHistory] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
-  // --- Fetch plan from users/{uid}
-  useEffect(() => {
-    (async () => {
-      if (!user?.uid) return;
-      try {
-        const ref = doc(db, 'users', user.uid);
-        const snap = await getDoc(ref);
-        const data = snap.exists() ? snap.data() : {};
-        const plan = data?.subscription?.plan ?? data?.role;
-        const active = data?.subscription?.active ?? true;setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
-      } catch {
-        setIsPremium(false);
-      }
-    })();
+  // --- Fetch plan from users/{uid} - check on mount and when screen comes into focus
+  const checkPremiumStatus = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : {};
+      const plan = data?.subscription?.plan ?? data?.role;
+      const active = data?.subscription?.active ?? true;
+      setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
+    } catch {
+      setIsPremium(false);
+    }
   }, [user?.uid]);
+
+  // Check premium status on mount
+  useEffect(() => {
+    checkPremiumStatus();
+  }, [checkPremiumStatus]);
+
+  // Re-check premium status when screen comes into focus (e.g., after upgrading)
+  useFocusEffect(
+    useCallback(() => {
+      checkPremiumStatus();
+    }, [checkPremiumStatus])
+  );
 
   // --- Fetch saved + history documents
   useEffect(() => {
@@ -50,13 +63,6 @@ export default function TipsHistoryScreen() {
       setHistory(h);
     })();
   }, [user?.uid]);
-
-  // If free tries to open History, force to Saved
-  useEffect(() => {
-    if (tab === 'History' && !isPremium) {
-      setTab('Saved');
-    }
-  }, [tab, isPremium]);
 
   // ----- Build canonical history from anchor → today (continuous)
   const today = new Date();
@@ -113,10 +119,9 @@ export default function TipsHistoryScreen() {
 
       {/* TABS */}
       <View style={styles.tabs}>
-        {/* History tab (premium only) */}
+        {/* History tab - Always visible, lock shows in content area */}
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'History' ? styles.tabActive : null, !isPremium && { opacity: 0.5 }]}
-          disabled={!isPremium}
+          style={[styles.tabBtn, tab === 'History' ? styles.tabActive : null]}
           onPress={() => setTab('History')}
         >
           <Text style={[styles.tabText, tab === 'History' ? styles.tabTextActive : null]}>
@@ -124,78 +129,118 @@ export default function TipsHistoryScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Saved tab (everyone) */}
+        {/* Saved tab (free for everyone) */}
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'Saved' ? styles.tabActive : null]}
           onPress={() => setTab('Saved')}
         >
-          <Text style={[styles.tabText, tab === 'Saved' ? styles.tabTextActive : null]}>Saved</Text>
+          <Text style={[styles.tabText, tab === 'Saved' ? styles.tabTextActive : null]}>
+            Saved ({saved.length})
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Upsell strip for free users */}
-      {!isPremium && tab !== 'Saved' && (
-        <View style={styles.upsell}>
-          <Text style={styles.upsellText}>
-            Upgrade to Premium to unlock your full Tips History.
-          </Text>
-        </View>
-      )}
 
       {/* LIST */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-        {list.map((item) => (
-          <View key={item.id || item.url} style={styles.card}>
-            {/* Tip Content Row */}
-            <TouchableOpacity onPress={() => Linking.openURL(item.url)} style={styles.rowCard}>
-              <View style={styles.thumbWrap}>
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.thumb} />
-                ) : (
-                  <View style={styles.thumbPlaceholder}>
-                    <Text style={styles.thumbEmoji}>💡</Text>
+      {tab === 'History' ? (
+        <PremiumGate isPremium={isPremium} featureName="full Tips History">
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+            {canonicalHistory.map((item) => (
+              <View key={item.id || item.url} style={styles.card}>
+                {/* Tip Content Row */}
+                <TouchableOpacity onPress={() => Linking.openURL(item.url)} style={styles.rowCard}>
+                  <View style={styles.thumbWrap}>
+                    {item.image ? (
+                      <Image source={{ uri: item.image }} style={styles.thumb} />
+                    ) : (
+                      <View style={styles.thumbPlaceholder}>
+                        <Text style={styles.thumbEmoji}>💡</Text>
+                      </View>
+                    )}
                   </View>
-                )}
+                  <View style={styles.cardText}>
+                    <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+                    {item.dateISO && (
+                      <Text style={styles.metaText}>
+                        {item.dateISO} • Day {item.dayNumberSinceAnchor}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Action Buttons Row */}
+                <View style={styles.actions}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
+                    <Text style={styles.actionText}>Open</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionBtnOutline}
+                    onPress={() => handleToggleSave(item)}
+                    disabled={busyId === (item.id || item.url)}
+                  >
+                    <Text style={styles.actionTextOutline}>
+                      {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.cardText}>
-                <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+            ))}
+          </ScrollView>
+        </PremiumGate>
+      ) : (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          {saved.map((item) => (
+              <View key={item.id || item.url} style={styles.card}>
+                {/* Tip Content Row */}
+                <TouchableOpacity onPress={() => Linking.openURL(item.url)} style={styles.rowCard}>
+                  <View style={styles.thumbWrap}>
+                    {item.image ? (
+                      <Image source={{ uri: item.image }} style={styles.thumb} />
+                    ) : (
+                      <View style={styles.thumbPlaceholder}>
+                        <Text style={styles.thumbEmoji}>💡</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.cardText}>
+                    <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardSource}>{item.sourceTitle}</Text>
 
-                {/* Show date & running day number if it came from the canonical history */}
-                {item.dateISO && (
-                  <Text style={styles.metaText}>
-                    {item.dateISO} • Day {item.dayNumberSinceAnchor}
-                  </Text>
-                )}
+                    {/* Show date & running day number if it came from the canonical history */}
+                    {item.dateISO && (
+                      <Text style={styles.metaText}>
+                        {item.dateISO} • Day {item.dayNumberSinceAnchor}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Action Buttons Row */}
+                <View style={styles.actions}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
+                    <Text style={styles.actionText}>Open</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionBtnOutline}
+                    onPress={() => handleToggleSave(item)}
+                    disabled={busyId === (item.id || item.url)}
+                  >
+                    <Text style={styles.actionTextOutline}>
+                      {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </TouchableOpacity>
+            ))}
 
-            {/* Action Buttons Row */}
-            <View style={styles.actions}>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
-                <Text style={styles.actionText}>Open</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtnOutline}
-                onPress={() => handleToggleSave(item)}
-                disabled={busyId === (item.id || item.url)}
-              >
-                <Text style={styles.actionTextOutline}>
-                  {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-
-        {list.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>
-              {tab === 'Saved' ? "No saved tips yet." : isPremium ? "No history yet." : "History is Premium-only."}
-            </Text>
-          </View>
+            {list.length === 0 && tab === 'Saved' && (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>No saved tips yet.</Text>
+              </View>
+            )}
+          </ScrollView>
         )}
-      </ScrollView>
     </View>
   );
 }
@@ -215,7 +260,7 @@ function createStyles(theme) {
       backgroundColor: theme.surface,
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
       shadowRadius: 4,
@@ -251,7 +296,7 @@ function createStyles(theme) {
       borderRadius: 16,
       padding: 16,
       marginBottom: 16,
-      shadowColor: '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
       shadowRadius: 8,
@@ -311,7 +356,7 @@ function createStyles(theme) {
       paddingHorizontal: 16,
       borderRadius: 12,
     },
-    actionText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    actionText: { color: theme.altText, fontSize: 13, fontWeight: '600' },
     actionBtnOutline: {
       flexDirection: 'row',
       alignItems: 'center',

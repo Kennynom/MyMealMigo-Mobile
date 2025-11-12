@@ -1,14 +1,16 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import PremiumGate from '@/components/ui/PremiumGate';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
 import { useDailyContent } from '@/hooks/useDailyContent';
 import { listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
 
 import { db } from '@/config/firebase';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 
 function palette(theme) {
@@ -47,6 +49,7 @@ function Row({ item, saved, onOpen, onToggleSave, styles, C }) {
 export default function TipsScreen() {
   const { user } = useAuth();
   const { theme } = useContext(ThemeContext);
+  const router = useRouter();
   const C = useMemo(() => palette(theme), [theme]);
   const styles = useMemo(() => createStyles(C), [C]);
 
@@ -56,14 +59,25 @@ export default function TipsScreen() {
   const [saved, setSaved] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (!user) return;
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      setIsPremium(!!snap.data()?.isPremium);
-      setSaved(await listSaved(user.uid));
-    })();
+  const checkPremiumStatus = useCallback(async () => {
+    if (!user) return;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    const data = snap.data();
+    const plan = data?.subscription?.plan ?? data?.role;
+    const active = data?.subscription?.active ?? true;
+    setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
+    setSaved(await listSaved(user.uid));
   }, [user]);
+
+  useEffect(() => {
+    checkPremiumStatus();
+  }, [checkPremiumStatus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkPremiumStatus();
+    }, [checkPremiumStatus])
+  );
 
   const savedIndex = useMemo(() => Object.fromEntries(saved.map(s => [s.url, true])), [saved]);
 
@@ -98,7 +112,7 @@ export default function TipsScreen() {
     <View style={styles.screen}>
       <Text style={styles.h1}>Tips</Text>
 
-      {/* Tabs */}
+      {/* Tabs - Always show both tabs */}
       <View style={styles.tabsRow}>
         <Pressable onPress={() => setTab('history')} style={[styles.tab, tab==='history' && styles.tabActive]}>
           <Text style={styles.tabText}>History</Text>
@@ -108,12 +122,25 @@ export default function TipsScreen() {
         </Pressable>
       </View>
 
-      {/* Premium lock */}
-      {tab === 'history' && !isPremium ? (
-        <View style={styles.lockWrap}>
-          <MaterialIcons name="lock" size={36} color={C.cardSub} />
-          <Text style={styles.lockText}>History is a Premium feature.</Text>
-        </View>
+      {/* Premium lock for History tab only */}
+      {tab === 'history' ? (
+        <PremiumGate isPremium={isPremium} featureName="full Tips History">
+          <FlatList
+            data={history}
+            keyExtractor={(item, i) => item.url + i}
+            renderItem={({ item }) => (
+              <Row
+                item={item}
+                saved={!!savedIndex[item.url]}
+                onOpen={() => open(item.url)}
+                onToggleSave={() => toggleSave(item)}
+                styles={styles}
+                C={C}
+              />
+            )}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          />
+        </PremiumGate>
       ) : (
         <FlatList
           data={listData}
@@ -153,8 +180,6 @@ function createStyles(C) {
     thumb: { width: 60, height: 60, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', marginRight: 12 },
     title: { color: '#fff', fontWeight: '800', fontSize: 14.5, lineHeight: 20 },
     source: { color: C.cardSub, fontSize: 12, marginTop: 4 },
-    lockWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 64 },
-    lockText: { color: C.cardSub, marginTop: 8, textAlign: 'center' },
     empty: { color: C.sub }
   });
 }

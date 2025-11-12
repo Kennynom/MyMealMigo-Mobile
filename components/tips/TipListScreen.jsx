@@ -1,8 +1,11 @@
+import PremiumGate from '@/components/ui/PremiumGate';
+import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { listHistory, listSaved, removeSavedTip, saveTip } from '@/lib/dnt/savedTips';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TipsListScreen({ initialTab = 'History' }) {
@@ -11,10 +14,36 @@ export default function TipsListScreen({ initialTab = 'History' }) {
   const { user } = useAuth();
 
   const [tab, setTab] = useState(initialTab === 'Saved' ? 'Saved' : 'History');
+  const [isPremium, setIsPremium] = useState(false);
 
   const [saved, setSaved] = useState([]);
   const [history, setHistory] = useState([]);
   const [busyId, setBusyId] = useState(null);
+
+  // Check premium status - on mount and when screen comes into focus
+  const checkPremiumStatus = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : {};
+      const plan = data?.subscription?.plan ?? data?.role;
+      const active = data?.subscription?.active ?? true;
+      setIsPremium((plan === 'premium' || data?.role === 'premium') && active !== false);
+    } catch {
+      setIsPremium(false);
+    }
+  }, [user?.uid]);
+
+  useEffect(() => {
+    checkPremiumStatus();
+  }, [checkPremiumStatus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkPremiumStatus();
+    }, [checkPremiumStatus])
+  );
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -25,7 +54,7 @@ export default function TipsListScreen({ initialTab = 'History' }) {
     })();
   }, [user?.uid]);
 
-  const list = tab === 'Saved' ? saved : history;
+  const list = tab === 'Saved' ? saved : (isPremium ? history : []);
 
   async function handleToggleSave(item) {
     if (!user?.uid) return;
@@ -55,13 +84,15 @@ export default function TipsListScreen({ initialTab = 'History' }) {
         <View style={{ width: 28 }} />
       </View>
 
-      {/* TABS */}
+      {/* TABS - Always show both tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'History' ? styles.tabActive : null]}
           onPress={() => setTab('History')}
         >
-          <Text style={[styles.tabText, tab === 'History' ? styles.tabTextActive : null]}>History</Text>
+          <Text style={[styles.tabText, tab === 'History' ? styles.tabTextActive : null]}>
+            History
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'Saved' ? styles.tabActive : null]}
@@ -71,49 +102,95 @@ export default function TipsListScreen({ initialTab = 'History' }) {
         </TouchableOpacity>
       </View>
 
+      {/* Premium upsell for History */}
+      {!isPremium && tab === 'History' && (
+        <View style={styles.upsell}>
+          <Text style={styles.upsellText}>
+            🔒 Upgrade to Premium to unlock Tips History. You can still save and view tips!
+          </Text>
+        </View>
+      )}
+
       {/* LIST */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-        {list.map((item) => (
-          <View key={item.id || item.url} style={styles.card}>
-            <View style={styles.thumbWrap}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.thumb} />
-              ) : (
-                <View style={styles.thumbPlaceholder}><Text style={styles.thumbEmoji}>💡</Text></View>
-              )}
-            </View>
+      {tab === 'History' ? (
+        <PremiumGate isPremium={isPremium} featureName="full Tips History">
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+            {history.map((item) => (
+              <View key={item.id || item.url} style={styles.card}>
+                <View style={styles.thumbWrap}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.thumb} />
+                  ) : (
+                    <View style={styles.thumbPlaceholder}><Text style={styles.thumbEmoji}>💡</Text></View>
+                  )}
+                </View>
 
-            <View style={styles.cardText}>
-              <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+                <View style={styles.cardText}>
+                  <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardSource}>{item.sourceTitle}</Text>
 
-              <View style={styles.actions}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
-                  <Text style={styles.actionText}>Open</Text>
-                </TouchableOpacity>
+                  <View style={styles.actions}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
+                      <Text style={styles.actionText}>Open</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.secondaryBtn]}
-                  onPress={() => handleToggleSave(item)}
-                  disabled={busyId === (item.id || item.url)}
-                >
-                  <Text style={styles.actionText}>
-                    {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
-                  </Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.secondaryBtn]}
+                      onPress={() => handleToggleSave(item)}
+                      disabled={busyId === (item.id || item.url)}
+                    >
+                      <Text style={styles.actionText}>
+                        {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        ))}
+            ))}
+          </ScrollView>
+        </PremiumGate>
+      ) : (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+          {saved.map((item) => (
+              <View key={item.id || item.url} style={styles.card}>
+                <View style={styles.thumbWrap}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.thumb} />
+                  ) : (
+                    <View style={styles.thumbPlaceholder}><Text style={styles.thumbEmoji}>💡</Text></View>
+                  )}
+                </View>
 
-        {list.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>
-              {tab === 'Saved' ? 'No saved tips yet.' : 'No history yet.'}
-            </Text>
-          </View>
+                <View style={styles.cardText}>
+                  <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardSource}>{item.sourceTitle}</Text>
+
+                  <View style={styles.actions}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(item.url)}>
+                      <Text style={styles.actionText}>Open</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.secondaryBtn]}
+                      onPress={() => handleToggleSave(item)}
+                      disabled={busyId === (item.id || item.url)}
+                    >
+                      <Text style={styles.actionText}>
+                        {saved.some(s => s.id === item.id || s.url === item.url) ? 'Unsave' : 'Save'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ))}
+
+            {list.length === 0 && tab === 'Saved' && (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>No saved tips yet.</Text>
+              </View>
+            )}
+          </ScrollView>
         )}
-      </ScrollView>
     </View>
   );
 }
@@ -141,6 +218,21 @@ function createStyles(theme) {
     tabActive: { backgroundColor: theme.primary },
     tabText: { fontWeight: '700', color: theme.textSecondary },
     tabTextActive: { color: theme.buttonText },
+
+    upsell: {
+      backgroundColor: theme.altAccent + '20',
+      padding: 12,
+      marginHorizontal: 16,
+      marginTop: 12,
+      borderRadius: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: theme.altAccent,
+    },
+    upsellText: {
+      color: theme.text,
+      fontSize: 13,
+      lineHeight: 18,
+    },
 
     card: {
       flexDirection: 'row', backgroundColor: theme.surface, borderRadius: 12,

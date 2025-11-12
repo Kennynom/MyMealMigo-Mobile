@@ -87,11 +87,7 @@ export default function NutritionalTipCard() {
 
   const toggleSave = async () => {
     if (!user) return;
-    // Gate save feature for free users
-    if (!isPremium) {
-      router.push('/(tabs)/(home)/(profile)/(subscription)');
-      return;
-    }
+    // Save feature is now free for everyone
     if (saved) {
       await removeSavedTip(user.uid, current.url);
       setSaved(false);
@@ -110,7 +106,6 @@ export default function NutritionalTipCard() {
         </View>
 
         <View style={styles.pillsRow}>
-        {isPremium && (
           <Pressable
             onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'history' } })}
             style={styles.historyPill}
@@ -118,8 +113,6 @@ export default function NutritionalTipCard() {
           >
             <Text style={styles.historyText}>History</Text>
           </Pressable>
-        )}
-        {isPremium && (
           <Pressable
             onPress={() => router.push({ pathname: '/(tabs)/(home)/(tips)/tips-history', params: { tab: 'saved' } })}
             style={styles.historyPill}
@@ -127,7 +120,6 @@ export default function NutritionalTipCard() {
           >
             <Text style={styles.historyText}>Saved</Text>
           </Pressable>
-        )}
         </View>
       </View>
 
@@ -145,9 +137,9 @@ export default function NutritionalTipCard() {
           style={{ padding: 6 }}
         >
           <MaterialIcons 
-            name={isPremium ? (saved ? 'bookmark' : 'bookmark-border') : 'lock'} 
+            name={saved ? 'bookmark' : 'bookmark-border'} 
             size={22} 
-            color={isPremium ? C.accent : C.cardSub} 
+            color={C.accent} 
           />
         </Pressable>
       </Pressable>
@@ -157,9 +149,8 @@ export default function NutritionalTipCard() {
           <Text style={styles.actionText}>Open</Text>
         </Pressable>
 
-        <Pressable onPress={toggleSave} style={[styles.actionPill, { marginRight: 8, opacity: isPremium ? 1 : 0.5 }]}>
-          <MaterialIcons name={isPremium ? undefined : 'lock'} size={14} color="#fff" style={{ marginRight: isPremium ? 0 : 4 }} />
-          <Text style={styles.actionText}>{isPremium ? (saved ? 'Unsave' : 'Save') : 'Premium'}</Text>
+        <Pressable onPress={toggleSave} style={[styles.actionPill, { marginRight: 8 }]}>
+          <Text style={styles.actionText}>{saved ? 'Unsave' : 'Save'}</Text>
         </Pressable>
       </View>
     </View>

@@ -41,7 +41,7 @@ export default function PremiumGate({ isPremium, children, featureName = 'this f
             style={styles.upgradeButton}
             onPress={() => router.push('/(tabs)/(home)/(profile)/(subscription)')}
           >
-            <MaterialIcons name="arrow-upward" size={18} color="#fff" style={{ marginRight: 6 }} />
+            <MaterialIcons name="arrow-upward" size={18} color={theme.altText} style={{ marginRight: 6 }} />
             <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
           </Pressable>
         </View>
@@ -54,9 +54,11 @@ function createStyles(theme) {
   return StyleSheet.create({
     container: {
       position: 'relative',
+      flex: 1,
       overflow: 'hidden',
     },
     contentWrapper: {
+      flex: 1,
       opacity: 0.3,
     },
     overlay: {
@@ -79,7 +81,7 @@ function createStyles(theme) {
       backgroundColor: theme.surface,
       borderColor: theme.border,
       borderWidth: 1,
-      shadowColor: '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
@@ -117,7 +119,7 @@ function createStyles(theme) {
       backgroundColor: theme.primary,
     },
     upgradeButtonText: {
-      color: '#fff',
+      color: theme.altText,
       fontSize: 16,
       fontWeight: '600',
     },
