@@ -10,21 +10,21 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from "react";
 import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ViewMealLogScreen() {
@@ -391,19 +391,19 @@ export default function ViewMealLogScreen() {
                             </View>
                             <View style={styles.mealItemNutrition}>
                               <Text style={styles.nutritionText}>
-                                {meal.calories} cal
+                                {Math.round(meal.calories * (meal.servingSize || 1))} cal
                               </Text>
                               <Text style={styles.nutritionDivider}>•</Text>
                               <Text style={styles.nutritionText}>
-                                C: {meal.carbs}g
+                                C: {((meal.carbs || 0) * (meal.servingSize || 1)).toFixed(1)}g
                               </Text>
                               <Text style={styles.nutritionDivider}>•</Text>
                               <Text style={styles.nutritionText}>
-                                P: {meal.protein}g
+                                P: {((meal.protein || 0) * (meal.servingSize || 1)).toFixed(1)}g
                               </Text>
                               <Text style={styles.nutritionDivider}>•</Text>
                               <Text style={styles.nutritionText}>
-                                F: {meal.fat}g
+                                F: {((meal.fat || 0) * (meal.servingSize || 1)).toFixed(1)}g
                               </Text>
                             </View>
                           </View>
@@ -521,7 +521,7 @@ export default function ViewMealLogScreen() {
                   <View style={styles.mealItemInfo}>
                     <Text style={styles.mealItemName}>{meal.foodName}</Text>
                     <Text style={styles.mealItemDetails}>
-                      {meal.calories} cal • {meal.mealType === 'beverage' ? 
+                      {Math.round(meal.calories * (meal.servingSize || 1))} cal • {meal.mealType === 'beverage' ? 
                         <MaterialIcons name="emoji-food-beverage" size={14} color="orange" /> : 
                         <MaterialIcons name="dinner-dining" size={14} color="saddlebrown" />} {meal.mealType}
                     </Text>

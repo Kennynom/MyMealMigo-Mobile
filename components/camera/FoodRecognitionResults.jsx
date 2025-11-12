@@ -4,14 +4,14 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, u
 import { router } from 'expo-router';
 import React, { useContext } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function FoodRecognitionResults({ 
@@ -205,7 +205,7 @@ export default function FoodRecognitionResults({
 
       {/* Food Information */}
       <View style={styles.foodInfoContainer}>
-        <Text style={styles.sectionTitle}>Food Detected</Text>
+        <Text style={styles.sectionTitle}>Food / Beverage Detected</Text>
         <Text style={styles.foodName}>{foodData.name}</Text>
       </View>
 

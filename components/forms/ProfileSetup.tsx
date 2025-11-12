@@ -319,18 +319,36 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
               <Text style={{color: theme.text}}>{birthdayDate ? birthdayDate.toISOString().split('T')[0] : 'Select date'}</Text>
             </TouchableOpacity>
             {showDatePicker && (
-              <DateTimePicker
-                value={birthdayDate ?? new Date(2000,0,1)}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(e, d) => {
-                  setShowDatePicker(Platform.OS === 'ios');
-                  if (d) {
-                    setBirthdayDate(d);
-                    setBirthday(d.toISOString().split('T')[0]);
-                  }
-                }}
-              />
+              <View>
+                <DateTimePicker
+                  value={birthdayDate ?? new Date(2000,0,1)}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS === 'android') {
+                      setShowDatePicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        setBirthdayDate(selectedDate);
+                        setBirthday(selectedDate.toISOString().split('T')[0]);
+                      }
+                    } else {
+                      // iOS: update date as user scrolls
+                      if (selectedDate) {
+                        setBirthdayDate(selectedDate);
+                        setBirthday(selectedDate.toISOString().split('T')[0]);
+                      }
+                    }
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(false)} 
+                    style={{backgroundColor: theme.primary || '#059669', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8}}
+                  >
+                    <Text style={{color: '#fff', fontWeight: '600'}}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
 
             <View style={styles.row}>
