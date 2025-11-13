@@ -5,7 +5,7 @@ export default function DiscoverLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       {/* Discover Home & other sections */}
       <Stack.Screen name="index" />
-      <Stack.Screen name="meal-recommendations" />
+      <Stack.Screen name="(recommendation)/index" />
 
       {/* Recipes section */}
       <Stack.Screen name="(recipes)/browse-recipes" options={{ headerShown: false }} />

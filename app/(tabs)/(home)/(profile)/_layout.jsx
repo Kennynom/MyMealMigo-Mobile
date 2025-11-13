@@ -4,10 +4,9 @@ export default function ProfileLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="personal" />
-      <Stack.Screen name="health" />
-      <Stack.Screen name="subscription" />
-      <Stack.Screen name="delete" />
+      <Stack.Screen name="(personal)/index" />
+      <Stack.Screen name="(health)/index" />
+      <Stack.Screen name="(subscription)/index" />
     </Stack>
   );
 }

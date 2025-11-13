@@ -33,7 +33,7 @@ export default function DiscoverMainScreen() {
       subtitle: 'Personalized for you',
       icon: 'recommend',
       color: '#F38181',
-      route: '/(tabs)/(discover)/meal-recommendations',
+      route: '/(tabs)/(discover)/(recommendation)',
       image: require('@/assets/images/mealrecommendation.png'),
     }
   ];
