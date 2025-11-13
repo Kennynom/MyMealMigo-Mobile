@@ -1,6 +1,7 @@
 // app/(tabs)/(home)/index.jsx - Add Features section
 import { ThemeContext } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import Foundation from '@expo/vector-icons/Foundation';
 import { router } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -9,7 +10,7 @@ import { LineChart } from 'react-native-chart-kit';
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 // Import components
 import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
@@ -31,6 +32,7 @@ export default function HomeScreen() {
   const [userHeight, setUserHeight] = useState(null);
   const [userBMI, setUserBMI] = useState(null);
   const [userName, setUserName] = useState('User');
+  const [targetCalories, setTargetCalories] = useState(null);
   const [calorieChartData, setCalorieChartData] = useState({
     labels: ["7", "6", "5", "4", "3", "2", "1"],
     datasets: [
@@ -91,72 +93,138 @@ export default function HomeScreen() {
     };
   }, [user]);
 
-  // Fetch calorie logs for the chart (last 7 days)
+  // Fetch calorie logs for the chart (last 7 days) with real-time updates
   useEffect(() => {
-    let cancelled = false;
-    const fetchCalorieLogs = async () => {
-      if (!user) return;
-      try {
-        console.log('🔍 [HOME] Fetching calorie logs for uid:', user.uid);
-        const calorieLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'calorie_logs', 'main');
-        const calorieLogSnap = await getDoc(calorieLogRef);
-        if (cancelled) return;
-
-        if (calorieLogSnap.exists()) {
-          const data = calorieLogSnap.data() || {};
-          const dailyLogs = Array.isArray(data.dailyLogs) ? data.dailyLogs : [];
-          
-          // Get the last 7 days, oldest to newest (for left to right display)
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const last7Days = [];
-          const dateLabels = [];
-          
-          // Loop from 6 days ago (i=6) to today (i=0) - oldest to newest
-          for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-            
-            // Format date as MM/DD for display
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            dateLabels.push(`${month}/${day}`);
-            
-            // Find the log entry for this date
-            const logEntry = dailyLogs.find(log => {
-              if (log.dateStart) {
-                const logDate = log.dateStart.split('T')[0];
-                return logDate === dateStr;
-              }
-              return false;
-            });
-            
-            // Get calories consumed or default to 0
-            const caloriesConsumed = logEntry?.caloriesConsumed || 0;
-            last7Days.push(caloriesConsumed);
-          }
-          
-          // Update chart data with date labels
-          setCalorieChartData({
-            labels: dateLabels,
-            datasets: [
-              { data: last7Days }
-            ]
-          });
-          console.log('✅ [HOME] Successfully fetched calorie logs');
+    if (!user) return;
+    
+    console.log('🔍 [HOME] Setting up real-time listeners for calorie data, uid:', user.uid);
+    
+    // Set up real-time listener for target calories from health profile
+    const healthProfileRef = doc(db, 'users', user.uid, 'private', 'health_profile');
+    const unsubHealthProfile = onSnapshot(healthProfileRef, (healthProfileSnap) => {
+      if (healthProfileSnap.exists()) {
+        const healthData = healthProfileSnap.data() || {};
+        const targetCal = healthData.Goal?.items?.targetCalories;
+        if (typeof targetCal === 'number') {
+          setTargetCalories(targetCal);
+          console.log('✅ [HOME] Target calories updated:', targetCal);
         } else {
-          console.log('⚠️ [HOME] Calorie logs document does not exist');
+          console.log('⚠️ [HOME] No target calories found in health profile');
         }
-      } catch (err) {
-        console.error('❌ [HOME] ERROR fetching calorie logs from users/' + user.uid + '/private/health_profile/calorie_logs/main:', err.code, err.message);
       }
-    };
+    }, (err) => {
+      console.error('❌ [HOME] ERROR in health profile listener:', err);
+    });
+    
+    // Set up real-time listener for calorie logs
+    const calorieLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'calorie_logs', 'main');
+    const unsubCalorieLogs = onSnapshot(calorieLogRef, (calorieLogSnap) => {
+      if (calorieLogSnap.exists()) {
+        const data = calorieLogSnap.data() || {};
+        const dailyLogs = Array.isArray(data.dailyLogs) ? data.dailyLogs : [];
+        
+        console.log('📊 [HOME] Real-time update - Total daily logs found:', dailyLogs.length);
+        
+        // Debug: Show all dates in the logs
+        if (dailyLogs.length > 0) {
+          console.log('📊 [HOME] All dates in logs:', dailyLogs.map(log => ({
+            dateStart: log.dateStart,
+            calories: log.caloriesConsumed
+          })));
+        }
+        
+        // Get the last 7 days, oldest to newest (for left to right display)
+        // Get today's date in local timezone (YYYY-MM-DD format to match Firebase)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        console.log('📊 [HOME] Today is:', todayStr);
+        
+        // Create date object for calculation
+        const today = new Date(year, now.getMonth(), now.getDate());
+        
+        const last7Days = [];
+        const dateLabels = [];
+        
+        // Loop from 6 days ago (i=6) to today (i=0) - oldest to newest
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          
+          // Format as YYYY-MM-DD to match Firebase
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${d}`;
+          
+          // Format date as MM/DD for display labels
+          dateLabels.push(`${m}/${d}`);
+          
+          // Find the log entry for this date
+          const logEntry = dailyLogs.find(log => {
+            if (log.dateStart) {
+              // Handle both "2025-11-13" and "2025-11-13T00:00:00Z" formats
+              let logDate;
+              if (log.dateStart.includes('T')) {
+                logDate = log.dateStart.split('T')[0];
+              } else {
+                logDate = log.dateStart;
+              }
+              return logDate === dateStr;
+            }
+            return false;
+          });
+          
+          // Get calories consumed or default to 0
+          const caloriesConsumed = logEntry?.caloriesConsumed || 0;
+          console.log(`📊 [HOME] ${dateStr} (${month}/${day}): ${caloriesConsumed} cal`, logEntry ? '✓' : '✗');
+          last7Days.push(caloriesConsumed);
+        }
+        
+        console.log('📊 [HOME] Chart data:', { dateLabels, last7Days });
+        
+        // Build datasets with target calorie line if available
+        const datasets = [
+          { 
+            data: last7Days,
+            color: (opacity = 1) => theme.primary,
+            strokeWidth: 3
+          }
+        ];
+        
+        // Add target calorie reference line
+        if (targetCalories && targetCalories > 0) {
+          datasets.push({
+            data: Array(7).fill(targetCalories),
+            color: (opacity = 1) => theme.altAccent || '#FF6B35',
+            strokeWidth: 2,
+            withDots: false,
+          });
+        }
+        
+        // Update chart data with date labels
+        setCalorieChartData({
+          labels: dateLabels,
+          datasets: datasets
+        });
+        console.log('✅ [HOME] Chart updated with real-time data');
+      } else {
+        console.log('⚠️ [HOME] Calorie logs document does not exist');
+      }
+    }, (err) => {
+      console.error('❌ [HOME] ERROR in calorie logs listener:', err.code, err.message);
+    });
 
-    fetchCalorieLogs();
-    return () => { cancelled = true; };
-  }, [user]);
+    // Cleanup listeners on unmount
+    return () => {
+      console.log('🧹 [HOME] Cleaning up calorie data listeners');
+      unsubHealthProfile();
+      unsubCalorieLogs();
+    };
+  }, [user, targetCalories, theme]);
 
   return (
     <View style={styles.mobileContainer}>
@@ -237,7 +305,7 @@ export default function HomeScreen() {
                   backgroundGradientFrom: theme.background,
                   backgroundGradientTo: theme.background,
                   decimalPlaces: 0,
-                  color: (opacity = 1) => theme.background,
+                  color: (opacity = 1) => theme.primary,
                   labelColor: (opacity = 1) => theme.text,
                   style: {
                     borderRadius: 16,
@@ -259,6 +327,66 @@ export default function HomeScreen() {
                 withHorizontalLabels={true}
                 withVerticalLines={false}
               />
+              
+              {/* Legend */}
+              {targetCalories && (
+                <View style={styles.legendContainer}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: theme.primary }]} />
+                    <Text style={styles.legendText}>Consumed</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: theme.altAccent || '#FF6B35' }]} />
+                    <Text style={styles.legendText}>Target ({targetCalories} cal)</Text>
+                  </View>
+                </View>
+              )}
+              
+              {/* Predictive Insight */}
+              {targetCalories && calorieChartData.datasets[0].data.length > 0 && (() => {
+                const recentCalories = calorieChartData.datasets[0].data;
+                const todayCalories = recentCalories[recentCalories.length - 1];
+                const avgCalories = recentCalories.reduce((sum, val) => sum + val, 0) / recentCalories.length;
+                const difference = todayCalories - targetCalories;
+                const avgDifference = avgCalories - targetCalories;
+                
+                let insightText = '';
+                let insightIcon = '';
+                let insightColor = theme.textSecondary;
+                
+                if (Math.abs(difference) < 100) {
+                  insightText = `Great! You're right on track with your calorie goal.`;
+                  insightIcon = <Foundation name="target" size={24} color={theme.text} />;
+                  insightColor = theme.primary;
+                } else if (difference > 0) {
+                  insightText = `You're ${Math.round(difference)} cal over your target. Consider lighter meals.`;
+                  insightIcon = <Foundation name="alert" size={24} color={theme.text} />;
+                  insightColor = theme.altAccent;
+                } else {
+                  insightText = `You're ${Math.round(Math.abs(difference))} cal under your target. You can eat more!`;
+                  insightIcon = <Foundation name="check" size={24} color={theme.text} />;
+                  insightColor = theme.accent;
+                }
+                
+                // Add weekly trend
+                if (Math.abs(avgDifference) > 200) {
+                  if (avgDifference > 0) {
+                    insightText += ` Your 7-day average is ${Math.round(avgDifference)} cal over target.`;
+                  } else {
+                    insightText += ` Your 7-day average is ${Math.round(Math.abs(avgDifference))} cal under target.`;
+                  }
+                }
+                
+                return (
+                  <View style={styles.insightContainer}>
+                    <View style={styles.insightHeader}>
+                      <Text style={styles.insightIcon}>{insightIcon}</Text>
+                      <Text style={[styles.insightTitle, { color: insightColor }]}>Predictive Insight</Text>
+                    </View>
+                    <Text style={styles.insightText}>{insightText}</Text>
+                  </View>
+                );
+              })()}
             </View>
           </View>
         </PremiumGate>
@@ -527,6 +655,55 @@ function createStyle(theme) {
     sectionSubtitle: {
       fontSize: 13,
       color: theme.textSecondary,
+    },
+    legendContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 20,
+      gap: 20,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    legendText: {
+      fontSize: 13,
+      color: theme.text,
+      fontWeight: '500',
+    },
+    insightContainer: {
+      marginTop: 20,
+      paddingTop: 20,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    insightHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+    },
+    insightIcon: {
+      fontSize: 18,
+    },
+    insightTitle: {
+      fontSize: 15,
+      fontWeight: 'bold',
+    },
+    insightText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      lineHeight: 20,
     },
   });
 }
