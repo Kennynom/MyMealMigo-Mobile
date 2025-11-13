@@ -6,7 +6,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useFocusEffect } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -289,37 +289,6 @@ export default function CalorieTrackerScreen() {
         if (!uid) return;
 
         try {
-            let userCalorieGoal = null; 
-            
-            console.log('=== Fetching Calorie Goal ===');
-            console.log('User ID:', uid);
-            
-            // First, get targetCalories from health_profile Goal
-            const healthProfileRef = doc(db, 'users', uid, 'private', 'health_profile');
-            const healthProfileSnap = await getDoc(healthProfileRef);
-            
-            console.log('Health profile exists:', healthProfileSnap.exists());
-            
-            if (healthProfileSnap.exists()) {
-                const healthData = healthProfileSnap.data();
-                console.log('Health data Goal:', healthData.Goal);
-                console.log('Health data Goal.items:', healthData.Goal?.items);
-                console.log('Health data Goal.items.targetCalories:', healthData.Goal?.items?.targetCalories);
-                
-                // Use targetCalories from Goal.items as the primary source
-                if (healthData.Goal && healthData.Goal.items && healthData.Goal.items.targetCalories) {
-                    userCalorieGoal = healthData.Goal.items.targetCalories;
-                    console.log('✅ Found targetCalories:', userCalorieGoal);
-                }
-                // Fall back to dailyCalorieGoal if targetCalories doesn't exist
-                else if (healthData.dailyCalorieGoal) {
-                    userCalorieGoal = healthData.dailyCalorieGoal;
-                    console.log('✅ Using dailyCalorieGoal:', userCalorieGoal);
-                }
-            }
-            
-            console.log('Final userCalorieGoal:', userCalorieGoal);
-            
             // Get the calorie logs
             const calorieLogDocRef = doc(db, 'users', uid, 'private', 'health_profile', 'calorie_logs', 'main');
             const docSnap = await getDoc(calorieLogDocRef);
@@ -338,12 +307,52 @@ export default function CalorieTrackerScreen() {
                 }
             }
             
-            setDefaultCalorieGoal(userCalorieGoal);
-            console.log('Set defaultCalorieGoal to:', userCalorieGoal);
-            
         } catch (error) {
             console.error('Error fetching calorie logs:', error);
         }
+    }, []);
+
+    // Set up real-time listener for targetCalories
+    useEffect(() => {
+        const auth = getAuth();
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+
+        console.log('🔍 [CALORIE TRACKER] Setting up real-time listener for targetCalories, uid:', uid);
+        
+        const healthProfileRef = doc(db, 'users', uid, 'private', 'health_profile');
+        const unsubscribe = onSnapshot(healthProfileRef, (healthProfileSnap) => {
+            if (healthProfileSnap.exists()) {
+                const healthData = healthProfileSnap.data();
+                console.log('📊 [CALORIE TRACKER] Health data received');
+                console.log('📊 [CALORIE TRACKER] Goal:', healthData.Goal);
+                console.log('📊 [CALORIE TRACKER] Goal.items:', healthData.Goal?.items);
+                console.log('📊 [CALORIE TRACKER] targetCalories:', healthData.Goal?.items?.targetCalories);
+                
+                // Use targetCalories from Goal.items as the primary source
+                let userCalorieGoal = null;
+                if (healthData.Goal && healthData.Goal.items && healthData.Goal.items.targetCalories) {
+                    userCalorieGoal = healthData.Goal.items.targetCalories;
+                    console.log('✅ [CALORIE TRACKER] Real-time update - targetCalories:', userCalorieGoal);
+                }
+                // Fall back to dailyCalorieGoal if targetCalories doesn't exist
+                else if (healthData.dailyCalorieGoal) {
+                    userCalorieGoal = healthData.dailyCalorieGoal;
+                    console.log('✅ [CALORIE TRACKER] Real-time update - dailyCalorieGoal:', userCalorieGoal);
+                }
+                
+                setDefaultCalorieGoal(userCalorieGoal);
+                console.log('✅ [CALORIE TRACKER] Set defaultCalorieGoal to:', userCalorieGoal);
+            }
+        }, (err) => {
+            console.error('❌ [CALORIE TRACKER] ERROR in real-time listener:', err);
+        });
+
+        // Cleanup listener on unmount
+        return () => {
+            console.log('🧹 [CALORIE TRACKER] Cleaning up real-time listener');
+            unsubscribe();
+        };
     }, []);
 
     useEffect(() => {
@@ -382,6 +391,13 @@ export default function CalorieTrackerScreen() {
         caloriesConsumed: 0,
         caloriesRemaining: defaultCalorieGoal
     };
+
+    // Override caloriesSet with latest defaultCalorieGoal if it exists
+    // This ensures we always show the current goal, not the old logged value
+    if (defaultCalorieGoal && logForSelectedDate) {
+        dailyLogForDate.caloriesSet = defaultCalorieGoal;
+        dailyLogForDate.caloriesRemaining = defaultCalorieGoal - dailyLogForDate.caloriesConsumed;
+    }
 
     console.log('=== Daily Log for Date ===');
     console.log('Selected date:', selectedDateString);
