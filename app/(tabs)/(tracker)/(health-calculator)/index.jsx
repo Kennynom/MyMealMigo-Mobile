@@ -136,14 +136,14 @@ export default function HealthCalculatorScreen() {
     setBmiValuesChanged(heightChanged || weightChanged);
   }, [height, weight, originalBMIHeight, originalBMIWeight]);
 
-  // Check if BMR values have changed
+  // Check if BMR values have changed (excluding activity level)
   useEffect(() => {
     const ageChanged = bmrAge !== originalBMRAge;
     const heightChanged = bmrHeight !== originalBMRHeight;
     const weightChanged = bmrWeight !== originalBMRWeight;
-    const activityChanged = bmrActivity !== originalBMRActivity;
-    setBmrValuesChanged(ageChanged || heightChanged || weightChanged || activityChanged);
-  }, [bmrAge, bmrHeight, bmrWeight, bmrActivity, originalBMRAge, originalBMRHeight, originalBMRWeight, originalBMRActivity]);
+    // Activity level change should not block saving - user can change activity and save
+    setBmrValuesChanged(ageChanged || heightChanged || weightChanged);
+  }, [bmrAge, bmrHeight, bmrWeight, originalBMRAge, originalBMRHeight, originalBMRWeight]);
 
   const calculateBMI = () => {
     const heightM = parseFloat(height) / 100; // Convert cm to m
@@ -670,7 +670,7 @@ export default function HealthCalculatorScreen() {
                 
                 {bmrValuesChanged && (
                   <Text style={styles.warningText}>
-                    ⚠️ You've changed age, height, weight, or activity level. Please recalculate BMR before saving to ensure accurate data.
+                    ⚠️ You've changed age, height, or weight. Please recalculate BMR before saving to ensure accurate data.
                   </Text>
                 )}
                 
