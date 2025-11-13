@@ -14,7 +14,7 @@ export default function ProfileSetupScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
+    <View style={[styles.container, { backgroundColor: '#58e221' }]}> 
       <ProfileSetup onComplete={handleComplete} />
     </View>
   );

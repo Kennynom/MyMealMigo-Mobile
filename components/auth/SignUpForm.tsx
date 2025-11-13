@@ -240,7 +240,7 @@ export function SignUpForm({ onSuccess }: { onSuccess?: () => void }) {
               bg={BLACK}
               textColor={WHITE}
             >
-              <Text>{loading ? 'Creating. . .' : 'Get Started'}</Text>
+              {loading ? 'Creating. . .' : 'Get Started'}
             </ScaleButton>
           </View>
         </View>

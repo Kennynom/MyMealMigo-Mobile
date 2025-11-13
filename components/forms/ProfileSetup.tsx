@@ -8,14 +8,13 @@ import {
   Dimensions,
   Platform, // 
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 // ====== UI CONSTANTS (palette / spacing / radius) ======  
@@ -273,10 +272,10 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   };
 
   if (loading) return (
-    <SafeAreaView style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
+     <View style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
       <ActivityIndicator size="large" color={PAL.primary} />
-      <Text style={{ color: PAL.sub, marginTop: 12 }}>Loading your profile. . .</Text> 
-    </SafeAreaView>
+      <Text style={{ color: '#000', marginTop: 12, fontWeight: '600' }}>Loading your profile...</Text>
+    </View>
   );
 
   const EQUIPMENT = ['none','mat','dumbbells','resistance_band','barbell','bike','treadmill'];
@@ -321,7 +320,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   );
 
   return (
-    <SafeAreaView style={styles.container}>  
+    <View style={styles.container}>  
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Profile</Text>
@@ -737,7 +736,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
