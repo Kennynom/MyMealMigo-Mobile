@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Platform, // ★ CHANGED
+  Platform, // 
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -18,21 +18,21 @@ import {
   View,
 } from 'react-native';
 
-// ====== UI CONSTANTS (palette / spacing / radius) ======  ★ CHANGED
+// ====== UI CONSTANTS (palette / spacing / radius) ======  
 const PAL = {
-  bg: '#58e221',            // ★ main background
+  bg: '#58e221',           
   card: '#000000ff',
   cardAlt: '#111827',
   border: '#1f2937',
   text: '#e5e7eb',
   sub: '#cbd5e1',
-  primary: '#58e221',       // ★ use same green as primary accent
+  primary: '#58e221',       
   primarySoft: '#49c21a',
   dangerBg: '#3b0f13',
   danger: '#F87171',
   chip: '#111827',
   chipBorder: '#293241',
-  chipActiveBg: '#e6ffe0',  // ★ better contrast on green bg
+  chipActiveBg: '#e6ffe0',  
   chipActiveText: '#052e2b',
 };
 const R = {
@@ -202,7 +202,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
       const sexAtBirth = sex === 'male' || sex === 'female' ? sex : 'prefer_not_to_say';
 
       await setDoc(hpRef, {
-        demographics: {                                     // ★ CHANGED (store here too for consistency)
+        demographics: {                                     
           ...(heightCm ? { heightCm: Number(heightCm) } : {}),
           ...(weightKg ? { weightKg: Number(weightKg) } : {}),
           ...(sexAtBirth ? { sexAtBirth } : {}),
@@ -275,7 +275,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   if (loading) return (
     <SafeAreaView style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
       <ActivityIndicator size="large" color={PAL.primary} />
-      <Text style={{ color: PAL.sub, marginTop: 12 }}>Loading your profile…</Text> {/* ★ CHANGED */}
+      <Text style={{ color: PAL.sub, marginTop: 12 }}>Loading your profile. . .</Text> 
     </SafeAreaView>
   );
 
@@ -306,7 +306,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
     </View>
   );
 
-  const Pill = ({ active, children, onPress }: any) => (   // ★ CHANGED: larger tap target, better contrast
+  const Pill = ({ active, children, onPress }: any) => (   
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
@@ -321,13 +321,13 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
   );
 
   return (
-    <SafeAreaView style={styles.container}>  {/* ★ CHANGED */}
+    <SafeAreaView style={styles.container}>  
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Profile</Text>
-        <Text style={styles.headerSubtitle}>Let’s personalize your experience</Text>
+        <Text style={styles.headerSubtitle}>Let's personalize your experience</Text>
 
-        {/* Step bar */}  {/* ★ CHANGED */}
+        {/* Step bar */}  
         <View style={styles.stepBar}>
           {Array.from({ length: PAGES }).map((_, i) => (
             <View key={i} style={[styles.step, i <= page && styles.stepActive]} />
@@ -359,7 +359,7 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
         {/* Page 1 - Basic Info */}
         <View style={[styles.page, { width: PAGE_WIDTH }]}>
           <ScrollView style={{flex:1}} contentContainerStyle={styles.pageContent} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={[styles.card, SHADOW.card]}> {/* ★ CHANGED: Card wrapper */}
+            <View style={[styles.card, SHADOW.card]}> 
               <PageHeader emoji="👤" title="Basic Information" sub="Tell us about yourself" />
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Display Name</Text>
@@ -744,15 +744,15 @@ export default function ProfileSetup({ onComplete }: { onComplete?: () => void }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: PAL.bg,                           // ★ CHANGED
+    backgroundColor: PAL.bg,                           
   },
   header: {
-    paddingTop: 16,                                    // ★ CHANGED (use SafeAreaView top inset)
+    paddingTop: 16,                                    
     paddingBottom: 20,
     paddingHorizontal: R.lg,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    backgroundColor: '#0d1b2a',                        // ★ CHANGED
+    backgroundColor: '#0d1b2a',                        
     ...SHADOW.soft,
   },
   headerTitle: {
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
     color: PAL.sub,
     textAlign: 'center',
   },
-  stepBar: {                                           // ★ CHANGED
+  stepBar: {                                          
     flexDirection: 'row',
     gap: 8,
     marginTop: 16,
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
     backgroundColor: PAL.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#1b2535',              // ★
+    borderColor: '#1b2535',              
     padding: 20,
     width: '100%',
     maxWidth: 350,        // << make the card narrower
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: PAL.cardAlt,                      // ★ CHANGED
+    backgroundColor: PAL.cardAlt,                      
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: PAL.cardAlt,                      // ★ CHANGED
+    backgroundColor: PAL.cardAlt,                      
     borderWidth: 1.2,
     borderColor: PAL.border,
     padding: 14,
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   },
   pillActive: { backgroundColor: PAL.primary, borderColor: PAL.primary },
   pillText: { color: PAL.text, fontSize: 14, fontWeight: '600' },
-  pillTextActive: { color: '#0b1a06', fontWeight: '700' }, // ★
+  pillTextActive: { color: '#0b1a06', fontWeight: '700' }, 
   switchContainer: {
     backgroundColor: PAL.cardAlt,
     borderRadius: R.br,
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     paddingVertical: 10,
-    backgroundColor: 'transparent',                   // ★ CHANGED
+    backgroundColor: 'transparent',                   
   },
   dot: {
     width: 8,
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     width: 24,
   },
   navRow: {
-    position: 'absolute',                              // ★ CHANGED sticky footer
+    position: 'absolute',                             
     left: 0, right: 0, bottom: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11,18,32,0.85)',
     borderTopWidth: 1,
     borderTopColor: PAL.border,
-    backdropFilter: 'blur(8px)' as any,               // harmless on native
+    backdropFilter: 'blur(8px)' as any,               
   },
   navButton: {
     paddingVertical: 14,
