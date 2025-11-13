@@ -9,7 +9,7 @@ import { LineChart } from 'react-native-chart-kit';
 // 🔥 Firebase imports
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 // Import components
 import { AuthDebug } from '@/components/auth/AuthDebug'; // ← ADD DEBUG IMPORT
@@ -49,47 +49,46 @@ export default function HomeScreen() {
 
   // Fetch user's weight and BMI for display on mobile dashboard
   useEffect(() => {
-    let cancelled = false;
-    const fetchUserHealthData = async () => {
-      if (!user) return;
-      try {
-        console.log('🔍 [HOME] Fetching user health data for uid:', user.uid);
-        // Fetch from users/{uid} document - profile object contains weightKg and currentBMI
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-        if (cancelled) return;
+    if (!user) return;
+    
+    console.log('🔍 [HOME] Setting up real-time listener for user health data, uid:', user.uid);
+    const userRef = doc(db, 'users', user.uid);
+    
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(userRef, (userSnap) => {
+      if (userSnap.exists()) {
+        const userData = userSnap.data() || {};
+        const profile = userData.profile || {};
         
-        if (userSnap.exists()) {
-          const userData = userSnap.data() || {};
-          const profile = userData.profile || {};
-          
-          // Get user name for avatar
-          if (userData.name) {
-            setUserName(userData.name);
-          }
-          
-          // Get weight and BMI directly from profile
-          const weight = profile.weightKg;
-          const bmi = profile.currentBMI;
-          
-          if (typeof weight === 'number') {
-            setUserWeight(weight);
-          }
-          
-          if (typeof bmi === 'number') {
-            setUserBMI(bmi.toFixed(1));
-          }
-          console.log('✅ [HOME] Successfully fetched user health data');
-        } else {
-          console.log('⚠️ [HOME] User document does not exist');
+        // Get user name for avatar
+        if (userData.name) {
+          setUserName(userData.name);
         }
-      } catch (err) {
-        console.error('❌ [HOME] ERROR fetching user health data from users/' + user.uid + ':', err.code, err.message);
+        
+        // Get weight and BMI directly from profile
+        const weight = profile.weightKg;
+        const bmi = profile.currentBMI;
+        
+        if (typeof weight === 'number') {
+          setUserWeight(weight);
+        }
+        
+        if (typeof bmi === 'number') {
+          setUserBMI(bmi.toFixed(1));
+        }
+        console.log('✅ [HOME] Real-time update: BMI =', bmi, 'Weight =', weight);
+      } else {
+        console.log('⚠️ [HOME] User document does not exist');
       }
-    };
+    }, (err) => {
+      console.error('❌ [HOME] ERROR in real-time listener:', err.code, err.message);
+    });
 
-    fetchUserHealthData();
-    return () => { cancelled = true; };
+    // Cleanup listener on unmount
+    return () => {
+      console.log('🧹 [HOME] Cleaning up real-time listener');
+      unsubscribe();
+    };
   }, [user]);
 
   // Fetch calorie logs for the chart (last 7 days)

@@ -24,81 +24,81 @@ export default function ProgressTrackerScreen() {
   const styles = createStyles(theme);
 
   // Fetch weight data from Firebase
-  useEffect(() => {
-    const fetchWeightData = async () => {
-      if (!user) return;
+  const fetchWeightData = async () => {
+    if (!user) return;
 
-      try {
-        // Fetch current weight from user profile
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
+    try {
+      // Fetch current weight from user profile
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data() || {};
-          const profile = userData.profile || {};
+      if (userSnap.exists()) {
+        const userData = userSnap.data() || {};
+        const profile = userData.profile || {};
 
-          if (typeof profile.weightKg === 'number') {
-            setCurrentWeight(profile.weightKg);
-          }
+        if (typeof profile.weightKg === 'number') {
+          setCurrentWeight(profile.weightKg);
         }
-
-        // Fetch target weight from health profile
-        const healthProfileRef = doc(db, 'users', user.uid, 'private', 'health_profile');
-        const healthProfileSnap = await getDoc(healthProfileRef);
-
-        if (healthProfileSnap.exists()) {
-          const healthData = healthProfileSnap.data() || {};
-          
-          // Check if targetWeight exists in Goal.items first
-          if (healthData.Goal?.items?.targetWeight && typeof healthData.Goal.items.targetWeight === 'number') {
-            setTargetWeight(healthData.Goal.items.targetWeight);
-          }
-          // Fallback to old location for backward compatibility
-          else if (typeof healthData.targetWeight === 'number') {
-            setTargetWeight(healthData.targetWeight);
-          }
-
-          // Fetch weekly weight change goal (e.g., 0.5 for gain, -0.5 for loss)
-          if (healthData.Goal?.items?.weeklyWeightChange && typeof healthData.Goal.items.weeklyWeightChange === 'number') {
-            // Check the goal type to determine if it should be positive or negative
-            const goalType = healthData.Goal?.items?.type || '';
-            const weeklyChange = healthData.Goal.items.weeklyWeightChange;
-            
-            // If goal is weight loss (lose/loss), make it negative
-            if (goalType.toLowerCase().includes('loss') || goalType.toLowerCase().includes('lose')) {
-              setGoalRate(-Math.abs(weeklyChange));
-            } 
-            // If goal is weight gain, make it positive
-            else if (goalType.toLowerCase().includes('gain')) {
-              setGoalRate(Math.abs(weeklyChange));
-            }
-            // Otherwise use the value as-is
-            else {
-              setGoalRate(weeklyChange);
-            }
-          }
-        }
-
-        // Fetch weight logs from weight_log
-        const weightLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'weight_log', 'main');
-        const weightLogSnap = await getDoc(weightLogRef);
-
-        if (weightLogSnap.exists()) {
-          const logData = weightLogSnap.data() || {};
-          const logs = logData.logs || [];
-          
-          // Sort by date (newest first) and take last 7 entries - keep newest to oldest for display
-          const sortedLogs = logs
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 7);
-          
-          setWeightLogs(sortedLogs);
-        }
-      } catch (error) {
-        console.error('Error fetching weight data:', error);
       }
-    };
 
+      // Fetch target weight from health profile
+      const healthProfileRef = doc(db, 'users', user.uid, 'private', 'health_profile');
+      const healthProfileSnap = await getDoc(healthProfileRef);
+
+      if (healthProfileSnap.exists()) {
+        const healthData = healthProfileSnap.data() || {};
+        
+        // Check if targetWeight exists in Goal.items first
+        if (healthData.Goal?.items?.targetWeight && typeof healthData.Goal.items.targetWeight === 'number') {
+          setTargetWeight(healthData.Goal.items.targetWeight);
+        }
+        // Fallback to old location for backward compatibility
+        else if (typeof healthData.targetWeight === 'number') {
+          setTargetWeight(healthData.targetWeight);
+        }
+
+        // Fetch weekly weight change goal (e.g., 0.5 for gain, -0.5 for loss)
+        if (healthData.Goal?.items?.weeklyWeightChange && typeof healthData.Goal.items.weeklyWeightChange === 'number') {
+          // Check the goal type to determine if it should be positive or negative
+          const goalType = healthData.Goal?.items?.type || '';
+          const weeklyChange = healthData.Goal.items.weeklyWeightChange;
+          
+          // If goal is weight loss (lose/loss), make it negative
+          if (goalType.toLowerCase().includes('loss') || goalType.toLowerCase().includes('lose')) {
+            setGoalRate(-Math.abs(weeklyChange));
+          } 
+          // If goal is weight gain, make it positive
+          else if (goalType.toLowerCase().includes('gain')) {
+            setGoalRate(Math.abs(weeklyChange));
+          }
+          // Otherwise use the value as-is
+          else {
+            setGoalRate(weeklyChange);
+          }
+        }
+      }
+
+      // Fetch weight logs from weight_log
+      const weightLogRef = doc(db, 'users', user.uid, 'private', 'health_profile', 'weight_log', 'main');
+      const weightLogSnap = await getDoc(weightLogRef);
+
+      if (weightLogSnap.exists()) {
+        const logData = weightLogSnap.data() || {};
+        const logs = logData.logs || [];
+        
+        // Sort by date (newest first) and take last 7 entries - keep newest to oldest for display
+        const sortedLogs = logs
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 7);
+        
+        setWeightLogs(sortedLogs);
+      }
+    } catch (error) {
+      console.error('Error fetching weight data:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchWeightData();
   }, [user]);
 
@@ -180,11 +180,21 @@ export default function ProgressTrackerScreen() {
         await updateDoc(weightLogRef, {
           logs: existingLogs
         });
+
+        // Re-fetch weight logs to update the chart immediately
+        const updatedLogs = existingLogs
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 7);
+        setWeightLogs(updatedLogs);
       }
 
       setModalVisible(false);
       setNewTargetWeight('');
       setNewCurrentWeight('');
+      
+      // Re-fetch all data to ensure charts are updated
+      await fetchWeightData();
+      
       Alert.alert('Success', 'Weight data updated successfully!');
     } catch (error) {
       console.error('Error saving weight data:', error);

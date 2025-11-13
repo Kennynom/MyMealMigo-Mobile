@@ -217,15 +217,20 @@ export default function SummaryModal({ visible, onClose, lookbackDays = 7 }) {
     );
     const hasAll = REQUIRED_MEALS.every(x => categories.has(x));
 
-    const sumToday = tMeals.reduce((acc, m) => acc + (Number(m.calories) || 0), 0);
+    const sumToday = tMeals.reduce((acc, m) => {
+      const cals = Number(m.calories) || 0;
+      const servings = Number(m.servingSize) || 1;
+      return acc + (cals * servings);
+    }, 0);
 
     // 7d map
     const map = new Map();
     for (const it of meals) {
       const kc = Number(it?.calories);
+      const servings = Number(it?.servingSize) || 1;
       if (!Number.isFinite(kc)) continue;
       const key = dateKey(it.timestamp);
-      map.set(key, (map.get(key) || 0) + kc);
+      map.set(key, (map.get(key) || 0) + (kc * servings));
     }
     const days = [];
     for (let i = 0; i < lookbackDays; i++) {

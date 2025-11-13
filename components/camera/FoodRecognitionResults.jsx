@@ -4,14 +4,15 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, u
 import { router } from 'expo-router';
 import React, { useContext } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function FoodRecognitionResults({ 
@@ -30,6 +31,7 @@ export default function FoodRecognitionResults({
   const [showMealCategoryModal, setShowMealCategoryModal] = React.useState(false);
   const [selectedMealCategory, setSelectedMealCategory] = React.useState(null);
   const [selectedMealType, setSelectedMealType] = React.useState(null);
+  const [servingMultiplier, setServingMultiplier] = React.useState(1);
   
   const styles = createStyles(theme);
 
@@ -74,7 +76,7 @@ export default function FoodRecognitionResults({
         fat: foodData.fats,
         sodium: foodData.sodium,
         sugar: foodData.sugar,
-        servingSize: foodData.servingSize,
+        servingSize: foodData.servingSize * servingMultiplier,
         servingUnit: foodData.servingUnit,
         entryMethod: 'photo',
         timestamp: new Date(),
@@ -205,7 +207,7 @@ export default function FoodRecognitionResults({
 
       {/* Food Information */}
       <View style={styles.foodInfoContainer}>
-        <Text style={styles.sectionTitle}>Food Detected</Text>
+        <Text style={styles.sectionTitle}>Food / Beverage Detected</Text>
         <Text style={styles.foodName}>{foodData.name}</Text>
       </View>
 
@@ -216,40 +218,81 @@ export default function FoodRecognitionResults({
         <View style={styles.macroGrid}>
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Calories</Text>
-            <Text style={styles.macroValue}>{foodData.calories} Kcal</Text>
+            <Text style={styles.macroValue}>{Math.round(foodData.calories * servingMultiplier)} Kcal</Text>
           </View>
           
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Carbs</Text>
-            <Text style={styles.macroValue}>{foodData.carbs} g</Text>
+            <Text style={styles.macroValue}>{(foodData.carbs * servingMultiplier).toFixed(1)} g</Text>
           </View>
           
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Protein</Text>
-            <Text style={styles.macroValue}>{foodData.protein} g</Text>
+            <Text style={styles.macroValue}>{(foodData.protein * servingMultiplier).toFixed(1)} g</Text>
           </View>
           
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Fats</Text>
-            <Text style={styles.macroValue}>{foodData.fats} g</Text>
+            <Text style={styles.macroValue}>{(foodData.fats * servingMultiplier).toFixed(1)} g</Text>
           </View>
           
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Sugar</Text>
-            <Text style={styles.macroValue}>{foodData.sugar} g</Text>
+            <Text style={styles.macroValue}>{(foodData.sugar * servingMultiplier).toFixed(1)} g</Text>
           </View>
           
           <View style={styles.macroItem}>
             <Text style={styles.macroLabel}>Sodium</Text>
-            <Text style={styles.macroValue}>{foodData.sodium} mg</Text>
+            <Text style={styles.macroValue}>{Math.round(foodData.sodium * servingMultiplier)} mg</Text>
           </View>
         </View>
 
-        {/* Serving Size Info */}
-        <View style={styles.servingContainer}>
-          <Text style={styles.servingText}>
-            Per {foodData.servingSize} {foodData.servingUnit}
-          </Text>
+        {/* Serving Size Section with Editable Multiplier */}
+        <View style={styles.servingSection}>
+          <View style={styles.servingSizeInfo}>
+            <Text style={styles.servingLabel}>Serving Size:</Text>
+            <Text style={styles.servingText}>
+              {foodData.servingSize} {foodData.servingUnit}
+            </Text>
+          </View>
+          
+          <View style={styles.servingMultiplierContainer}>
+            <Text style={styles.servingLabel}>Number of Servings:</Text>
+            <View style={styles.servingInputRow}>
+              <TouchableOpacity 
+                style={styles.servingButton}
+                onPress={() => setServingMultiplier(Math.max(0.5, servingMultiplier - 0.5))}
+              >
+                <Text style={styles.servingButtonText}>−</Text>
+              </TouchableOpacity>
+              
+              <TextInput
+                style={styles.servingInput}
+                value={servingMultiplier.toString()}
+                onChangeText={(text) => {
+                  const val = parseFloat(text);
+                  if (!isNaN(val) && val > 0) {
+                    setServingMultiplier(val);
+                  }
+                }}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+              
+              <TouchableOpacity 
+                style={styles.servingButton}
+                onPress={() => setServingMultiplier(servingMultiplier + 0.5)}
+              >
+                <Text style={styles.servingButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <View style={styles.totalServingInfo}>
+            <Text style={styles.totalServingText}>
+
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -448,6 +491,71 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  servingSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    gap: 12,
+  },
+  servingSizeInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  servingLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  servingMultiplierContainer: {
+    gap: 8,
+  },
+  servingInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  servingButton: {
+    backgroundColor: '#059669',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  servingButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  servingInput: {
+    backgroundColor: theme.background,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.text,
+    textAlign: 'center',
+    minWidth: 80,
+  },
+  totalServingInfo: {
+    alignItems: 'center',
+  },
+  totalServingText: {
+    fontSize: 14,
+    color: '#059669',
+    fontWeight: '600',
   },
   buttonContainer: {
     paddingHorizontal: 20,

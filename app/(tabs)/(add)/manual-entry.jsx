@@ -4,16 +4,16 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking, u
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function ManualEntryScreen() {
@@ -286,7 +286,7 @@ export default function ManualEntryScreen() {
 
           {/* Food Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Food Name *</Text>
+            <Text style={styles.label}>Food / Beverages Name *</Text>
             <TextInput
               style={styles.input}
               value={mealData.foodName}
@@ -398,36 +398,48 @@ export default function ManualEntryScreen() {
               <Text style={styles.summaryTitle}>Nutritional Summary</Text>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Calories:</Text>
-                <Text style={styles.summaryValue}>{mealData.calories}</Text>
+                <Text style={styles.summaryValue}>
+                  {(parseFloat(mealData.calories) * (parseFloat(mealData.servingSize) || 1)).toFixed(0)}
+                </Text>
               </View>
               {mealData.protein && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Protein:</Text>
-                  <Text style={styles.summaryValue}>{mealData.protein}g</Text>
+                  <Text style={styles.summaryValue}>
+                    {(parseFloat(mealData.protein) * (parseFloat(mealData.servingSize) || 1)).toFixed(1)}g
+                  </Text>
                 </View>
               )}
               {mealData.carbs && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Carbs:</Text>
-                  <Text style={styles.summaryValue}>{mealData.carbs}g</Text>
+                  <Text style={styles.summaryValue}>
+                    {(parseFloat(mealData.carbs) * (parseFloat(mealData.servingSize) || 1)).toFixed(1)}g
+                  </Text>
                 </View>
               )}
               {mealData.fat && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Fat:</Text>
-                  <Text style={styles.summaryValue}>{mealData.fat}g</Text>
+                  <Text style={styles.summaryValue}>
+                    {(parseFloat(mealData.fat) * (parseFloat(mealData.servingSize) || 1)).toFixed(1)}g
+                  </Text>
                 </View>
               )}
               {mealData.sodium && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Sodium:</Text>
-                  <Text style={styles.summaryValue}>{mealData.sodium}mg</Text>
+                  <Text style={styles.summaryValue}>
+                    {(parseFloat(mealData.sodium) * (parseFloat(mealData.servingSize) || 1)).toFixed(0)}mg
+                  </Text>
                 </View>
               )}
               {mealData.sugar && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Sugar:</Text>
-                  <Text style={styles.summaryValue}>{mealData.sugar}g</Text>
+                  <Text style={styles.summaryValue}>
+                    {(parseFloat(mealData.sugar) * (parseFloat(mealData.servingSize) || 1)).toFixed(1)}g
+                  </Text>
                 </View>
               )}
             </View>

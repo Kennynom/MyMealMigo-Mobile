@@ -6,7 +6,7 @@ import { checkCalorieGoalExceedance, logMealToFirebase, updateCalorieTracking } 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const PLACEHOLDER = require('@/assets/images/placeholder-recipe.png');
 
@@ -19,6 +19,7 @@ export default function RecipeDetail() {
   const [item, setItem] = useState(null);
   const [showMealCategoryModal, setShowMealCategoryModal] = useState(false);
   const [logging, setLogging] = useState(false);
+  const [servingMultiplier, setServingMultiplier] = useState(1);
 
   const styles = createStyles(theme);
 
@@ -77,7 +78,7 @@ export default function RecipeDetail() {
         fat: item.Macros?.fat || 0,
         sodium: item.Macros?.sodium || 0,
         sugar: item.Macros?.sugar || 0,
-        servingSize: 1,
+        servingSize: servingMultiplier,
         servingUnit: 'serving',
         mealCategory: mealCategory,
         mealType: mealType,
@@ -313,14 +314,20 @@ export default function RecipeDetail() {
         visible={showMealCategoryModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowMealCategoryModal(false)}
+        onRequestClose={() => {
+          setShowMealCategoryModal(false);
+          setServingMultiplier(1);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Meal Category</Text>
               <TouchableOpacity 
-                onPress={() => setShowMealCategoryModal(false)}
+                onPress={() => {
+                  setShowMealCategoryModal(false);
+                  setServingMultiplier(1);
+                }}
                 style={styles.modalCloseButton}
               >
                 <Text style={styles.modalCloseText}>✕</Text>
@@ -328,6 +335,79 @@ export default function RecipeDetail() {
             </View>
 
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {/* Serving Size Selector */}
+              <View style={styles.modalServingSection}>
+                <Text style={styles.modalSectionTitle}>Adjust Serving Size</Text>
+                
+                <View style={styles.servingInputRow}>
+                  <TouchableOpacity 
+                    style={styles.servingButton}
+                    onPress={() => setServingMultiplier(Math.max(0.5, servingMultiplier - 0.5))}
+                  >
+                    <Text style={styles.servingButtonText}>−</Text>
+                  </TouchableOpacity>
+                  
+                  <TextInput
+                    style={styles.servingInput}
+                    value={servingMultiplier.toString()}
+                    onChangeText={(text) => {
+                      const val = parseFloat(text);
+                      if (!isNaN(val) && val > 0) {
+                        setServingMultiplier(val);
+                      }
+                    }}
+                    keyboardType="numeric"
+                    selectTextOnFocus
+                  />
+                  
+                  <TouchableOpacity 
+                    style={styles.servingButton}
+                    onPress={() => setServingMultiplier(servingMultiplier + 0.5)}
+                  >
+                    <Text style={styles.servingButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.servingHint}>
+                  {servingMultiplier.toFixed(1)} serving{servingMultiplier !== 1 ? 's' : ''}
+                </Text>
+              </View>
+
+              {/* Nutrition Preview */}
+              {!!item?.Macros && (
+                <View style={styles.modalNutritionSection}>
+                  <Text style={styles.modalSectionTitle}>Total Nutrition</Text>
+                  <View style={styles.modalMacrosGrid}>
+                    {item.Macros.calories && (
+                      <View style={styles.modalMacroItem}>
+                        <Text style={styles.modalMacroValue}>{Math.round(item.Macros.calories * servingMultiplier)}</Text>
+                        <Text style={styles.modalMacroLabel}>cal</Text>
+                      </View>
+                    )}
+                    {item.Macros.carbs && (
+                      <View style={styles.modalMacroItem}>
+                        <Text style={styles.modalMacroValue}>{(item.Macros.carbs * servingMultiplier).toFixed(1)}g</Text>
+                        <Text style={styles.modalMacroLabel}>carbs</Text>
+                      </View>
+                    )}
+                    {item.Macros.protein && (
+                      <View style={styles.modalMacroItem}>
+                        <Text style={styles.modalMacroValue}>{(item.Macros.protein * servingMultiplier).toFixed(1)}g</Text>
+                        <Text style={styles.modalMacroLabel}>protein</Text>
+                      </View>
+                    )}
+                    {item.Macros.fat && (
+                      <View style={styles.modalMacroItem}>
+                        <Text style={styles.modalMacroValue}>{(item.Macros.fat * servingMultiplier).toFixed(1)}g</Text>
+                        <Text style={styles.modalMacroLabel}>fat</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Meal Category Selection */}
+              <Text style={styles.modalSectionTitle}>Select Meal Category</Text>
               {mealCategories.map((category) => (
                 <View key={category.id} style={styles.categorySection}>
                   <Text style={styles.categoryLabel}>
@@ -562,6 +642,92 @@ const createStyles = (theme) => StyleSheet.create({
   },
   modalContent: {
     padding: 20,
+  },
+  modalServingSection: {
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: theme.text,
+  },
+  servingInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  servingButton: {
+    backgroundColor: theme.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  servingButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  servingInput: {
+    backgroundColor: theme.background,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.text,
+    textAlign: 'center',
+    minWidth: 80,
+  },
+  servingHint: {
+    fontSize: 14,
+    color: theme.primary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  modalNutritionSection: {
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+  },
+  modalMacrosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  modalMacroItem: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 12,
+    backgroundColor: theme.background,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalMacroValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.primary,
+    marginBottom: 4,
+  },
+  modalMacroLabel: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    textTransform: 'uppercase',
   },
   categorySection: {
     marginBottom: 24,
