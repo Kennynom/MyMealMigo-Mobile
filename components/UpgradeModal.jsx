@@ -22,7 +22,6 @@ export default function UpgradeModal({ visible, onClose, onSubscribe }) {
   const features = [
     'Unlimited meal logging',
     'Advanced nutrition insights',
-    'Personalized meal recommendations',
     'Export meal history',
     'Priority customer support',
     'Ad-free experience',

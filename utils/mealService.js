@@ -34,10 +34,6 @@ const MAIN_DOC = 'main';
  */
 export const logMealToFirebase = async (mealData) => {
   try {
-    // Debug logging
-    console.log('=== Firebase Meal Logging Debug ===');
-    console.log('Input mealData:', mealData);
-    
     // Validate required fields
     if (!mealData.userId) {
       throw new Error('User ID is required');
@@ -57,13 +53,9 @@ export const logMealToFirebase = async (mealData) => {
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
-
-    console.log('Final meal document:', mealDocument);
     
     // Path: users/{userId}/private/health_profile/meal_logs/main
     const userMealLogsRef = doc(db, USERS_COLLECTION, mealData.userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, MEAL_LOGS_COLLECTION, MAIN_DOC);
-    
-    console.log('Document path:', `users/${mealData.userId}/private/health_profile/meal_logs/main`);
 
     // Check if the document exists, if not create it with the meal
     const docSnap = await getDoc(userMealLogsRef);
@@ -74,7 +66,6 @@ export const logMealToFirebase = async (mealData) => {
         dailyLogs: arrayUnion(mealDocument),
         updatedAt: Timestamp.now()
       });
-      console.log('✅ Meal added to existing dailyLogs array');
     } else {
       // Document doesn't exist, create it with the meal
       await setDoc(userMealLogsRef, {
@@ -83,10 +74,8 @@ export const logMealToFirebase = async (mealData) => {
         updatedAt: Timestamp.now(),
         userId: mealData.userId
       });
-      console.log('✅ Created new meal_logs document with first meal');
     }
     
-    console.log('Meal logged successfully with ID:', mealId);
     return mealId;
   } catch (error) {
     console.error('Error logging meal to Firebase:', error);
@@ -109,13 +98,10 @@ export const getUserMeals = async (userId, limit = 50) => {
     // Path: users/{userId}/private/health_profile/meal_logs/main
     const userMealLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, MEAL_LOGS_COLLECTION, MAIN_DOC);
     const docSnap = await getDoc(userMealLogsRef);
-
+    
     if (!docSnap.exists()) {
-      console.log('No meal logs found for user');
       return [];
-    }
-
-    const data = docSnap.data();
+    }    const data = docSnap.data();
     let meals = data.dailyLogs || [];
 
     // Convert Firestore timestamps to JavaScript dates
@@ -205,7 +191,6 @@ export const updateMeal = async (mealId, updateData) => {
     };
 
     await updateDoc(mealRef, updatedData);
-    console.log('Meal updated successfully');
   } catch (error) {
     console.error('Error updating meal:', error);
     throw error;
@@ -225,7 +210,6 @@ export const deleteMeal = async (mealId) => {
 
     const mealRef = doc(db, MEALS_COLLECTION, mealId);
     await deleteDoc(mealRef);
-    console.log('Meal deleted successfully');
   } catch (error) {
     console.error('Error deleting meal:', error);
     throw error;
@@ -283,10 +267,6 @@ export const getDailyNutritionTotals = async (userId, date = new Date()) => {
  */
 export const updateCalorieTracking = async (userId, mealData) => {
   try {
-    console.log('=== Updating Calorie Tracking ===');
-    console.log('User ID:', userId);
-    console.log('Meal data:', mealData);
-
     // Path: users/{userId}/private/health_profile/calorie_logs/main
     const calorieLogsRef = doc(db, USERS_COLLECTION, userId, PRIVATE_COLLECTION, HEALTH_PROFILE_DOC, 'calorie_logs', MAIN_DOC);
     
@@ -331,8 +311,6 @@ export const updateCalorieTracking = async (userId, mealData) => {
           dailyLogs: dailyLogs,
           updatedAt: Timestamp.now()
         });
-        
-        console.log('✅ Updated existing daily log with meal calories');
       } else {
         // Create new daily log for today
         const newDailyLog = {
@@ -354,8 +332,6 @@ export const updateCalorieTracking = async (userId, mealData) => {
           dailyLogs: dailyLogs,
           updatedAt: Timestamp.now()
         });
-        
-        console.log('✅ Created new daily log with meal calories');
       }
     } else {
       // Document doesn't exist, create it with first daily log
@@ -380,11 +356,7 @@ export const updateCalorieTracking = async (userId, mealData) => {
         updatedAt: Timestamp.now(),
         userId: userId
       });
-      
-      console.log('✅ Created new calorie logs document with first daily log');
     }
-    
-    console.log(`Added ${mealCalories} calories to daily tracking`);
   } catch (error) {
     console.error('Error updating calorie tracking:', error);
     throw error;
@@ -481,8 +453,6 @@ export const checkCalorieGoalExceedance = async (userId, mealCalories) => {
     const willExceed = totalAfterMeal > calorieGoal;
     const exceedBy = willExceed ? totalAfterMeal - calorieGoal : 0;
 
-    console.log(`Current: ${currentConsumed}, Adding: ${mealCalories}, Goal: ${calorieGoal}, Will exceed: ${willExceed}, Exceed by: ${exceedBy}`);
-
     return {
       willExceed,
       exceedBy: Math.round(exceedBy),
@@ -513,12 +483,6 @@ export const checkCalorieGoalExceedance = async (userId, mealCalories) => {
  */
 export const updateMealAndCalories = async (userId, mealId, oldMealData, newMealData) => {
   try {
-    console.log('=== Updating Meal and Calories ===');
-    console.log('User ID:', userId);
-    console.log('Meal ID:', mealId);
-    console.log('Old meal data:', oldMealData);
-    console.log('New meal data:', newMealData);
-
     if (!userId || !mealId) {
       throw new Error('User ID and Meal ID are required');
     }
@@ -609,12 +573,8 @@ export const updateMealAndCalories = async (userId, mealId, oldMealData, newMeal
           dailyLogs: dailyCalorieLogs,
           updatedAt: Timestamp.now()
         });
-
-        console.log('✅ Calorie tracking updated successfully');
       }
     }
-
-    console.log('Meal and calories updated successfully');
   } catch (error) {
     console.error('Error updating meal and calories:', error);
     throw error;
@@ -630,11 +590,6 @@ export const updateMealAndCalories = async (userId, mealId, oldMealData, newMeal
  */
 export const deleteMealAndCalories = async (userId, mealId, mealData) => {
   try {
-    console.log('=== Deleting Meal and Calories ===');
-    console.log('User ID:', userId);
-    console.log('Meal ID:', mealId);
-    console.log('Meal data:', mealData);
-
     if (!userId || !mealId) {
       throw new Error('User ID and Meal ID are required');
     }
@@ -711,12 +666,8 @@ export const deleteMealAndCalories = async (userId, mealId, mealData) => {
           dailyLogs: dailyCalorieLogs,
           updatedAt: Timestamp.now()
         });
-
-        console.log('✅ Calorie tracking updated successfully');
       }
     }
-
-    console.log('Meal and calories deleted successfully');
   } catch (error) {
     console.error('Error deleting meal and calories:', error);
     throw error;

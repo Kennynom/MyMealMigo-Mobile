@@ -3,8 +3,6 @@
 
 import foodsData from '../mlserver/data/foods.json';
 
-console.log('📊 Loaded nutrition data for', foodsData.length, 'foods');
-
 /**
  * Get nutrition data for a specific food ID
  * @param {string} foodId - The food identifier (e.g., "chicken_rice")
@@ -16,17 +14,12 @@ export const getFoodNutrition = async (foodId) => {
       throw new Error('Food ID is required');
     }
 
-    console.log('🔍 Looking up nutrition for food ID:', foodId);
-
     // Find food in local JSON data
     const food = foodsData.find(item => item.id === foodId);
 
     if (!food) {
-      console.log('❌ Food not found:', foodId);
       throw new Error(`Food with ID "${foodId}" not found in nutrition database`);
     }
-
-    console.log('✅ Found nutrition data:', food);
 
     // Return standardized nutrition data
     return {
@@ -54,8 +47,6 @@ export const getFoodNutrition = async (foodId) => {
  */
 export const getMultipleFoodOptions = async (predictions) => {
   try {
-    console.log('🍽️ Fetching nutrition for multiple predictions:', predictions);
-
     const foodOptions = [];
 
     for (const prediction of predictions) {
@@ -91,5 +82,3 @@ export const getAllFoods = () => {
     calories: food.calories
   }));
 };
-
-console.log('🎯 Available foods:', getAllFoods().map(f => f.name).join(', '));

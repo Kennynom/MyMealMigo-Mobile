@@ -26,15 +26,6 @@ export default function DiscoverMainScreen() {
       color: theme.altAccent,
       route: '/(tabs)/(discover)/(recipes)/browse-recipes',
       image: require('@/assets/images/browserecipe.png'),
-    },
-    {
-      id: 'recommendations',
-      title: 'Meal Recommendations',
-      subtitle: 'Personalized for you',
-      icon: 'recommend',
-      color: '#F38181',
-      route: '/(tabs)/(discover)/(recommendation)',
-      image: require('@/assets/images/mealrecommendation.png'),
     }
   ];
 

@@ -1,4 +1,4 @@
-// Modern Personal Information Screen - Save this to replace the existing index.jsx
+// Modern Personal Information Screen
 import { db } from '@/config/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeContext } from '@/context/ThemeContext';
