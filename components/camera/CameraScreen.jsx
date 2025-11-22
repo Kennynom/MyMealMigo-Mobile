@@ -31,7 +31,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
   
   const styles = createStyles(theme);
 
-  const CONFIDENCE_THRESHOLD = 0.70; 
+  const CONFIDENCE_THRESHOLD = 0.70; // Minimum confidence to accept prediction
 
 
   if (!permission) {
@@ -99,7 +99,11 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
           'Low Confidence',
           `Food detection confidence is ${Math.round(probability * 100)}%. Please try taking a clearer photo.`,
           [
-            { text: 'Retry', onPress: () => {} }
+            { text: 'Retry', onPress: () => {} },
+            { 
+              text: 'Continue Anyway', 
+              onPress: () => proceedWithRecognition(photo.uri, className, probability)
+            }
           ]
         );
         return;
@@ -139,6 +143,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
 
    
       const nutritionData = await getFoodNutrition(foodId);
+      console.log('✅ Nutrition data from Firestore:', nutritionData);
 
    
       setRecognitionResults({
@@ -150,7 +155,7 @@ export default function CameraScreen({ editMode = false, mealId = null, existing
       setShowResults(true);
 
     } catch (error) {
-      console.error(' Error getting nutrition data:', error);
+      console.error('❌ Error getting nutrition data:', error);
       
       // Handle different types of errors
       if (error.message.includes('not available in database')) {
