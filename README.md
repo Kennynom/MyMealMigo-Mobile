@@ -495,9 +495,17 @@ The `.env` file is included in the repository for easy evaluation and testing. S
 ## 👥 Contributors
 
 - **Development Team**: MyMealMigo Team
-- **Institution**: [Your University Name]
+- **Institution**: University of Wollonggong
 - **Project Type**: Final Year Project (FYP)
-- **Year**: 2024-2025
+- **Development Date**: July 2025 - Dec 2025
+- **Team Members**: 
+**- Gabriel Leu Jun Yang**
+**- Ridhwan Putra Dewantoro**
+**- Bryce Nicolas Fernandez Sumcad**
+**- Kenneth Chua Yi Sheng**
+**- D'artagnan Kong Yih Ferng**
+ 
+
 
 ```bash
 # Start development server
