@@ -2,7 +2,45 @@
 
 A comprehensive nutrition tracking and meal planning application built with React Native and Expo Router.
 
-<img width="300" height="673" alt="image" src="https://github.com/user-attachments/assets/c8568fa9-d6a9-4be9-a80a-87a1d1a88f8e" />
+# Quick Application Feature rundown
+- Startup/Login Page: For user logging in (account features are available based on account type)
+<img width="478" height="865" alt="image" src="https://github.com/user-attachments/assets/2d80e4fc-5fc5-4742-9991-b2197127af1e" />
+<img width="484" height="871" alt="image" src="https://github.com/user-attachments/assets/c9337661-8845-40ca-acd2-625c8ea14c5e" />
+
+- Dashboard: weight, BMI, 7-day calorie chart and predictive insights.
+- Calorie goal warnings: app warns if a new meal will exceed daily target.
+<img width="480" height="872" alt="image" src="https://github.com/user-attachments/assets/eb5f632f-6017-4dad-9f19-2510acfa4256" />
+<img width="582" height="1277" alt="image" src="https://github.com/user-attachments/assets/dbdead48-f111-4a55-9bca-0544725211a0" />
+<img width="482" height="866" alt="image" src="https://github.com/user-attachments/assets/fd988426-40aa-4910-8116-940eb020ef9c" />
+<img width="585" height="1287" alt="image" src="https://github.com/user-attachments/assets/eb37ae11-456f-40b9-9991-22b382421fa5" />
+<img width="589" height="1279" alt="image" src="https://github.com/user-attachments/assets/e33c2f14-8ff5-417f-a80a-13089ac9e12f" />
+
+- Manual meal logging: add food, calories and macros, choose meal category.
+- Entry can also be made from our in-app library
+<img width="476" height="862" alt="image" src="https://github.com/user-attachments/assets/ce31f7c6-3cdf-4544-a4dc-ec272873645f" />
+<img width="589" height="1274" alt="image" src="https://github.com/user-attachments/assets/95160d65-4daa-4df4-b787-3175151f3b60" />
+<img width="469" height="871" alt="image" src="https://github.com/user-attachments/assets/5f79dbb5-5f21-4bd5-872b-e1f7d3e76655" />
+<img width="471" height="861" alt="image" src="https://github.com/user-attachments/assets/5cf53a21-2e48-4aed-8fdd-394d0dac3470" />
+
+- Photo-based logging (AI): take a photo → ML server predicts food → auto-populates nutrition.
+- Barcode scanning (premium): scan packaged food to fetch nutrition and log quickly.
+<img width="582" height="1277" alt="image" src="https://github.com/user-attachments/assets/3e3e3090-1cdf-429e-8c92-d6a8c50407e1" />
+<img width="589" height="1282" alt="image" src="https://github.com/user-attachments/assets/26789da6-805e-4ba7-b994-76ca4f6e8f9c" />
+<img width="582" height="1276" alt="image" src="https://github.com/user-attachments/assets/895cc009-dff2-497b-af7d-8a9620a359af" />
+<img width="579" height="1268" alt="image" src="https://github.com/user-attachments/assets/8a924899-9ff9-4be5-9942-5911cdccb79b" />
+<img width="582" height="1278" alt="image" src="https://github.com/user-attachments/assets/288f5ec5-611b-412f-9661-bac10ecccb67" />
+
+- Meal logs & history: view, edit, delete logs; daily/weekly summaries.
+<img width="587" height="1271" alt="image" src="https://github.com/user-attachments/assets/31139a97-2737-436c-b75d-838d04d10d16" />
+<img width="582" height="1276" alt="image" src="https://github.com/user-attachments/assets/1ad26834-e697-461c-a1ea-72e5991f0fc3" />
+
+- Authentication & profile: email auth and health profile (target calories, weight).
+- Premium gating & AI chat: premium-only flows and an in-app nutrition chatbot.
+<img width="587" height="1264" alt="image" src="https://github.com/user-attachments/assets/5d3cdca6-2648-4997-91c7-9186e3959251" />
+
+- ML Server: standalone Express + TensorFlow.js service used by the photo flow.
+- Firebase integration: Firestore and Storage for user data and images.
+
 
 ## 🚀 Recent Updates & Features
 
