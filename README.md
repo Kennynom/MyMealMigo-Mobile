@@ -2,6 +2,8 @@
 
 A comprehensive nutrition tracking and meal planning application built with React Native and Expo Router.
 
+<img width="300" height="673" alt="image" src="https://github.com/user-attachments/assets/c8568fa9-d6a9-4be9-a80a-87a1d1a88f8e" />
+
 ## 🚀 Recent Updates & Features
 
 ### ✨ Latest Changes (Current Version)
