@@ -15,7 +15,9 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 
 - Manual meal logging: add food, calories and macros, choose meal category.
 - Entry can also be made from our in-app library
-<img width="476" height="862" alt="image" src="https://github.com/user-attachments/assets/ce31f7c6-3cdf-4544-a4dc-ec272873645f" />
+- Meal logs & history: view, edit, delete logs; daily/weekly summaries.
+<img width="587" height="1271" alt="image" src="https://github.com/user-attachments/assets/31139a97-2737-436c-b75d-838d04d10d16" />
+<img width="582" height="1276" alt="image" src="https://github.com/user-attachments/assets/1ad26834-e697-461c-a1ea-72e5991f0fc3" />
 <img width="589" height="1274" alt="image" src="https://github.com/user-attachments/assets/95160d65-4daa-4df4-b787-3175151f3b60" />
 <img width="469" height="871" alt="image" src="https://github.com/user-attachments/assets/5f79dbb5-5f21-4bd5-872b-e1f7d3e76655" />
 <img width="471" height="861" alt="image" src="https://github.com/user-attachments/assets/5cf53a21-2e48-4aed-8fdd-394d0dac3470" />
@@ -27,10 +29,6 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 <img width="582" height="1276" alt="image" src="https://github.com/user-attachments/assets/895cc009-dff2-497b-af7d-8a9620a359af" />
 <img width="579" height="1268" alt="image" src="https://github.com/user-attachments/assets/8a924899-9ff9-4be5-9942-5911cdccb79b" />
 <img width="582" height="1278" alt="image" src="https://github.com/user-attachments/assets/288f5ec5-611b-412f-9661-bac10ecccb67" />
-
-- Meal logs & history: view, edit, delete logs; daily/weekly summaries.
-<img width="587" height="1271" alt="image" src="https://github.com/user-attachments/assets/31139a97-2737-436c-b75d-838d04d10d16" />
-<img width="582" height="1276" alt="image" src="https://github.com/user-attachments/assets/1ad26834-e697-461c-a1ea-72e5991f0fc3" />
 
 - Authentication & profile: email auth and health profile (target calories, weight).
 - Premium gating & AI chat: premium-only flows and an in-app nutrition chatbot.
