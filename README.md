@@ -9,9 +9,7 @@ A comprehensive nutrition tracking and meal planning application built with Reac
 
 - Dashboard: weight, BMI, 7-day calorie chart and predictive insights.
 - Calorie goal warnings: app warns if a new meal will exceed daily target.
-<img width="480" height="872" alt="image" src="https://github.com/user-attachments/assets/eb5f632f-6017-4dad-9f19-2510acfa4256" />
 <img width="582" height="1277" alt="image" src="https://github.com/user-attachments/assets/dbdead48-f111-4a55-9bca-0544725211a0" />
-<img width="482" height="866" alt="image" src="https://github.com/user-attachments/assets/fd988426-40aa-4910-8116-940eb020ef9c" />
 <img width="585" height="1287" alt="image" src="https://github.com/user-attachments/assets/eb37ae11-456f-40b9-9991-22b382421fa5" />
 <img width="589" height="1279" alt="image" src="https://github.com/user-attachments/assets/e33c2f14-8ff5-417f-a80a-13089ac9e12f" />
 
